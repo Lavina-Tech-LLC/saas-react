@@ -771,6 +771,111 @@ export function generateCSS(theme: ResolvedTheme): string {
       object-fit: cover;
     }
 
+    /* Avatar hover overlay */
+    .ss-avatar-hoverable {
+      position: relative;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+
+    .ss-avatar-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s;
+      color: #fff;
+    }
+
+    .ss-avatar-hoverable:hover .ss-avatar-overlay {
+      opacity: 1;
+    }
+
+    /* Avatar cropper */
+    .ss-avatar-cropper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ss-avatar-canvas {
+      border-radius: ${theme.borderRadius};
+      background: #111;
+      touch-action: none;
+      max-width: 100%;
+    }
+
+    .ss-avatar-zoom {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .ss-avatar-zoom-label {
+      font-size: 13px;
+      color: ${theme.colorTextSecondary};
+      flex-shrink: 0;
+    }
+
+    .ss-avatar-zoom-slider {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: ${theme.colorInputBorder};
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .ss-avatar-zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: ${theme.colorPrimary};
+      cursor: pointer;
+    }
+
+    .ss-avatar-zoom-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: ${theme.colorPrimary};
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Dropzone */
+    .ss-avatar-dropzone {
+      border: 2px dashed ${theme.colorInputBorder};
+      border-radius: ${theme.borderRadius};
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      color: ${theme.colorTextSecondary};
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ss-avatar-dropzone:hover,
+    .ss-avatar-dropzone-active {
+      border-color: ${theme.colorPrimary};
+      background: ${theme.colorPrimary}08;
+    }
+
+    .ss-avatar-dropzone svg {
+      opacity: 0.5;
+    }
+
     .ss-input-readonly {
       opacity: 0.6;
       cursor: not-allowed;

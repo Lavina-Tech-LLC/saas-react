@@ -2,6 +2,7 @@ import { useState, useCallback, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
 import { useAuth, useProfile } from './hooks'
+import { AvatarUploadModal } from './AvatarUploadModal'
 import type { Appearance } from '../../core/types'
 
 export interface UserProfileProps {
@@ -11,11 +12,12 @@ export interface UserProfileProps {
 export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
   const { appearance: globalAppearance } = useSaaSContext()
   const { user, signOut } = useAuth()
-  const { updateProfile, changePassword, isLoading, error, success, setError, setSuccess } = useProfile()
+  const { updateProfile, uploadAvatar, changePassword, isLoading, error, success, setError, setSuccess } = useProfile()
   const appearance = localAppearance ?? globalAppearance
 
   const [name, setName] = useState(user?.name ?? '')
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? '')
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,9 +28,20 @@ export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
       e.preventDefault()
       setError(null)
       setSuccess(null)
-      await updateProfile({ name, avatarUrl })
+      await updateProfile({ name, avatarUrl: avatarUrl || undefined })
     },
     [name, avatarUrl, updateProfile, setError, setSuccess],
+  )
+
+  const handleAvatarUpload = useCallback(
+    async (blob: Blob) => {
+      const result = await uploadAvatar(blob)
+      if (result) {
+        setAvatarUrl(result.avatarUrl)
+        setShowAvatarUpload(false)
+      }
+    },
+    [uploadAvatar],
   )
 
   const handleChangePassword = useCallback(
@@ -67,23 +80,29 @@ export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
         {error && <div className="ss-global-error">{error}</div>}
         {success && <div className="ss-success-msg">{success}</div>}
 
-        <div className="ss-avatar-preview" style={{ margin: '0 auto 16px' }}>
+        <div
+          className="ss-avatar-preview ss-avatar-hoverable"
+          style={{ margin: '0 auto 16px' }}
+          onClick={() => setShowAvatarUpload(true)}
+          title="Click to change avatar"
+        >
           {avatarUrl ? (
             <img src={avatarUrl} alt="" />
           ) : (
             (name || user.email).charAt(0).toUpperCase()
           )}
+          <div className="ss-avatar-overlay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 16a4 4 0 100-8 4 4 0 000 8z" />
+              <path d="M3 16.8V9.2c0-1.12 0-1.68.218-2.108a2 2 0 01.874-.874C4.52 6 5.08 6 6.2 6h.382c.246 0 .37 0 .482-.022a1 1 0 00.513-.29c.08-.082.148-.186.284-.392l.079-.118C8.08 4.968 8.15 4.863 8.234 4.77a2 2 0 01.965-.61C9.346 4.1 9.508 4.1 9.834 4.1h4.332c.326 0 .488 0 .636.06a2 2 0 01.965.61c.083.094.153.198.293.408l.079.118c.136.206.204.31.284.392a1 1 0 00.513.29c.112.022.236.022.482.022h.382c1.12 0 1.68 0 2.108.218a2 2 0 01.874.874C21 7.52 21 8.08 21 9.2v7.6c0 1.12 0 1.68-.218 2.108a2 2 0 01-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 01-.874-.874C3 18.48 3 17.92 3 16.8z" />
+            </svg>
+          </div>
         </div>
 
         <form onSubmit={handleSaveProfile}>
           <div className="ss-field">
             <label className="ss-label">Name</label>
             <input className="ss-input" type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-
-          <div className="ss-field">
-            <label className="ss-label">Avatar URL</label>
-            <input className="ss-input" type="url" placeholder="https://example.com/avatar.jpg" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
           </div>
 
           <div className="ss-field">
@@ -137,6 +156,14 @@ export function UserProfile({ appearance: localAppearance }: UserProfileProps) {
             Sign out
           </button>
         </div>
+
+        {showAvatarUpload && (
+          <AvatarUploadModal
+            onUpload={handleAvatarUpload}
+            onClose={() => setShowAvatarUpload(false)}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </ShadowHost>
   )

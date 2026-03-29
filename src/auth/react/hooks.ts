@@ -191,5 +191,24 @@ export function useProfile() {
     [client],
   )
 
-  return { user, updateProfile, changePassword, isLoading, error, success, setError, setSuccess }
+  const uploadAvatar = useCallback(
+    async (imageBlob: Blob) => {
+      setIsLoading(true)
+      setError(null)
+      setSuccess(null)
+      try {
+        const result = await client.auth.uploadAvatar(imageBlob)
+        setSuccess('Avatar updated')
+        return result
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload avatar')
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  return { user, updateProfile, uploadAvatar, changePassword, isLoading, error, success, setError, setSuccess }
 }

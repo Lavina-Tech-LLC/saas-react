@@ -269,6 +269,22 @@ export class AuthClient {
     return user
   }
 
+  async uploadAvatar(imageBlob: Blob): Promise<{ avatarUrl: string; small: string; medium: string; original: string }> {
+    const result = await this.transport.uploadBinary<{
+      avatarUrl: string
+      small: string
+      medium: string
+      original: string
+    }>('/auth/avatar', imageBlob, this.authHeaders())
+
+    if (this.cachedUser) {
+      this.cachedUser = { ...this.cachedUser, avatarUrl: result.avatarUrl }
+      this.emitter.emit('authStateChange', this.cachedUser)
+    }
+
+    return result
+  }
+
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     await this.transport.post('/auth/change-password', { currentPassword, newPassword }, this.authHeaders())
   }

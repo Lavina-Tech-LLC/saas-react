@@ -64,6 +64,59 @@ export class Transport {
     return this.request<T>('DELETE', path, undefined, headers)
   }
 
+  async uploadBinary<T>(
+    path: string,
+    data: Blob,
+    headers?: Record<string, string>,
+  ): Promise<T> {
+    try {
+      return await this.doUploadBinary<T>(path, data, headers)
+    } catch (err) {
+      if (
+        err instanceof SaaSError &&
+        err.isUnauthorized &&
+        this.onUnauthorized &&
+        headers?.['Authorization']
+      ) {
+        const newToken = await this.onUnauthorized()
+        if (newToken) {
+          return this.doUploadBinary<T>(path, data, {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          })
+        }
+      }
+      throw err
+    }
+  }
+
+  private async doUploadBinary<T>(
+    path: string,
+    data: Blob,
+    headers?: Record<string, string>,
+  ): Promise<T> {
+    const reqHeaders: Record<string, string> = {
+      'Content-Type': 'application/octet-stream',
+      ...this.getAuthHeaders(),
+      ...headers,
+    }
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: reqHeaders,
+      body: data,
+    })
+
+    const json = await res.json()
+
+    if (json.code && json.code >= 400) {
+      const domain = this.inferDomain(path)
+      throw new SaaSError(json.code, json.message || 'Upload failed', domain)
+    }
+
+    return json.data as T
+  }
+
   private async doRequest<T>(
     method: string,
     path: string,
