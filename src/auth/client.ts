@@ -212,7 +212,7 @@ export class AuthClient {
 
     if (this.tokenManager?.hasRefreshToken()) {
       try {
-        await this.performRefresh()
+        await this.tokenManager.refreshOnce()
         return this.tokenManager?.getAccessToken() ?? null
       } catch {
         this.clearSession()
@@ -324,6 +324,12 @@ export class AuthClient {
   // ---------------------------------------------------------------------------
   // Internal
   // ---------------------------------------------------------------------------
+
+  /** @internal Called when another tab logs out (via storage event). */
+  handleExternalLogout(): void {
+    this.cachedUser = null
+    this.emitter.emit('authStateChange', null)
+  }
 
   /** @internal */
   async performRefresh(): Promise<void> {

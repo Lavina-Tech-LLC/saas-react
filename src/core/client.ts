@@ -56,6 +56,22 @@ export class SaaSSupport {
 
     if (this.tokenManager) {
       this.tokenManager.setRefreshCallback(() => this.auth.performRefresh())
+      this.tokenManager.setTokensChangedCallback(() => {
+        if (!this.tokenManager!.hasRefreshToken()) {
+          this.auth.handleExternalLogout()
+        }
+      })
+    }
+
+    if (this.tokenManager && authTransport) {
+      authTransport.setUnauthorizedHandler(async () => {
+        try {
+          await this.tokenManager!.refreshOnce()
+          return this.tokenManager!.getAccessToken()
+        } catch {
+          return null
+        }
+      })
     }
   }
 
