@@ -5,6 +5,8 @@ export interface User {
   emailVerified: boolean
   metadata: Record<string, unknown>
   mfaEnabled?: boolean
+  name?: string
+  avatarUrl?: string
 }
 
 export interface ProjectSettings {

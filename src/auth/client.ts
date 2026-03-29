@@ -42,8 +42,8 @@ export class AuthClient {
 
     try {
       this.cachedSettings = await this.transport.get<ProjectSettings>('/auth/settings')
-    } catch {
-      // Settings endpoint might fail; defaults will be used.
+    } catch (e) {
+      console.warn('[SaaS Support] Failed to load project settings:', e)
     }
 
     if (this.tokenManager?.hasRefreshToken()) {
@@ -262,11 +262,15 @@ export class AuthClient {
   // Profile
   // ---------------------------------------------------------------------------
 
-  async updateProfile(metadata: Record<string, unknown>): Promise<User> {
-    const user = await this.transport.patch<User>('/auth/me', { metadata }, this.authHeaders())
+  async updateProfile(params: { name?: string; avatarUrl?: string; metadata?: Record<string, unknown> }): Promise<User> {
+    const user = await this.transport.patch<User>('/auth/me', params, this.authHeaders())
     this.cachedUser = user
     this.emitter.emit('authStateChange', user)
     return user
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await this.transport.post('/auth/change-password', { currentPassword, newPassword }, this.authHeaders())
   }
 
   // ---------------------------------------------------------------------------
