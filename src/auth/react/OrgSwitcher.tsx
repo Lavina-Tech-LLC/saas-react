@@ -24,7 +24,7 @@ export function OrgSwitcher({ appearance: localAppearance, onOrgChange }: OrgSwi
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    if (dropdownRef.current && !e.composedPath().includes(dropdownRef.current)) {
       setOpen(false)
       setShowCreateForm(false)
     }
