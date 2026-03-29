@@ -146,3 +146,50 @@ export function useOrg() {
 
   return { orgs, selectedOrg, members, isLoading, error, refresh, selectOrg, createOrg }
 }
+
+export function useProfile() {
+  const { client, user } = useSaaSContext()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const updateProfile = useCallback(
+    async (params: { name?: string; avatarUrl?: string; metadata?: Record<string, unknown> }) => {
+      setIsLoading(true)
+      setError(null)
+      setSuccess(null)
+      try {
+        const updated = await client.auth.updateProfile(params)
+        setSuccess('Profile updated')
+        return updated
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update profile')
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      setIsLoading(true)
+      setError(null)
+      setSuccess(null)
+      try {
+        await client.auth.changePassword(currentPassword, newPassword)
+        setSuccess('Password changed successfully')
+        return true
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to change password')
+        return false
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  return { user, updateProfile, changePassword, isLoading, error, success, setError, setSuccess }
+}

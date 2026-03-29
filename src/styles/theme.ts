@@ -666,5 +666,140 @@ export function generateCSS(theme: ResolvedTheme): string {
       font-size: 12px;
       color: ${theme.colorTextSecondary};
     }
+
+    /* Modal Overlay */
+
+    .ss-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      animation: ss-fade-in 0.15s ease-out;
+    }
+
+    @keyframes ss-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .ss-modal {
+      background: ${theme.colorBackground};
+      border-radius: ${theme.borderRadius};
+      padding: 32px;
+      width: 90%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 16px 64px rgba(0, 0, 0, 0.2);
+      border: 1px solid ${theme.colorInputBorder};
+      animation: ss-scale-in 0.15s ease-out;
+    }
+
+    @keyframes ss-scale-in {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .ss-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .ss-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: ${theme.colorText};
+    }
+
+    .ss-modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: ${theme.colorTextSecondary};
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 4px;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+
+    .ss-modal-close:hover {
+      background: ${theme.colorInputBackground};
+      color: ${theme.colorText};
+    }
+
+    .ss-modal-section {
+      padding-top: 20px;
+      margin-top: 20px;
+      border-top: 1px solid ${theme.colorInputBorder};
+    }
+
+    .ss-modal-section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: ${theme.colorText};
+      margin-bottom: 16px;
+    }
+
+    .ss-avatar-preview {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: ${theme.colorPrimary};
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .ss-avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ss-input-readonly {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Inline form (for org creation in dropdown) */
+
+    .ss-dropdown-divider {
+      height: 1px;
+      background: ${theme.colorInputBorder};
+      margin: 4px 0;
+    }
+
+    .ss-inline-form {
+      padding: 12px 16px;
+    }
+
+    .ss-inline-form .ss-field {
+      margin-bottom: 8px;
+    }
+
+    .ss-inline-form .ss-input {
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+
+    .ss-inline-form .ss-btn {
+      font-size: 13px;
+      padding: 6px 12px;
+    }
   `
 }

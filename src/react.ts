@@ -18,7 +18,7 @@ export { UserProfile } from './auth/react'
 export type { UserProfileProps } from './auth/react'
 export { OrgSwitcher } from './auth/react'
 export type { OrgSwitcherProps } from './auth/react'
-export { useAuth, useUser, useSignIn, useSignUp, useOrg } from './auth/react'
+export { useAuth, useUser, useSignIn, useSignUp, useOrg, useProfile } from './auth/react'
 
 // Billing components + hooks
 export { PricingTable } from './billing/react'
