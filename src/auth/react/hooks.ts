@@ -116,15 +116,23 @@ export function useOrg() {
       const list = await client.auth.listOrgs()
       setOrgs(list)
 
-      // Restore previously selected org from localStorage.
-      const savedOrgId = typeof window !== 'undefined' ? localStorage.getItem('ss_selected_org') : null
-      if (savedOrgId && list.some((o) => o.id === savedOrgId) && !selectedOrg) {
-        const org = list.find((o) => o.id === savedOrgId)!
-        setSelectedOrg(org)
-        try {
-          const m = await client.auth.listMembers(org.id)
-          setMembers(m)
-        } catch { /* best-effort */ }
+      if (!selectedOrg && list.length > 0) {
+        // Try to restore the last-used org from localStorage.
+        const savedOrgId = typeof window !== 'undefined' ? localStorage.getItem('ss_selected_org') : null
+        const savedOrg = savedOrgId ? list.find((o) => o.id === savedOrgId) : null
+        // Fall back to auto-selecting if there's only one org.
+        const orgToSelect = savedOrg ?? (list.length === 1 ? list[0] : null)
+
+        if (orgToSelect) {
+          setSelectedOrg(orgToSelect)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ss_selected_org', orgToSelect.id)
+          }
+          try {
+            const m = await client.auth.listMembers(orgToSelect.id)
+            setMembers(m)
+          } catch { /* best-effort */ }
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load organizations')

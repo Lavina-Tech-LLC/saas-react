@@ -2239,14 +2239,15 @@ export function generateCSS(theme: ResolvedTheme): string {
       animation: ss-spin 0.6s linear infinite;
     }
 
-    /* Settings Panel (full-page overlay) */
+    /* Settings Panel (full page) */
     .ss-auth-settings-page {
-      width: 100%;
-      height: 100%;
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
       display: flex;
       flex-direction: column;
       background: ${theme.authSurface};
-      animation: ss-auth-scale-in 0.2s ease-out;
+      animation: ss-auth-fade-in 0.2s ease-out;
     }
 
     .ss-auth-settings-header {

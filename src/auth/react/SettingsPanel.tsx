@@ -22,41 +22,39 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
   ]
 
   return (
-    <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ss-auth-settings-page">
-        {/* Header */}
-        <div className="ss-auth-settings-header">
-          <h2>Settings</h2>
-          <button type="button" className="ss-auth-modal-close" onClick={onClose}>
-            <span className="material-symbols-outlined">{ICONS.close}</span>
-          </button>
-        </div>
+    <div className="ss-auth-settings-page">
+      {/* Header */}
+      <div className="ss-auth-settings-header">
+        <h2>Settings</h2>
+        <button type="button" className="ss-auth-modal-close" onClick={onClose}>
+          <span className="material-symbols-outlined">{ICONS.close}</span>
+        </button>
+      </div>
 
-        <div className="ss-auth-settings-layout">
-          {/* Nav */}
-          <nav className="ss-auth-settings-nav">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`ss-auth-settings-nav-item${activeTab === tab.key ? ' ss-auth-settings-nav-item-active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                <span className="material-symbols-outlined">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+      <div className="ss-auth-settings-layout">
+        {/* Nav */}
+        <nav className="ss-auth-settings-nav">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`ss-auth-settings-nav-item${activeTab === tab.key ? ' ss-auth-settings-nav-item-active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              <span className="material-symbols-outlined">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-          {/* Content */}
-          <div className="ss-auth-settings-content">
-            {activeTab === 'profile' && (
-              <ProfileSection afterDeleteAccountUrl={afterDeleteAccountUrl} />
-            )}
-            {activeTab === 'organization' && <OrganizationSection />}
-            {activeTab === 'people' && <PeopleSection />}
-            {activeTab === 'billing' && <BillingSection />}
-          </div>
+        {/* Content */}
+        <div className="ss-auth-settings-content">
+          {activeTab === 'profile' && (
+            <ProfileSection afterDeleteAccountUrl={afterDeleteAccountUrl} />
+          )}
+          {activeTab === 'organization' && <OrganizationSection />}
+          {activeTab === 'people' && <PeopleSection />}
+          {activeTab === 'billing' && <BillingSection />}
         </div>
       </div>
     </div>
