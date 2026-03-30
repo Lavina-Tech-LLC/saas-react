@@ -20,8 +20,10 @@ export function ShadowHost({ children, appearance }: ShadowHostProps) {
 
     const shadow = hostRef.current.attachShadow({ mode: 'open' })
 
-    // Inject Google Fonts into document.head (not shadow root — @font-face
-    // must be registered at document level for browsers to resolve them).
+    // Inject Google Fonts into both document.head AND shadow root.
+    // document.head: triggers font file download and registers @font-face globally.
+    // shadow root: ensures @font-face declarations are visible within the shadow
+    // scope (some browsers don't share document-level @font-face into shadow roots).
     if (appearance?.fontUrl !== null) {
       const href = appearance?.fontUrl ??
         'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap'
@@ -31,6 +33,10 @@ export function ShadowHost({ children, appearance }: ShadowHostProps) {
         fontLink.href = href
         document.head.appendChild(fontLink)
       }
+      const shadowFontLink = document.createElement('link')
+      shadowFontLink.rel = 'stylesheet'
+      shadowFontLink.href = href
+      shadow.appendChild(shadowFontLink)
     }
 
     const theme = resolveTheme(appearance)
