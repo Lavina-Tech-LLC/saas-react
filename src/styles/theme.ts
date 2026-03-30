@@ -1050,7 +1050,7 @@ export function generateCSS(theme: ResolvedTheme): string {
       border: 1px solid ${theme.authOutlineVariant}26;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
       width: 100%;
-      max-width: 440px;
+      max-width: 520px;
       overflow: hidden;
     }
 

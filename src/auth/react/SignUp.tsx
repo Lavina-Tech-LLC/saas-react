@@ -58,7 +58,7 @@ export function SignUp({ appearance: localAppearance, signInUrl, onSignIn }: Sig
   return (
     <ShadowHost appearance={appearance}>
       {/* Brand icon above card */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '440px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '520px' }}>
         <div className="ss-auth-header">
           <div className="ss-auth-brand-icon-gradient">
             <span className="material-symbols-outlined">{ICONS.autoAwesome}</span>
