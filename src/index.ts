@@ -22,6 +22,7 @@ export type {
   Org,
   Member,
   Invite,
+  PendingInvite,
   MfaSetupResult,
   MfaVerifyResult,
 } from './auth/types'

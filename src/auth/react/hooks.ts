@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSaaSContext } from '../../react/context'
-import type { AuthResult, OAuthProvider, Org, Member } from '../types'
+import type { AuthResult, OAuthProvider, Org, Member, PendingInvite } from '../types'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -104,6 +104,7 @@ export function useOrg() {
   const [orgs, setOrgs] = useState<Org[]>([])
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null)
   const [members, setMembers] = useState<Member[]>([])
+  const [invites, setInvites] = useState<PendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -113,12 +114,23 @@ export function useOrg() {
     try {
       const list = await client.auth.listOrgs()
       setOrgs(list)
+
+      // Restore previously selected org from localStorage.
+      const savedOrgId = typeof window !== 'undefined' ? localStorage.getItem('ss_selected_org') : null
+      if (savedOrgId && list.some((o) => o.id === savedOrgId) && !selectedOrg) {
+        const org = list.find((o) => o.id === savedOrgId)!
+        setSelectedOrg(org)
+        try {
+          const m = await client.auth.listMembers(org.id)
+          setMembers(m)
+        } catch { /* best-effort */ }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load organizations')
     } finally {
       setIsLoading(false)
     }
-  }, [client])
+  }, [client, selectedOrg])
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -126,6 +138,9 @@ export function useOrg() {
     try {
       const org = await client.auth.getOrg(orgId)
       setSelectedOrg(org)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ss_selected_org', orgId)
+      }
       const m = await client.auth.listMembers(orgId)
       setMembers(m)
     } catch (err) {
@@ -144,7 +159,126 @@ export function useOrg() {
     }
   }, [client])
 
-  return { orgs, selectedOrg, members, isLoading, error, refresh, selectOrg, createOrg }
+  const updateOrg = useCallback(async (orgId: string, params: { name?: string; avatarUrl?: string }) => {
+    try {
+      const updated = await client.auth.updateOrg(orgId, params)
+      setOrgs((prev) => prev.map((o) => (o.id === orgId ? updated : o)))
+      if (selectedOrg?.id === orgId) setSelectedOrg(updated)
+      return updated
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update organization')
+      return null
+    }
+  }, [client, selectedOrg])
+
+  const deleteOrg = useCallback(async (orgId: string) => {
+    try {
+      await client.auth.deleteOrg(orgId)
+      setOrgs((prev) => prev.filter((o) => o.id !== orgId))
+      if (selectedOrg?.id === orgId) {
+        setSelectedOrg(null)
+        setMembers([])
+        setInvites([])
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('ss_selected_org')
+        }
+      }
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete organization')
+      return false
+    }
+  }, [client, selectedOrg])
+
+  const sendInvite = useCallback(async (orgId: string, email: string, role: string) => {
+    try {
+      const invite = await client.auth.sendInvite(orgId, email, role)
+      return invite
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send invite')
+      return null
+    }
+  }, [client])
+
+  const refreshInvites = useCallback(async (orgId: string) => {
+    try {
+      const list = await client.auth.listInvites(orgId)
+      setInvites(list)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invites')
+    }
+  }, [client])
+
+  const revokeInvite = useCallback(async (orgId: string, inviteId: string) => {
+    try {
+      await client.auth.revokeInvite(orgId, inviteId)
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to revoke invite')
+      return false
+    }
+  }, [client])
+
+  const updateMemberRole = useCallback(async (orgId: string, userId: string, role: string) => {
+    try {
+      await client.auth.updateMemberRole(orgId, userId, role)
+      setMembers((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update member role')
+      return false
+    }
+  }, [client])
+
+  const removeMember = useCallback(async (orgId: string, userId: string) => {
+    try {
+      await client.auth.removeMember(orgId, userId)
+      setMembers((prev) => prev.filter((m) => m.userId !== userId))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member')
+      return false
+    }
+  }, [client])
+
+  const refreshMembers = useCallback(async (orgId: string) => {
+    try {
+      const m = await client.auth.listMembers(orgId)
+      setMembers(m)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load members')
+    }
+  }, [client])
+
+  return {
+    orgs, selectedOrg, members, invites, isLoading, error, setError,
+    refresh, selectOrg, createOrg, updateOrg, deleteOrg,
+    sendInvite, refreshInvites, revokeInvite,
+    updateMemberRole, removeMember, refreshMembers,
+  }
+}
+
+export function useDeleteAccount() {
+  const { client } = useSaaSContext()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const deleteAccount = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      await client.auth.deleteAccount()
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account')
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  return { deleteAccount, isLoading, error, setError }
 }
 
 export function useProfile() {

@@ -3,7 +3,7 @@ import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
 import { useSignIn } from './hooks'
 import { isMfaRequired } from '../types'
-import { GoogleIcon, GitHubIcon } from '../../styles/icons'
+import { GoogleIcon, GitHubIcon, EmailIcon } from '../../styles/icons'
 import type { Appearance } from '../../core/types'
 
 export interface SignInProps {
@@ -23,6 +23,7 @@ export function SignIn({ appearance: localAppearance, signUpUrl, onSignUp }: Sig
   const [mfaMode, setMfaMode] = useState(false)
   const [mfaToken, setMfaToken] = useState('')
   const [mfaCode, setMfaCode] = useState('')
+  const [showEmailForm, setShowEmailForm] = useState(false)
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
@@ -81,70 +82,85 @@ export function SignIn({ appearance: localAppearance, signUpUrl, onSignUp }: Sig
               </button>
             )}
 
-            {hasOAuth && <div className="ss-divider">or</div>}
+            {hasOAuth && !showEmailForm && <div className="ss-divider">or</div>}
+
+            {hasOAuth && !showEmailForm && (
+              <button
+                type="button"
+                className="ss-btn-social"
+                onClick={() => setShowEmailForm(true)}
+              >
+                <span dangerouslySetInnerHTML={{ __html: EmailIcon }} />
+                Login with email
+              </button>
+            )}
+
+            {hasOAuth && showEmailForm && <div className="ss-divider">or</div>}
           </>
         )}
 
         {error && <div className="ss-global-error">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          {mfaMode ? (
-            <div className="ss-field">
-              <label className="ss-label" htmlFor="ss-mfa-code">
-                Authentication code
-              </label>
-              <input
-                id="ss-mfa-code"
-                className="ss-input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="Enter 6-digit code"
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value)}
-                autoFocus
-              />
-            </div>
-          ) : (
-            <>
+        {(showEmailForm || mfaMode || !hasOAuth) && (
+          <form onSubmit={handleSubmit}>
+            {mfaMode ? (
               <div className="ss-field">
-                <label className="ss-label" htmlFor="ss-email">
-                  Email
+                <label className="ss-label" htmlFor="ss-mfa-code">
+                  Authentication code
                 </label>
                 <input
-                  id="ss-email"
+                  id="ss-mfa-code"
                   className="ss-input"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Enter 6-digit code"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  autoFocus
                 />
               </div>
-              <div className="ss-field">
-                <label className="ss-label" htmlFor="ss-password">
-                  Password
-                </label>
-                <input
-                  id="ss-password"
-                  className="ss-input"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </>
-          )}
+            ) : (
+              <>
+                <div className="ss-field">
+                  <label className="ss-label" htmlFor="ss-email">
+                    Email
+                  </label>
+                  <input
+                    id="ss-email"
+                    className="ss-input"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="ss-field">
+                  <label className="ss-label" htmlFor="ss-password">
+                    Password
+                  </label>
+                  <input
+                    id="ss-password"
+                    className="ss-input"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
 
-          <button type="submit" className="ss-btn ss-btn-primary" disabled={isLoading}>
-            {isLoading && <span className="ss-spinner" />}
-            {mfaMode ? 'Verify' : 'Continue'}
-          </button>
-        </form>
+            <button type="submit" className="ss-btn ss-btn-primary" disabled={isLoading}>
+              {isLoading && <span className="ss-spinner" />}
+              {mfaMode ? 'Verify' : 'Continue'}
+            </button>
+          </form>
+        )}
 
         {mfaMode && (
           <div className="ss-footer">

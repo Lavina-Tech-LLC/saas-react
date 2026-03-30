@@ -4,7 +4,7 @@ import type { EventEmitter } from '../core/eventEmitter'
 import type { SaaSEvents } from '../core/client'
 import type {
   User, ProjectSettings, AuthResult, SignInResult, SignUpResult,
-  OAuthProvider, Org, Member, Invite, MfaSetupResult, MfaVerifyResult,
+  OAuthProvider, Org, Member, Invite, PendingInvite, MfaSetupResult, MfaVerifyResult,
   AuthStateCallback,
 } from './types'
 
@@ -335,6 +335,19 @@ export class AuthClient {
 
   async acceptInvite(token: string): Promise<{ orgId: string; role: string }> {
     return this.transport.post<{ orgId: string; role: string }>(`/auth/invites/${token}/accept`, undefined, this.authHeaders())
+  }
+
+  async listInvites(orgId: string): Promise<PendingInvite[]> {
+    return this.transport.get<PendingInvite[]>(`/auth/orgs/${orgId}/invites`, this.authHeaders())
+  }
+
+  async revokeInvite(orgId: string, inviteId: string): Promise<void> {
+    await this.transport.del(`/auth/orgs/${orgId}/invites/${inviteId}`, this.authHeaders())
+  }
+
+  async deleteAccount(): Promise<void> {
+    await this.transport.del('/auth/account', this.authHeaders())
+    this.clearSession()
   }
 
   // ---------------------------------------------------------------------------

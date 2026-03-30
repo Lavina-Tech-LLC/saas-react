@@ -90,7 +90,7 @@ export function generateCSS(theme: ResolvedTheme): string {
       border-radius: ${theme.borderRadius};
       padding: 32px;
       width: 100%;
-      max-width: 400px;
+      max-width: 480px;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
       border: 1px solid ${theme.colorInputBorder};
     }
@@ -395,6 +395,26 @@ export function generateCSS(theme: ResolvedTheme): string {
     .ss-dropdown-item:hover { background: ${theme.colorInputBackground}; }
     .ss-dropdown-item-danger { color: ${theme.colorError}; }
     .ss-dropdown-item-active { font-weight: 600; color: ${theme.colorPrimary}; }
+
+    .ss-dropdown-section-title {
+      padding: 8px 16px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: ${theme.colorTextSecondary};
+    }
+
+    .ss-org-check {
+      margin-right: 6px;
+      font-size: 12px;
+    }
+
+    .ss-danger-zone {
+      padding-top: 20px;
+      margin-top: 20px;
+      border-top: 2px solid ${theme.colorError}33;
+    }
 
     /* Badges */
 
