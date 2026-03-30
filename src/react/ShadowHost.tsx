@@ -26,7 +26,7 @@ export function ShadowHost({ children, appearance }: ShadowHostProps) {
     // scope (some browsers don't share document-level @font-face into shadow roots).
     if (appearance?.fontUrl !== null) {
       const href = appearance?.fontUrl ??
-        'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap'
+        'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block'
       if (!document.querySelector(`link[href="${href}"]`)) {
         const fontLink = document.createElement('link')
         fontLink.rel = 'stylesheet'

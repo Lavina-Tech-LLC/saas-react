@@ -1049,8 +1049,7 @@ export function generateCSS(theme: ResolvedTheme): string {
       border-radius: 12px;
       border: 1px solid ${theme.authOutlineVariant}26;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-      width: 100%;
-      max-width: 520px;
+      width: min(520px, 90vw);
       overflow: hidden;
     }
 
@@ -1311,6 +1310,9 @@ export function generateCSS(theme: ResolvedTheme): string {
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       margin-bottom: 24px;
+    }
+    .ss-auth-oauth-grid > :only-child {
+      grid-column: 1 / -1;
     }
 
     /* Auth Divider */

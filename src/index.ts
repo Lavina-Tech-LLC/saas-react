@@ -1,5 +1,5 @@
 // Vanilla entry point (no React dependency).
-// Usage: import { SaaSSupport, AuthClient, BillingClient } from '@saas-support/react'
+// Usage: import { SaaSSupport, AuthClient } from '@saas-support/react'
 
 export { SaaSSupport } from './core/client'
 export type { SaaSEvents } from './core/client'
@@ -28,29 +28,3 @@ export type {
   MfaVerifyResult,
 } from './auth/types'
 export { isMfaRequired } from './auth/types'
-
-// Billing
-export { BillingClient } from './billing/client'
-export type {
-  Customer,
-  Plan,
-  Subscription,
-  Invoice,
-  UsageSummary,
-  ApplyCouponResult,
-  PortalTokenResult,
-} from './billing/types'
-
-// Report
-export { ReportClient } from './report/client'
-export type {
-  QueryParams,
-  FilterRule,
-  QueryResult,
-  SavedQuery,
-  Dashboard,
-  EmbedToken,
-  EmbedTokenResult,
-  ListParams,
-  OffsetPage,
-} from './report/types'

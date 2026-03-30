@@ -2,8 +2,6 @@ import { Transport } from './transport'
 import { TokenManager } from './tokenManager'
 import { EventEmitter } from './eventEmitter'
 import { AuthClient } from '../auth/client'
-import { BillingClient } from '../billing/client'
-import { ReportClient } from '../report/client'
 import type { SaaSOptions } from './types'
 import type { User } from '../auth/types'
 import type { SaaSError } from './error'
@@ -17,8 +15,6 @@ export interface SaaSEvents {
 
 export class SaaSSupport {
   readonly auth: AuthClient
-  readonly billing: BillingClient
-  readonly report: ReportClient
 
   private tokenManager: TokenManager | null = null
   private emitter: EventEmitter<SaaSEvents>
@@ -51,9 +47,6 @@ export class SaaSSupport {
       this.emitter,
       baseUrl,
     )
-
-    this.billing = new BillingClient(moduleTransport ?? authTransport!)
-    this.report = new ReportClient(moduleTransport ?? authTransport!)
 
     if (this.tokenManager) {
       this.tokenManager.setRefreshCallback(() => this.auth.performRefresh())

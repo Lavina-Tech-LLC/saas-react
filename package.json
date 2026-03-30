@@ -1,8 +1,8 @@
 {
   "name": "@saas-support/react",
-  "version": "0.7.6",
+  "version": "0.8.0",
   "type": "module",
-  "description": "Unified embeddable SDK for SaaS Support — auth, billing, and reporting",
+  "description": "Embeddable auth SDK for SaaS Support",
   "exports": {
     ".": {
       "import": "./dist/index.js",

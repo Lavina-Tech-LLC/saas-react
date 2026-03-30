@@ -269,11 +269,23 @@ export function useOrg() {
     }
   }, [client])
 
+  const uploadOrgAvatar = useCallback(async (orgId: string, imageBlob: Blob) => {
+    try {
+      const result = await client.auth.uploadOrgAvatar(orgId, imageBlob)
+      setOrgs((prev) => prev.map((o) => (o.id === orgId ? { ...o, avatarUrl: result.avatarUrl } : o)))
+      if (selectedOrg?.id === orgId) setSelectedOrg((prev) => prev ? { ...prev, avatarUrl: result.avatarUrl } : prev)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload org avatar')
+      return null
+    }
+  }, [client, selectedOrg])
+
   return {
     orgs, selectedOrg, members, invites, isLoading, error, setError,
     refresh, selectOrg, createOrg, updateOrg, deleteOrg,
     sendInvite, refreshInvites, revokeInvite,
-    updateMemberRole, removeMember, refreshMembers,
+    updateMemberRole, removeMember, refreshMembers, uploadOrgAvatar,
   }
 }
 
