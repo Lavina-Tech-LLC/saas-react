@@ -25,7 +25,12 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
     <div className="ss-auth-settings-page">
       {/* Header */}
       <div className="ss-auth-settings-header">
-        <h2>Settings</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button type="button" className="ss-auth-settings-back" onClick={onClose}>
+            <span className="material-symbols-outlined">{ICONS.arrowBack}</span>
+          </button>
+          <h2>Settings</h2>
+        </div>
         <button type="button" className="ss-auth-modal-close" onClick={onClose}>
           <span className="material-symbols-outlined">{ICONS.close}</span>
         </button>

@@ -25,6 +25,7 @@ export const ICONS = {
   errorOutline: 'error_outline',
   info: 'info',
   dragPan: 'drag_pan',
+  arrowBack: 'arrow_back',
   arrowForward: 'arrow_forward',
   verified: 'verified',
   shield: 'shield',

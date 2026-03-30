@@ -1450,6 +1450,7 @@ export function generateCSS(theme: ResolvedTheme): string {
       cursor: pointer;
       transition: background 0.15s, box-shadow 0.15s;
       font-family: ${theme.authFontBody};
+      max-width: 200px;
     }
 
     .ss-auth-user-trigger:hover {
@@ -2269,6 +2270,25 @@ export function generateCSS(theme: ResolvedTheme): string {
       margin: 0;
     }
 
+    .ss-auth-settings-back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: ${theme.authOnSurfaceVariant};
+      transition: background 0.15s, color 0.15s;
+    }
+    .ss-auth-settings-back:hover {
+      background: ${theme.authSurfaceContainer};
+      color: ${theme.authOnSurface};
+    }
+    .ss-auth-settings-back .material-symbols-outlined { font-size: 22px; }
+
     .ss-auth-settings-layout {
       display: flex;
       flex: 1;
@@ -2327,6 +2347,9 @@ export function generateCSS(theme: ResolvedTheme): string {
       flex: 1;
       overflow-y: auto;
       padding: 32px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
     }
 
     .ss-auth-settings-content h3 {
