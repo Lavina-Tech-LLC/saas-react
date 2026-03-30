@@ -16,6 +16,8 @@ export interface ProjectSettings {
   mfaEnforced: boolean
   passwordMinLength: number
   emailVerification: boolean
+  privacyPolicyUrl?: string
+  termsOfServiceUrl?: string
 }
 
 export interface SignInResult {

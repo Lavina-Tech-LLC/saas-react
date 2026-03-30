@@ -350,6 +350,19 @@ export function SignIn({
             </>
           )}
 
+          {/* Legal Links */}
+          {(settings?.privacyPolicyUrl || settings?.termsOfServiceUrl) && (
+            <div className="ss-auth-legal-links">
+              {settings.privacyPolicyUrl && (
+                <a href={settings.privacyPolicyUrl} target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+              )}
+              {settings.privacyPolicyUrl && settings.termsOfServiceUrl && <span> · </span>}
+              {settings.termsOfServiceUrl && (
+                <a href={settings.termsOfServiceUrl} target="_blank" rel="noopener noreferrer">Terms of Service</a>
+              )}
+            </div>
+          )}
+
           {/* Footer */}
           {mfaMode ? (
             <div className="ss-auth-footer">

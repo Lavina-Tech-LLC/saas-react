@@ -1429,6 +1429,22 @@ export function generateCSS(theme: ResolvedTheme): string {
     .ss-auth-footer a:hover,
     .ss-auth-link:hover { text-decoration: underline; }
 
+    .ss-auth-legal-links {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: ${theme.authOnSurfaceVariant};
+      font-family: ${theme.authFontBody};
+    }
+    .ss-auth-legal-links a {
+      color: ${theme.authOnSurfaceVariant};
+      text-decoration: none;
+    }
+    .ss-auth-legal-links a:hover {
+      text-decoration: underline;
+      color: ${theme.authPrimary};
+    }
+
     /* Glass Panel (dropdown) */
     .ss-auth-glass-panel {
       backdrop-filter: blur(20px);

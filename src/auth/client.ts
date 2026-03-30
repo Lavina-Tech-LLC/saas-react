@@ -332,6 +332,15 @@ export class AuthClient {
     await this.transport.del(`/auth/orgs/${orgId}`, this.authHeaders())
   }
 
+  async uploadOrgAvatar(orgId: string, imageBlob: Blob): Promise<{ avatarUrl: string; small: string; medium: string; original: string }> {
+    return this.transport.uploadBinary<{
+      avatarUrl: string
+      small: string
+      medium: string
+      original: string
+    }>(`/auth/orgs/${orgId}/avatar`, imageBlob, this.authHeaders())
+  }
+
   // ---------------------------------------------------------------------------
   // Members & Invites
   // ---------------------------------------------------------------------------
