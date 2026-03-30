@@ -23,6 +23,7 @@ export class SaaSSupport {
   private tokenManager: TokenManager | null = null
   private emitter: EventEmitter<SaaSEvents>
   private loaded = false
+  private loadPromise: Promise<void> | null = null
 
   constructor(options: SaaSOptions) {
     if (!options.publishableKey && !options.apiKey) {
@@ -77,8 +78,11 @@ export class SaaSSupport {
 
   async load(): Promise<void> {
     if (this.loaded) return
-    await this.auth.load()
-    this.loaded = true
+    if (this.loadPromise) return this.loadPromise
+    this.loadPromise = this.auth.load()
+      .then(() => { this.loaded = true })
+      .finally(() => { this.loadPromise = null })
+    return this.loadPromise
   }
 
   isLoaded(): boolean {

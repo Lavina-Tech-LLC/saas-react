@@ -20,6 +20,7 @@ export class AuthClient {
   private cachedUser: User | null = null
   private cachedSettings: ProjectSettings | null = null
   private loaded = false
+  private loadPromise: Promise<void> | null = null
 
   constructor(
     transport: Transport,
@@ -39,7 +40,12 @@ export class AuthClient {
 
   async load(): Promise<void> {
     if (this.loaded) return
+    if (this.loadPromise) return this.loadPromise
+    this.loadPromise = this.doLoad().finally(() => { this.loadPromise = null })
+    return this.loadPromise
+  }
 
+  private async doLoad(): Promise<void> {
     try {
       this.cachedSettings = await this.transport.get<ProjectSettings>('/auth/settings')
     } catch (e) {
@@ -48,7 +54,7 @@ export class AuthClient {
 
     if (this.tokenManager?.hasRefreshToken()) {
       try {
-        await this.performRefresh()
+        await this.tokenManager.refreshOnce()
       } catch {
         this.tokenManager?.clearTokens()
       }
