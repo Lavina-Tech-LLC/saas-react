@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
 import type { AuthResult, OAuthProvider, Org, Member, PendingInvite } from '../types'
 
@@ -108,6 +108,7 @@ export function useOrg() {
   const [invites, setInvites] = useState<PendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const initialSelectDone = useRef(false)
 
   const refresh = useCallback(async () => {
     setIsLoading(true)
@@ -116,7 +117,7 @@ export function useOrg() {
       const list = await client.auth.listOrgs()
       setOrgs(list)
 
-      if (!selectedOrg && list.length > 0) {
+      if (!initialSelectDone.current && list.length > 0) {
         // Try to restore the last-used org from localStorage.
         const savedOrgId = typeof window !== 'undefined' ? localStorage.getItem('ss_selected_org') : null
         const savedOrg = savedOrgId ? list.find((o) => o.id === savedOrgId) : null
@@ -124,6 +125,7 @@ export function useOrg() {
         const orgToSelect = savedOrg ?? (list.length === 1 ? list[0] : null)
 
         if (orgToSelect) {
+          initialSelectDone.current = true
           setSelectedOrg(orgToSelect)
           if (typeof window !== 'undefined') {
             localStorage.setItem('ss_selected_org', orgToSelect.id)
@@ -139,7 +141,7 @@ export function useOrg() {
     } finally {
       setIsLoading(false)
     }
-  }, [client, selectedOrg])
+  }, [client])
 
   useEffect(() => { refresh() }, [refresh])
 

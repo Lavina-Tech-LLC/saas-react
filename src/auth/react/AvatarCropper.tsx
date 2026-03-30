@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { ICONS } from '../../styles/icons'
+
+export type AvatarCropperHandle = { triggerCrop: () => void }
 
 interface AvatarCropperProps {
   file: File
@@ -10,7 +12,7 @@ interface AvatarCropperProps {
 const CANVAS_SIZE = 320
 const CROP_RADIUS = 128
 
-export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
+export const AvatarCropper = forwardRef<AvatarCropperHandle, AvatarCropperProps>(function AvatarCropper({ file, onCrop, onCancel }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const [zoom, setZoom] = useState(1)
@@ -131,6 +133,8 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
     }, 'image/png')
   }, [zoom, offset, onCrop])
 
+  useImperativeHandle(ref, () => ({ triggerCrop: () => handleCrop() }), [handleCrop])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
       <div className="ss-auth-crop-area">
@@ -161,4 +165,4 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
       </div>
     </div>
   )
-}
+})
