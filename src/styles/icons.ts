@@ -37,4 +37,11 @@ export const ICONS = {
   cloudDone: 'cloud_done',
   check: 'check',
   image: 'image',
+  settings: 'settings',
+  group: 'group',
+  creditCard: 'credit_card',
+  edit: 'edit',
+  delete: 'delete',
+  send: 'send',
+  personRemove: 'person_remove',
 } as const

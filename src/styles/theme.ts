@@ -1438,6 +1438,38 @@ export function generateCSS(theme: ResolvedTheme): string {
       overflow: hidden;
     }
 
+    /* User Trigger (avatar + org name pill) */
+    .ss-auth-user-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px 4px 4px;
+      border-radius: 999px;
+      border: 1px solid ${theme.authOutlineVariant}33;
+      background: ${theme.authSurfaceContainerLow};
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      font-family: ${theme.authFontBody};
+    }
+
+    .ss-auth-user-trigger:hover {
+      background: ${theme.authSurfaceContainer};
+      box-shadow: 0 0 0 2px ${theme.authPrimary}33;
+    }
+
+    .ss-auth-user-trigger:active { transform: scale(0.98); }
+
+    .ss-auth-trigger-org-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: ${theme.authOnSurface};
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
     /* Avatar Trigger */
     .ss-auth-avatar-trigger {
       width: 40px;
@@ -1445,19 +1477,11 @@ export function generateCSS(theme: ResolvedTheme): string {
       border-radius: 50%;
       border: 2px solid ${theme.authPrimary};
       overflow: hidden;
-      cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
       padding: 0;
       background: none;
       flex-shrink: 0;
     }
-
-    .ss-auth-avatar-trigger:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 0 3px ${theme.authPrimary}33;
-    }
-
-    .ss-auth-avatar-trigger:active { transform: scale(0.95); }
 
     .ss-auth-avatar-trigger img {
       width: 100%;
@@ -1624,6 +1648,24 @@ export function generateCSS(theme: ResolvedTheme): string {
     .ss-auth-org-check {
       color: ${theme.authPrimary};
       font-variation-settings: 'FILL' 1;
+    }
+
+    /* Plan Badge */
+    .ss-auth-plan-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: ${theme.authPrimary}1a;
+      color: ${theme.authPrimary};
+      border: 1px solid ${theme.authPrimary}33;
+      margin-left: auto;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-family: ${theme.authFontBody};
     }
 
     /* Modal Overlay */
@@ -2197,6 +2239,249 @@ export function generateCSS(theme: ResolvedTheme): string {
       animation: ss-spin 0.6s linear infinite;
     }
 
+    /* Settings Panel (full-page overlay) */
+    .ss-auth-settings-page {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: ${theme.authSurface};
+      animation: ss-auth-scale-in 0.2s ease-out;
+    }
+
+    .ss-auth-settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid ${theme.authOutlineVariant}1a;
+      background: ${theme.authSurfaceContainerHigh}80;
+      flex-shrink: 0;
+    }
+
+    .ss-auth-settings-header h2 {
+      font-family: ${theme.authFontHeadline};
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: ${theme.authOnSurface};
+      margin: 0;
+    }
+
+    .ss-auth-settings-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .ss-auth-settings-nav {
+      width: 220px;
+      padding: 16px;
+      border-right: 1px solid ${theme.authOutlineVariant}1a;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      background: ${theme.authSurfaceContainerLow};
+    }
+
+    .ss-auth-settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      background: none;
+      border: none;
+      width: 100%;
+      font-family: ${theme.authFontBody};
+      font-size: 14px;
+      font-weight: 500;
+      color: ${theme.authOnSurfaceVariant};
+      text-align: left;
+    }
+
+    .ss-auth-settings-nav-item:hover {
+      background: ${theme.authSurfaceContainer};
+      color: ${theme.authOnSurface};
+    }
+
+    .ss-auth-settings-nav-item-active {
+      background: ${theme.authPrimaryFixed}4d;
+      color: ${theme.authPrimary};
+      font-weight: 600;
+    }
+
+    .ss-auth-settings-nav-item-active:hover {
+      background: ${theme.authPrimaryFixed}4d;
+    }
+
+    .ss-auth-settings-nav-item .material-symbols-outlined {
+      font-size: 20px;
+    }
+
+    .ss-auth-settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    .ss-auth-settings-content h3 {
+      font-family: ${theme.authFontHeadline};
+      font-size: 18px;
+      font-weight: 700;
+      color: ${theme.authOnSurface};
+      letter-spacing: -0.01em;
+      margin: 0 0 24px 0;
+    }
+
+    .ss-auth-settings-card {
+      background: ${theme.authSurfaceContainer};
+      border: 1px solid ${theme.authOutlineVariant}1a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .ss-auth-settings-card h4 {
+      font-family: ${theme.authFontHeadline};
+      font-size: 15px;
+      font-weight: 700;
+      color: ${theme.authOnSurface};
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ss-auth-settings-card h4 .material-symbols-outlined {
+      color: ${theme.authPrimary};
+      font-size: 20px;
+    }
+
+    /* Settings Table */
+    .ss-auth-settings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ${theme.authFontBody};
+      font-size: 14px;
+    }
+
+    .ss-auth-settings-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: ${theme.authOnSurfaceVariant};
+      border-bottom: 1px solid ${theme.authOutlineVariant}33;
+    }
+
+    .ss-auth-settings-table td {
+      padding: 10px 12px;
+      color: ${theme.authOnSurface};
+      border-bottom: 1px solid ${theme.authOutlineVariant}1a;
+    }
+
+    .ss-auth-settings-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .ss-auth-settings-table tr:hover td {
+      background: ${theme.authSurfaceContainerLow};
+    }
+
+    /* Settings Role Badges */
+    .ss-auth-role-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: ${theme.authFontBody};
+    }
+
+    .ss-auth-role-badge-owner {
+      background: #8b5cf633;
+      color: #8b5cf6;
+      border: 1px solid #8b5cf64d;
+    }
+
+    .ss-auth-role-badge-admin {
+      background: #3b82f633;
+      color: #3b82f6;
+      border: 1px solid #3b82f64d;
+    }
+
+    .ss-auth-role-badge-member {
+      background: ${theme.authOnSurfaceVariant}1a;
+      color: ${theme.authOnSurfaceVariant};
+      border: 1px solid ${theme.authOutlineVariant}33;
+    }
+
+    /* Settings icon buttons */
+    .ss-auth-icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      color: ${theme.authOnSurfaceVariant};
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .ss-auth-icon-btn:hover {
+      background: ${theme.authSurfaceContainerHigh};
+      color: ${theme.authOnSurface};
+    }
+
+    .ss-auth-icon-btn-danger:hover {
+      background: ${theme.authError}1a;
+      color: ${theme.authError};
+    }
+
+    .ss-auth-icon-btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    /* Settings Empty State */
+    .ss-auth-settings-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: ${theme.authOnSurfaceVariant};
+      font-size: 14px;
+    }
+
+    .ss-auth-settings-empty .material-symbols-outlined {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    /* Settings action row */
+    .ss-auth-settings-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Settings Danger Card */
+    .ss-auth-settings-danger {
+      border-color: ${theme.authError}33;
+    }
+
+    .ss-auth-settings-danger h4 {
+      color: ${theme.authError};
+    }
+
     /* Responsive overrides */
     @media (max-width: 640px) {
       .ss-auth-profile-header {
@@ -2210,6 +2495,11 @@ export function generateCSS(theme: ResolvedTheme): string {
 
       .ss-auth-signout-row { flex-direction: column; text-align: center; }
       .ss-auth-signout-info { flex-direction: column; }
+
+      .ss-auth-settings-nav { width: 180px; padding: 12px; }
+      .ss-auth-settings-content { padding: 24px; }
+      .ss-auth-trigger-org-name { display: none; }
+      .ss-auth-user-trigger { padding: 0; border: none; background: none; }
     }
   `
 }

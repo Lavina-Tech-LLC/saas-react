@@ -51,6 +51,7 @@ export interface Org {
   slug: string
   avatarUrl?: string
   metadata?: string
+  planName?: string
 }
 
 export interface Member {

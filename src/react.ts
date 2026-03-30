@@ -18,6 +18,8 @@ export { UserProfile } from './auth/react'
 export type { UserProfileProps } from './auth/react'
 export { OrgSwitcher } from './auth/react'
 export type { OrgSwitcherProps } from './auth/react'
+export { SettingsPanel } from './auth/react'
+export type { SettingsPanelProps } from './auth/react'
 export { useAuth, useUser, useSignIn, useSignUp, useOrg, useProfile, useDeleteAccount } from './auth/react'
 
 // Billing components + hooks
