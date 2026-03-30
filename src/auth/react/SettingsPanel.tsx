@@ -9,9 +9,11 @@ export interface SettingsPanelProps {
   onClose: () => void
   afterDeleteAccountUrl?: string
   defaultTab?: SettingsTab
+  onOrgDeleted?: () => void
+  onOrgUpdated?: () => void
 }
 
-export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'profile' }: SettingsPanelProps) {
+export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'profile', onOrgDeleted, onOrgUpdated }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
 
   const tabs: { key: SettingsTab; label: string; icon: string }[] = [
@@ -57,7 +59,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
           {activeTab === 'profile' && (
             <ProfileSection afterDeleteAccountUrl={afterDeleteAccountUrl} />
           )}
-          {activeTab === 'organization' && <OrganizationSection />}
+          {activeTab === 'organization' && <OrganizationSection onOrgDeleted={onOrgDeleted} onOrgUpdated={onOrgUpdated} />}
           {activeTab === 'people' && <PeopleSection />}
           {activeTab === 'billing' && <BillingSection />}
         </div>
@@ -349,18 +351,35 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 /* Organization Section                                                       */
 /* -------------------------------------------------------------------------- */
 
-function OrganizationSection() {
+function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: () => void; onOrgUpdated?: () => void }) {
   const { selectedOrg, updateOrg, deleteOrg, isLoading, error, setError } = useOrg()
   const [orgName, setOrgName] = useState(selectedOrg?.name ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [deleted, setDeleted] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteNameConfirm, setDeleteNameConfirm] = useState('')
 
   useEffect(() => {
-    if (selectedOrg) setOrgName(selectedOrg.name)
+    if (selectedOrg) {
+      setOrgName(selectedOrg.name)
+      setDeleted(false)
+    }
   }, [selectedOrg])
+
+  if (deleted) {
+    return (
+      <>
+        <h3>Organization</h3>
+        <div className="ss-auth-settings-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.4, marginBottom: '16px', display: 'block' }}>{ICONS.check}</span>
+          <h4 style={{ margin: '0 0 8px' }}>Organization deleted</h4>
+          <p className="ss-auth-section-desc">The organization has been permanently deleted.</p>
+        </div>
+      </>
+    )
+  }
 
   if (!selectedOrg) {
     return (
@@ -381,13 +400,18 @@ function OrganizationSection() {
     setSaveSuccess(false)
     const result = await updateOrg(selectedOrg.id, { name: orgName.trim() })
     setIsSaving(false)
-    if (result) setSaveSuccess(true)
+    if (result) {
+      setSaveSuccess(true)
+      onOrgUpdated?.()
+    }
   }
 
   const handleDeleteOrg = async () => {
     const ok = await deleteOrg(selectedOrg.id)
     if (ok) {
       setShowDeleteConfirm(false)
+      setDeleted(true)
+      onOrgDeleted?.()
     }
   }
 

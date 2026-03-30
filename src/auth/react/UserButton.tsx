@@ -35,7 +35,7 @@ export function UserButton({
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const { orgs, selectedOrg, selectOrg, createOrg } = useOrg()
+  const { orgs, selectedOrg, selectOrg, createOrg, refresh: refreshOrgs } = useOrg()
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !e.composedPath().includes(dropdownRef.current)) {
@@ -266,6 +266,8 @@ export function UserButton({
           <SettingsPanel
             onClose={() => setShowSettings(false)}
             afterDeleteAccountUrl={afterDeleteAccountUrl}
+            onOrgDeleted={refreshOrgs}
+            onOrgUpdated={refreshOrgs}
           />
         )}
       </div>
