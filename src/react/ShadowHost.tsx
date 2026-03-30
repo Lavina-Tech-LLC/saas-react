@@ -20,13 +20,17 @@ export function ShadowHost({ children, appearance }: ShadowHostProps) {
 
     const shadow = hostRef.current.attachShadow({ mode: 'open' })
 
-    // Inject Google Fonts (Manrope, Inter, Material Symbols) unless opted out
+    // Inject Google Fonts into document.head (not shadow root — @font-face
+    // must be registered at document level for browsers to resolve them).
     if (appearance?.fontUrl !== null) {
-      const fontLink = document.createElement('link')
-      fontLink.rel = 'stylesheet'
-      fontLink.href = appearance?.fontUrl ??
+      const href = appearance?.fontUrl ??
         'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap'
-      shadow.appendChild(fontLink)
+      if (!document.querySelector(`link[href="${href}"]`)) {
+        const fontLink = document.createElement('link')
+        fontLink.rel = 'stylesheet'
+        fontLink.href = href
+        document.head.appendChild(fontLink)
+      }
     }
 
     const theme = resolveTheme(appearance)
