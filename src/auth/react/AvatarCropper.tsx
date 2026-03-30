@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { ICONS } from '../../styles/icons'
 
 interface AvatarCropperProps {
   file: File
@@ -6,8 +7,8 @@ interface AvatarCropperProps {
   onCancel: () => void
 }
 
-const CANVAS_SIZE = 256
-const CROP_RADIUS = 112
+const CANVAS_SIZE = 320
+const CROP_RADIUS = 128
 
 export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -39,7 +40,6 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
     const img = imgRef.current
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
-    // Fill background
     ctx.fillStyle = '#111'
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
@@ -76,7 +76,7 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
     ctx.restore()
 
     // Circle border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
     ctx.lineWidth = 2
     ctx.beginPath()
     ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CROP_RADIUS, 0, Math.PI * 2)
@@ -132,19 +132,22 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
   }, [zoom, offset, onCrop])
 
   return (
-    <div className="ss-avatar-cropper">
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_SIZE}
-        height={CANVAS_SIZE}
-        className="ss-avatar-canvas"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-      />
-      <div className="ss-avatar-zoom">
-        <span className="ss-avatar-zoom-label">Zoom</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+      <div className="ss-auth-crop-area">
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_SIZE}
+          height={CANVAS_SIZE}
+          style={{ cursor: dragging ? 'grabbing' : 'grab', width: '100%', height: '100%' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        />
+        <div className="ss-auth-crop-size-badge">256 x 256 px</div>
+      </div>
+
+      <div className="ss-auth-zoom-control" style={{ width: '100%', maxWidth: '280px' }}>
+        <span className="material-symbols-outlined">{ICONS.zoomOut}</span>
         <input
           type="range"
           min="1"
@@ -152,16 +155,9 @@ export function AvatarCropper({ file, onCrop, onCancel }: AvatarCropperProps) {
           step="0.01"
           value={zoom}
           onChange={(e) => setZoom(parseFloat(e.target.value))}
-          className="ss-avatar-zoom-slider"
+          className="ss-auth-zoom-slider"
         />
-      </div>
-      <div className="ss-btn-group">
-        <button type="button" className="ss-btn ss-btn-danger ss-btn-sm" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="ss-btn ss-btn-primary ss-btn-sm" onClick={handleCrop}>
-          Save
-        </button>
+        <span className="material-symbols-outlined">{ICONS.zoomIn}</span>
       </div>
     </div>
   )

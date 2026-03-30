@@ -3,6 +3,7 @@ import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
 import { useAuth, useProfile, useOrg, useDeleteAccount } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
+import { ICONS } from '../../styles/icons'
 import type { Appearance } from '../../core/types'
 import type { Org } from '../types'
 
@@ -29,9 +30,7 @@ export function UserButton({
 
   const [open, setOpen] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [showCreateOrg, setShowCreateOrg] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
-  const [newOrgSlug, setNewOrgSlug] = useState('')
   const [createOrgError, setCreateOrgError] = useState<string | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -41,7 +40,6 @@ export function UserButton({
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !e.composedPath().includes(dropdownRef.current)) {
       setOpen(false)
-      setShowCreateOrg(false)
     }
   }, [])
 
@@ -57,24 +55,18 @@ export function UserButton({
     }
   }, [open, handleClickOutside])
 
-  const handleOrgNameChange = useCallback((value: string) => {
-    setNewOrgName(value)
-    setNewOrgSlug(value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))
-  }, [])
-
   const handleCreateOrg = useCallback(
     async (e: FormEvent) => {
       e.preventDefault()
       setCreateOrgError(null)
       setIsCreatingOrg(true)
+      const slug = newOrgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       try {
-        const org = await createOrg(newOrgName, newOrgSlug)
+        const org = await createOrg(newOrgName, slug)
         if (org) {
           await selectOrg(org.id)
           onOrgChange?.(org)
-          setShowCreateOrg(false)
           setNewOrgName('')
-          setNewOrgSlug('')
           setOpen(false)
         }
       } catch (err) {
@@ -83,158 +75,185 @@ export function UserButton({
         setIsCreatingOrg(false)
       }
     },
-    [newOrgName, newOrgSlug, createOrg, selectOrg, onOrgChange],
+    [newOrgName, createOrg, selectOrg, onOrgChange],
   )
 
   if (!user) return null
 
-  const initial = (user.name || user.email).charAt(0).toUpperCase()
-
   return (
     <ShadowHost appearance={appearance}>
-      <div className="ss-user-btn" ref={dropdownRef}>
+      <div style={{ position: 'relative', display: 'inline-block' }} ref={dropdownRef}>
+        {/* Trigger */}
         <button
           type="button"
-          className="ss-avatar"
+          className="ss-auth-avatar-trigger"
           onClick={() => setOpen(!open)}
           aria-label="User menu"
         >
           {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            <img src={user.avatarUrl} alt="" />
           ) : (
-            initial
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 700,
+            }}>
+              {(user.name || user.email).charAt(0).toUpperCase()}
+            </div>
           )}
         </button>
 
+        {/* Dropdown */}
         {open && (
-          <div className="ss-dropdown">
-            <div className="ss-dropdown-header">
-              {user.name && <div style={{ fontWeight: 600, fontSize: '14px', color: 'inherit' }}>{user.name}</div>}
-              <div className="ss-dropdown-email">{user.email}</div>
+          <div className="ss-auth-dropdown ss-auth-glass-panel" style={{ minWidth: '320px' }}>
+            {/* Header */}
+            <div className="ss-auth-dropdown-header">
+              <div className="ss-auth-dropdown-avatar">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    fontWeight: 800,
+                  }}>
+                    {(user.name || user.email).charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div>
+                {user.name && <div className="ss-auth-dropdown-name">{user.name}</div>}
+                <div className="ss-auth-dropdown-email">{user.email}</div>
+              </div>
             </div>
-            <button
-              type="button"
-              className="ss-dropdown-item"
-              onClick={() => {
-                setOpen(false)
-                setShowProfile(true)
-              }}
-            >
-              Profile
-            </button>
 
+            {/* Profile link */}
+            <div style={{ padding: '4px 8px' }}>
+              <button
+                type="button"
+                className="ss-auth-dropdown-action"
+                onClick={() => {
+                  setOpen(false)
+                  setShowProfile(true)
+                }}
+              >
+                <span className="material-symbols-outlined">{ICONS.person}</span>
+                Profile
+              </button>
+            </div>
+
+            {/* Organizations */}
             {showOrgSwitcher && (
               <>
-                <div className="ss-dropdown-divider" />
-                <div className="ss-dropdown-section-title">Organizations</div>
+                <div className="ss-auth-section-label">Organizations</div>
+                <div style={{ padding: '0 8px 4px' }}>
+                  {orgs.map((org) => {
+                    const isActive = selectedOrg?.id === org.id
+                    const initials = org.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                    return (
+                      <button
+                        key={org.id}
+                        type="button"
+                        className={`ss-auth-org-item${isActive ? ' ss-auth-org-item-active' : ''}`}
+                        onClick={async () => {
+                          setOpen(false)
+                          await selectOrg(org.id)
+                          onOrgChange?.(org)
+                        }}
+                      >
+                        <div className="ss-auth-org-item-inner">
+                          <div className={`ss-auth-org-avatar${isActive ? '' : ' ss-auth-org-avatar-inactive'}`}>
+                            {initials}
+                          </div>
+                          <span style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.01em' }}>{org.name}</span>
+                        </div>
+                        {isActive && (
+                          <span className="material-symbols-outlined ss-auth-org-check" style={{ fontSize: '18px' }}>
+                            {ICONS.checkCircle}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
 
-                {orgs.map((org) => (
-                  <button
-                    key={org.id}
-                    type="button"
-                    className={`ss-dropdown-item${selectedOrg?.id === org.id ? ' ss-dropdown-item-active' : ''}`}
-                    onClick={async () => {
-                      setOpen(false)
-                      setShowCreateOrg(false)
-                      await selectOrg(org.id)
-                      onOrgChange?.(org)
-                    }}
-                  >
-                    {selectedOrg?.id === org.id && <span className="ss-org-check">&#x2713;</span>}
-                    {org.name}
-                  </button>
-                ))}
-
-                {showCreateOrg ? (
-                  <div className="ss-inline-form">
-                    {createOrgError && <div className="ss-global-error" style={{ marginBottom: '8px', fontSize: '12px' }}>{createOrgError}</div>}
-                    <form onSubmit={handleCreateOrg}>
-                      <div className="ss-field">
-                        <input
-                          className="ss-input"
-                          type="text"
-                          placeholder="Organization name"
-                          value={newOrgName}
-                          onChange={(e) => handleOrgNameChange(e.target.value)}
-                          required
-                          autoFocus
-                        />
-                      </div>
-                      <div className="ss-field">
-                        <input
-                          className="ss-input"
-                          type="text"
-                          placeholder="org-slug"
-                          value={newOrgSlug}
-                          onChange={(e) => setNewOrgSlug(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="ss-btn-group" style={{ marginTop: '8px' }}>
-                        <button
-                          type="button"
-                          className="ss-btn ss-btn-sm ss-btn-current"
-                          onClick={() => {
-                            setShowCreateOrg(false)
-                            setCreateOrgError(null)
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="ss-btn ss-btn-sm ss-btn-primary"
-                          disabled={isCreatingOrg}
-                        >
-                          {isCreatingOrg && <span className="ss-spinner" />}
-                          Create
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="ss-dropdown-item"
-                    onClick={() => setShowCreateOrg(true)}
-                    style={{ fontWeight: 500 }}
-                  >
-                    + Create organization
-                  </button>
-                )}
+                {/* Inline create org */}
+                <div className="ss-auth-inline-create">
+                  {createOrgError && (
+                    <div className="ss-auth-error" style={{ marginBottom: '8px', fontSize: '12px' }}>
+                      <span>{createOrgError}</span>
+                    </div>
+                  )}
+                  <form onSubmit={handleCreateOrg}>
+                    <div className="ss-auth-inline-create-input">
+                      <input
+                        className="ss-auth-input"
+                        type="text"
+                        placeholder="New organization name"
+                        value={newOrgName}
+                        onChange={(e) => setNewOrgName(e.target.value)}
+                        required
+                        style={{ fontSize: '13px', padding: '10px 40px 10px 12px' }}
+                      />
+                      <button
+                        type="submit"
+                        className="ss-auth-inline-create-btn"
+                        disabled={isCreatingOrg || !newOrgName.trim()}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{ICONS.add}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
 
                 {selectedOrg && onOrgSettingsClick && (
-                  <button
-                    type="button"
-                    className="ss-dropdown-item"
-                    onClick={() => {
-                      setOpen(false)
-                      onOrgSettingsClick(selectedOrg)
-                    }}
-                  >
-                    Org settings
-                  </button>
+                  <div style={{ padding: '0 8px 4px' }}>
+                    <button
+                      type="button"
+                      className="ss-auth-dropdown-action"
+                      onClick={() => {
+                        setOpen(false)
+                        onOrgSettingsClick(selectedOrg)
+                      }}
+                    >
+                      <span className="material-symbols-outlined">{ICONS.corporateFare}</span>
+                      Org settings
+                    </button>
+                  </div>
                 )}
               </>
             )}
 
-            <div className="ss-dropdown-divider" />
-            <button
-              type="button"
-              className="ss-dropdown-item ss-dropdown-item-danger"
-              onClick={async () => {
-                setOpen(false)
-                await signOut()
-                if (afterSignOutUrl) {
-                  window.location.href = afterSignOutUrl
-                }
-              }}
-            >
-              Sign out
-            </button>
+            {/* Sign out */}
+            <div className="ss-auth-signout-section" style={{ padding: '8px' }}>
+              <button
+                type="button"
+                className="ss-auth-dropdown-action"
+                onClick={async () => {
+                  setOpen(false)
+                  await signOut()
+                  if (afterSignOutUrl) {
+                    window.location.href = afterSignOutUrl
+                  }
+                }}
+                style={{ color: 'inherit' }}
+              >
+                <span className="material-symbols-outlined" style={{ color: 'inherit' }}>{ICONS.logout}</span>
+                Sign out
+              </button>
+            </div>
           </div>
         )}
 
+        {/* Profile Modal */}
         {showProfile && (
           <ProfileModal
             onClose={() => setShowProfile(false)}
@@ -320,167 +339,207 @@ function ProfileModal({ onClose, afterDeleteAccountUrl }: { onClose: () => void;
 
   const isEmailProvider = user?.provider === 'email'
   const emailMatches = deleteEmailConfirm === user?.email
+  const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="ss-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ss-modal">
-        <div className="ss-modal-header">
-          <span className="ss-modal-title">Profile</span>
-          <button type="button" className="ss-modal-close" onClick={onClose}>
-            &#x2715;
+    <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ss-auth-modal" style={{ maxWidth: '640px' }}>
+        {/* Header */}
+        <div className="ss-auth-modal-header">
+          <h2>Profile</h2>
+          <button type="button" className="ss-auth-modal-close" onClick={onClose}>
+            <span className="material-symbols-outlined">{ICONS.close}</span>
           </button>
         </div>
 
-        {error && <div className="ss-global-error">{error}</div>}
-        {success && <div className="ss-success-msg">{success}</div>}
+        {/* Profile Header */}
+        <div className="ss-auth-profile-header">
+          <div className="ss-auth-avatar-lg" onClick={() => setShowAvatarUpload(true)}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" />
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '48px',
+                fontWeight: 800,
+                opacity: 0.4,
+              }}>
+                {initial}
+              </div>
+            )}
+            <div className="ss-auth-avatar-overlay">
+              <span className="material-symbols-outlined">{ICONS.camera}</span>
+              <span>Edit</span>
+            </div>
+          </div>
+          <div className="ss-auth-profile-info">
+            <h2 className="ss-auth-profile-name">
+              {user?.name || 'Unnamed User'}
+              {user?.emailVerified && (
+                <span className="ss-auth-badge ss-auth-badge-success">
+                  <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>{ICONS.verified}</span>
+                  Verified
+                </span>
+              )}
+            </h2>
+            <p className="ss-auth-profile-desc">{user?.email}</p>
+          </div>
+        </div>
 
-        <div
-          className="ss-avatar-preview ss-avatar-hoverable"
-          onClick={() => setShowAvatarUpload(true)}
-          title="Click to change avatar"
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="" />
-          ) : (
-            (name || user?.email || '?').charAt(0).toUpperCase()
+        {/* Form */}
+        <div className="ss-auth-modal-body">
+          {error && (
+            <div className="ss-auth-error">
+              <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+              <span>{error}</span>
+            </div>
           )}
-          <div className="ss-avatar-overlay">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 16a4 4 0 100-8 4 4 0 000 8z" />
-              <path d="M3 16.8V9.2c0-1.12 0-1.68.218-2.108a2 2 0 01.874-.874C4.52 6 5.08 6 6.2 6h.382c.246 0 .37 0 .482-.022a1 1 0 00.513-.29c.08-.082.148-.186.284-.392l.079-.118C8.08 4.968 8.15 4.863 8.234 4.77a2 2 0 01.965-.61C9.346 4.1 9.508 4.1 9.834 4.1h4.332c.326 0 .488 0 .636.06a2 2 0 01.965.61c.083.094.153.198.293.408l.079.118c.136.206.204.31.284.392a1 1 0 00.513.29c.112.022.236.022.482.022h.382c1.12 0 1.68 0 2.108.218a2 2 0 01.874.874C21 7.52 21 8.08 21 9.2v7.6c0 1.12 0 1.68-.218 2.108a2 2 0 01-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 01-.874-.874C3 18.48 3 17.92 3 16.8z" />
-            </svg>
-          </div>
-        </div>
+          {success && (
+            <div className="ss-auth-info-box" style={{ marginBottom: '16px' }}>
+              <span className="material-symbols-outlined">{ICONS.check}</span>
+              <span>{success}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleSaveProfile}>
-          <div className="ss-field">
-            <label className="ss-label">Name</label>
-            <input
-              className="ss-input"
-              type="text"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          <form onSubmit={handleSaveProfile}>
+            <div className="ss-auth-field">
+              <label className="ss-auth-label">Full Name</label>
+              <input
+                className="ss-auth-input"
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
 
-          <div className="ss-field">
-            <label className="ss-label">Email</label>
-            <input className="ss-input ss-input-readonly" type="email" value={user?.email ?? ''} disabled readOnly />
-          </div>
-
-          <div className="ss-field">
-            <label className="ss-label">Provider</label>
-            <input className="ss-input ss-input-readonly" type="text" value={user?.provider ?? ''} disabled readOnly />
-          </div>
-
-          <button type="submit" className="ss-btn ss-btn-primary" disabled={isLoading}>
-            {isLoading && <span className="ss-spinner" />}
-            Save changes
-          </button>
-        </form>
-
-        {isEmailProvider && (
-          <div className="ss-modal-section">
-            <div className="ss-modal-section-title">Change password</div>
-
-            {passwordError && <div className="ss-global-error">{passwordError}</div>}
-
-            <form onSubmit={handleChangePassword}>
-              <div className="ss-field">
-                <label className="ss-label">Current password</label>
-                <input
-                  className="ss-input"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
+            <div className="ss-auth-profile-grid" style={{ marginBottom: '16px' }}>
+              <div>
+                <label className="ss-auth-label">Email Address</label>
+                <div style={{ position: 'relative' }}>
+                  <input className="ss-auth-input ss-auth-input-readonly" type="email" value={user?.email ?? ''} readOnly />
+                  <span className="ss-auth-visibility-toggle" style={{ cursor: 'default' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{ICONS.lock}</span>
+                  </span>
+                </div>
               </div>
-
-              <div className="ss-field">
-                <label className="ss-label">New password</label>
-                <input
-                  className="ss-input"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="ss-field">
-                <label className="ss-label">Confirm new password</label>
-                <input
-                  className="ss-input"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <button type="submit" className="ss-btn ss-btn-primary" disabled={isLoading}>
-                {isLoading && <span className="ss-spinner" />}
-                Update password
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className="ss-danger-zone">
-          <div className="ss-modal-section-title">Danger zone</div>
-          <p style={{ fontSize: '13px', margin: '0 0 12px 0', opacity: 0.8 }}>
-            Deleting your account is permanent. All organizations you own will also be deleted.
-          </p>
-
-          {deleteError && <div className="ss-global-error">{deleteError}</div>}
-
-          {showDeleteConfirm ? (
-            <div>
-              <div className="ss-field">
-                <label className="ss-label">Type your email to confirm</label>
-                <input
-                  className="ss-input"
-                  type="email"
-                  placeholder={user?.email}
-                  value={deleteEmailConfirm}
-                  onChange={(e) => setDeleteEmailConfirm(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="ss-btn-group" style={{ marginTop: '8px' }}>
-                <button
-                  type="button"
-                  className="ss-btn ss-btn-sm ss-btn-current"
-                  onClick={() => {
-                    setShowDeleteConfirm(false)
-                    setDeleteEmailConfirm('')
-                    setDeleteError(null)
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="ss-btn ss-btn-sm ss-btn-danger"
-                  disabled={!emailMatches || isDeleting}
-                  onClick={handleDeleteAccount}
-                >
-                  {isDeleting && <span className="ss-spinner" />}
-                  Delete account
-                </button>
+              <div>
+                <label className="ss-auth-label">Auth Provider</label>
+                <input className="ss-auth-input ss-auth-input-readonly" type="text" value={user?.provider ?? ''} readOnly />
               </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              className="ss-btn ss-btn-danger"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              Delete my account
-            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto' }}>
+                {isLoading && <span className="ss-auth-spinner" />}
+                Save changes
+              </button>
+            </div>
+          </form>
+
+          {/* Password Section */}
+          {isEmailProvider && (
+            <div className="ss-auth-section">
+              <div className="ss-auth-section-title">
+                <span className="material-symbols-outlined">{ICONS.security}</span>
+                Security Credentials
+              </div>
+
+              {passwordError && (
+                <div className="ss-auth-error" style={{ marginTop: '16px' }}>
+                  <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangePassword} style={{ marginTop: '16px' }}>
+                <div className="ss-auth-field">
+                  <label className="ss-auth-label">Current Password</label>
+                  <input className="ss-auth-input" type="password" placeholder="••••••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                </div>
+                <div className="ss-auth-profile-grid" style={{ marginBottom: '16px' }}>
+                  <div>
+                    <label className="ss-auth-label">New Password</label>
+                    <input className="ss-auth-input" type="password" placeholder="Min. 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  </div>
+                  <div>
+                    <label className="ss-auth-label">Confirm New Password</label>
+                    <input className="ss-auth-input" type="password" placeholder="Repeat new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="submit" className="ss-auth-btn-ghost" disabled={isLoading}>Update Security</button>
+                </div>
+              </form>
+            </div>
           )}
+
+          {/* Danger Zone */}
+          <div className="ss-auth-section">
+            <div className="ss-auth-section-title" style={{ color: 'inherit' }}>Danger Zone</div>
+            <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
+              Deleting your account is permanent. All organizations you own will also be deleted.
+            </p>
+
+            {deleteError && (
+              <div className="ss-auth-error">
+                <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            {showDeleteConfirm ? (
+              <div>
+                <div className="ss-auth-field">
+                  <label className="ss-auth-label">Type your email to confirm</label>
+                  <input
+                    className="ss-auth-input"
+                    type="email"
+                    placeholder={user?.email}
+                    value={deleteEmailConfirm}
+                    onChange={(e) => setDeleteEmailConfirm(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="ss-auth-btn-ghost"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteEmailConfirm('')
+                      setDeleteError(null)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="ss-auth-btn-primary ss-auth-btn-sm"
+                    style={{ width: 'auto', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                    disabled={!emailMatches || isDeleting}
+                    onClick={handleDeleteAccount}
+                  >
+                    {isDeleting && <span className="ss-auth-spinner" />}
+                    Delete account
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="ss-auth-btn-outline"
+                style={{ borderColor: 'currentColor', width: 'auto' }}
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete my account
+              </button>
+            )}
+          </div>
         </div>
 
         {showAvatarUpload && (

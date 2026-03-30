@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { AvatarCropper } from './AvatarCropper'
+import { ICONS } from '../../styles/icons'
 
 interface AvatarUploadModalProps {
   onUpload: (blob: Blob) => Promise<void>
@@ -44,48 +45,110 @@ export function AvatarUploadModal({ onUpload, onClose, isLoading }: AvatarUpload
   )
 
   return (
-    <div className="ss-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ss-modal">
-        <div className="ss-modal-header">
-          <span className="ss-modal-title">Upload Avatar</span>
-          <button type="button" className="ss-modal-close" onClick={onClose}>
-            &#x2715;
+    <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ss-auth-modal ss-auth-card-wide">
+        {/* Header */}
+        <div className="ss-auth-modal-header">
+          <h2>Upload avatar</h2>
+          <button type="button" className="ss-auth-modal-close" onClick={onClose}>
+            <span className="material-symbols-outlined">{ICONS.close}</span>
           </button>
         </div>
 
-        {error && <div className="ss-global-error">{error}</div>}
+        {/* Body */}
+        <div className="ss-auth-modal-body">
+          {error && (
+            <div className="ss-auth-error" style={{ marginBottom: '24px' }}>
+              <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+              <span>{error}</span>
+            </div>
+          )}
 
-        {!file ? (
-          <div
-            className={`ss-avatar-dropzone${dragOver ? ' ss-avatar-dropzone-active' : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setDragOver(true)
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M12 16a4 4 0 100-8 4 4 0 000 8z" />
-              <path d="M3 16.8V9.2c0-1.12 0-1.68.218-2.108a2 2 0 01.874-.874C4.52 6 5.08 6 6.2 6h.382c.246 0 .37 0 .482-.022a1 1 0 00.513-.29c.08-.082.148-.186.284-.392l.079-.118C8.08 4.968 8.15 4.863 8.234 4.77a2 2 0 01.965-.61C9.346 4.1 9.508 4.1 9.834 4.1h4.332c.326 0 .488 0 .636.06a2 2 0 01.965.61c.083.094.153.198.293.408l.079.118c.136.206.204.31.284.392a1 1 0 00.513.29c.112.022.236.022.482.022h.382c1.12 0 1.68 0 2.108.218a2 2 0 01.874.874C21 7.52 21 8.08 21 9.2v7.6c0 1.12 0 1.68-.218 2.108a2 2 0 01-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 01-.874-.874C3 18.48 3 17.92 3 16.8z" />
-            </svg>
-            <span>Drop image here or click to browse</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                if (e.target.files?.[0]) acceptFile(e.target.files[0])
-              }}
-            />
+          <div className="ss-auth-upload-grid">
+            {/* Left: Crop area or placeholder */}
+            <div>
+              {file ? (
+                <AvatarCropper file={file} onCrop={handleCrop} onCancel={() => setFile(null)} />
+              ) : (
+                <div
+                  className="ss-auth-crop-area"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    aspectRatio: '1',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.3 }}>
+                    {ICONS.image}
+                  </span>
+                  <span style={{ fontSize: '12px', opacity: 0.4 }}>No image selected</span>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Dropzone + Info */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div
+                className={`ss-auth-dropzone${dragOver ? ' ss-auth-dropzone-active' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ minHeight: '180px' }}
+              >
+                <div className="ss-auth-dropzone-icon">
+                  <span className="material-symbols-outlined">{ICONS.cloudUpload}</span>
+                </div>
+                <span className="ss-auth-dropzone-title">Drag and drop</span>
+                <span className="ss-auth-dropzone-desc">
+                  JPG, PNG or WEBP<br />Max file size 5 MB
+                </span>
+                <button type="button" className="ss-auth-dropzone-btn">Choose File</button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) acceptFile(e.target.files[0])
+                  }}
+                />
+              </div>
+
+              <div className="ss-auth-info-box">
+                <span className="material-symbols-outlined">{ICONS.info}</span>
+                <span>Your profile photo will be visible to all members of your organization.</span>
+              </div>
+            </div>
           </div>
-        ) : (
-          <AvatarCropper file={file} onCrop={handleCrop} onCancel={() => setFile(null)} />
-        )}
+        </div>
 
-        {isLoading && <div className="ss-loading">Uploading...</div>}
+        {/* Footer */}
+        <div className="ss-auth-modal-footer">
+          <button type="button" className="ss-auth-btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="ss-auth-btn-primary ss-auth-btn-sm"
+            onClick={() => {
+              // Trigger crop from parent if file exists - the crop is handled via AvatarCropper's onCrop
+            }}
+            disabled={!file || isLoading}
+            style={{ width: 'auto' }}
+          >
+            {isLoading && <span className="ss-auth-spinner" />}
+            Save Profile
+            {!isLoading && <span className="material-symbols-outlined">{ICONS.check}</span>}
+          </button>
+        </div>
       </div>
     </div>
   )

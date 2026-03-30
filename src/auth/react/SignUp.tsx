@@ -2,7 +2,7 @@ import { useState, useCallback, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
 import { useSignUp as useSignUpHook, useSignIn } from './hooks'
-import { GoogleIcon, GitHubIcon } from '../../styles/icons'
+import { GoogleIcon, GitHubIcon, ICONS } from '../../styles/icons'
 import type { Appearance } from '../../core/types'
 
 export interface SignUpProps {
@@ -21,6 +21,7 @@ export function SignUp({ appearance: localAppearance, signInUrl, onSignIn }: Sig
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
 
   const handleSubmit = useCallback(
@@ -56,111 +57,139 @@ export function SignUp({ appearance: localAppearance, signInUrl, onSignIn }: Sig
 
   return (
     <ShadowHost appearance={appearance}>
-      <div className="ss-card">
-        <h2 className="ss-title">Create account</h2>
-
-        {settings?.googleEnabled && (
-          <button
-            type="button"
-            className="ss-btn-social"
-            onClick={() => handleOAuth('google')}
-            disabled={isLoading}
-          >
-            <span dangerouslySetInnerHTML={{ __html: GoogleIcon }} />
-            Continue with Google
-          </button>
-        )}
-
-        {settings?.githubEnabled && (
-          <button
-            type="button"
-            className="ss-btn-social"
-            onClick={() => handleOAuth('github')}
-            disabled={isLoading}
-          >
-            <span dangerouslySetInnerHTML={{ __html: GitHubIcon }} />
-            Continue with GitHub
-          </button>
-        )}
-
-        {hasOAuth && <div className="ss-divider">or</div>}
-
-        {displayError && <div className="ss-global-error">{displayError}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="ss-field">
-            <label className="ss-label" htmlFor="ss-signup-email">
-              Email
-            </label>
-            <input
-              id="ss-signup-email"
-              className="ss-input"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+      {/* Brand icon above card */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '440px' }}>
+        <div className="ss-auth-header">
+          <div className="ss-auth-brand-icon-gradient">
+            <span className="material-symbols-outlined">{ICONS.autoAwesome}</span>
           </div>
+          <h1 className="ss-auth-title ss-auth-title-lg">Create your account</h1>
+          <p className="ss-auth-subtitle">Join the ecosystem</p>
+        </div>
 
-          <div className="ss-field">
-            <label className="ss-label" htmlFor="ss-signup-password">
-              Password
-            </label>
-            <input
-              id="ss-signup-password"
-              className="ss-input"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Create a password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                setValidationError(null)
-              }}
-              required
-            />
+        <div className="ss-auth-card">
+          <div className="ss-auth-card-body">
+            {/* OAuth */}
+            {hasOAuth && (
+              <>
+                <div className="ss-auth-oauth-grid">
+                  {settings?.googleEnabled && (
+                    <button
+                      type="button"
+                      className="ss-auth-btn-social"
+                      onClick={() => handleOAuth('google')}
+                      disabled={isLoading}
+                    >
+                      <span dangerouslySetInnerHTML={{ __html: GoogleIcon }} />
+                      Google
+                    </button>
+                  )}
+                  {settings?.githubEnabled && (
+                    <button
+                      type="button"
+                      className="ss-auth-btn-social"
+                      onClick={() => handleOAuth('github')}
+                      disabled={isLoading}
+                    >
+                      <span dangerouslySetInnerHTML={{ __html: GitHubIcon }} />
+                      GitHub
+                    </button>
+                  )}
+                </div>
+                <div className="ss-auth-divider">or sign up with email</div>
+              </>
+            )}
+
+            {/* Error */}
+            {displayError && (
+              <div className="ss-auth-error">
+                <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+                <span>{displayError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit}>
+              <div className="ss-auth-field">
+                <label className="ss-auth-label" htmlFor="ss-signup-email">Email</label>
+                <input
+                  id="ss-signup-email"
+                  className="ss-auth-input"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="ss-auth-field">
+                <label className="ss-auth-label" htmlFor="ss-signup-password">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="ss-signup-password"
+                    className="ss-auth-input"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setValidationError(null)
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="ss-auth-visibility-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <span className="material-symbols-outlined">
+                      {showPassword ? ICONS.visibilityOff : ICONS.visibility}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="ss-auth-field">
+                <label className="ss-auth-label" htmlFor="ss-signup-confirm">Confirm Password</label>
+                <input
+                  id="ss-signup-confirm"
+                  className="ss-auth-input"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    setValidationError(null)
+                  }}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="ss-auth-btn-primary" disabled={isLoading}>
+                {isLoading && <span className="ss-auth-spinner" />}
+                Sign up
+                {!isLoading && (
+                  <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
+                )}
+              </button>
+            </form>
+
+            {/* Footer */}
+            <div className="ss-auth-footer">
+              Already have an account?{' '}
+              {onSignIn ? (
+                <span className="ss-auth-link" onClick={onSignIn}>Sign in</span>
+              ) : signInUrl ? (
+                <a className="ss-auth-link" href={signInUrl}>Sign in</a>
+              ) : (
+                <span className="ss-auth-link">Sign in</span>
+              )}
+            </div>
           </div>
-
-          <div className="ss-field">
-            <label className="ss-label" htmlFor="ss-signup-confirm">
-              Confirm password
-            </label>
-            <input
-              id="ss-signup-confirm"
-              className="ss-input"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value)
-                setValidationError(null)
-              }}
-              required
-            />
-          </div>
-
-          <button type="submit" className="ss-btn ss-btn-primary" disabled={isLoading}>
-            {isLoading && <span className="ss-spinner" />}
-            Create account
-          </button>
-        </form>
-
-        <div className="ss-footer">
-          Already have an account?{' '}
-          {onSignIn ? (
-            <span className="ss-link" onClick={onSignIn}>
-              Sign in
-            </span>
-          ) : signInUrl ? (
-            <a className="ss-link" href={signInUrl}>
-              Sign in
-            </a>
-          ) : (
-            <span className="ss-link">Sign in</span>
-          )}
         </div>
       </div>
     </ShadowHost>

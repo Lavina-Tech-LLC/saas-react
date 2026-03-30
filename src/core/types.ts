@@ -11,6 +11,8 @@ export interface Appearance {
   baseTheme?: 'light' | 'dark'
   variables?: ThemeVariables
   elements?: ElementOverrides
+  /** Custom font URL, or null to disable CDN font loading */
+  fontUrl?: string | null
 }
 
 export interface ThemeVariables {
@@ -24,6 +26,12 @@ export interface ThemeVariables {
   colorWarning?: string
   fontFamily?: string
   borderRadius?: string
+  colorPrimaryContainer?: string
+  colorSurface?: string
+  colorOnSurface?: string
+  colorOutline?: string
+  fontFamilyHeadline?: string
+  fontFamilyBody?: string
 }
 
 export interface ElementOverrides {
@@ -44,4 +52,10 @@ export interface ElementOverrides {
   chartContainer?: React.CSSProperties
   queryInput?: React.CSSProperties
   dashboardGrid?: React.CSSProperties
+  brandIcon?: React.CSSProperties
+  oauthGrid?: React.CSSProperties
+  mfaDigitInput?: React.CSSProperties
+  glassPanel?: React.CSSProperties
+  avatarLarge?: React.CSSProperties
+  profileHeader?: React.CSSProperties
 }
