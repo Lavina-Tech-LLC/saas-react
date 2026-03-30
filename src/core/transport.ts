@@ -109,9 +109,10 @@ export class Transport {
 
     const json = await res.json()
 
-    if (json.code && json.code >= 400) {
+    if (!res.ok || json.isOk === false || (json.code && json.code >= 400)) {
       const domain = this.inferDomain(path)
-      throw new SaaSError(json.code, json.message || 'Upload failed', domain)
+      const code = json.code || res.status
+      throw new SaaSError(code, json.message || 'Upload failed', domain)
     }
 
     return json.data as T
@@ -137,9 +138,10 @@ export class Transport {
 
     const json = await res.json()
 
-    if (json.code && json.code >= 400) {
+    if (!res.ok || json.isOk === false || (json.code && json.code >= 400)) {
       const domain = this.inferDomain(path)
-      throw new SaaSError(json.code, json.message || 'Request failed', domain)
+      const code = json.code || res.status
+      throw new SaaSError(code, json.message || 'Request failed', domain)
     }
 
     return json.data as T
