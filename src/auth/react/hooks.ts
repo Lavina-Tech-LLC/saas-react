@@ -11,6 +11,7 @@ export function useAuth() {
     user,
     signOut: useCallback(() => client.auth.signOut(), [client]),
     getToken: useCallback(() => client.auth.getToken(), [client]),
+    refreshUser: useCallback(() => client.auth.refreshUser(), [client]),
   }
 }
 

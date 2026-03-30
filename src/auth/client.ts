@@ -236,6 +236,19 @@ export class AuthClient {
     }
   }
 
+  async refreshUser(): Promise<User | null> {
+    const token = await this.getToken()
+    if (!token) return this.cachedUser
+
+    try {
+      this.cachedUser = await this.transport.get<User>('/auth/me', { 'Authorization': `Bearer ${token}` })
+      this.emitter.emit('authStateChange', this.cachedUser)
+      return this.cachedUser
+    } catch {
+      return this.cachedUser
+    }
+  }
+
   getUserSync(): User | null {
     return this.cachedUser
   }
@@ -386,6 +399,10 @@ export class AuthClient {
     this.tokenManager?.setTokens(result.accessToken, result.refreshToken)
     this.cachedUser = result.user
     this.emitter.emit('authStateChange', result.user)
+
+    // Fetch fresh profile from /me in background to ensure complete data
+    // (avatar, name, etc. that may differ from the login/register response).
+    this.refreshUser()
   }
 
   private clearSession(): void {
