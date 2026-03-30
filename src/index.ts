@@ -23,6 +23,7 @@ export type {
   Member,
   Invite,
   PendingInvite,
+  MyPendingInvite,
   MfaSetupResult,
   MfaVerifyResult,
 } from './auth/types'

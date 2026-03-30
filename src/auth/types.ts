@@ -76,6 +76,15 @@ export interface PendingInvite {
   createdAt: string
 }
 
+export interface MyPendingInvite {
+  id: string
+  orgId: string
+  orgName: string
+  role: string
+  expiresAt: string
+  createdAt: string
+}
+
 export interface MfaSetupResult {
   secret: string
   uri: string

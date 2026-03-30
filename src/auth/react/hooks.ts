@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
-import type { AuthResult, OAuthProvider, Org, Member, PendingInvite } from '../types'
+import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite } from '../types'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -116,6 +116,13 @@ export function useOrg() {
     try {
       const list = await client.auth.listOrgs()
       setOrgs(list)
+
+      // Keep selectedOrg in sync with fresh data (e.g. after rename).
+      setSelectedOrg((prev) => {
+        if (!prev) return prev
+        const fresh = list.find((o) => o.id === prev.id)
+        return fresh ?? null
+      })
 
       if (!initialSelectDone.current && list.length > 0) {
         // Try to restore the last-used org from localStorage.
@@ -356,4 +363,50 @@ export function useProfile() {
   )
 
   return { user, updateProfile, uploadAvatar, changePassword, isLoading, error, success, setError, setSuccess }
+}
+
+export function useInvites() {
+  const { client } = useSaaSContext()
+  const [invites, setInvites] = useState<MyPendingInvite[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const list = await client.auth.listMyInvites()
+      setInvites(list)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invites')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  const accept = useCallback(async (inviteId: string) => {
+    try {
+      const result = await client.auth.acceptInviteById(inviteId)
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to accept invite')
+      return null
+    }
+  }, [client])
+
+  const decline = useCallback(async (inviteId: string) => {
+    try {
+      await client.auth.declineInvite(inviteId)
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to decline invite')
+      return false
+    }
+  }, [client])
+
+  return { invites, isLoading, error, setError, refresh, accept, decline }
 }

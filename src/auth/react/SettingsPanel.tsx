@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, type FormEvent } from 'react'
-import { useAuth, useProfile, useOrg, useDeleteAccount } from './hooks'
+import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
 import { ICONS } from '../../styles/icons'
 
-type SettingsTab = 'profile' | 'organization' | 'people' | 'billing'
+type SettingsTab = 'profile' | 'organization' | 'people' | 'invites' | 'billing'
 
 export interface SettingsPanelProps {
   onClose: () => void
@@ -15,11 +15,13 @@ export interface SettingsPanelProps {
 
 export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'profile', onOrgDeleted, onOrgUpdated }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
+  const { invites: pendingInvites } = useInvites()
 
-  const tabs: { key: SettingsTab; label: string; icon: string }[] = [
+  const tabs: { key: SettingsTab; label: string; icon: string; badge?: number }[] = [
     { key: 'profile', label: 'Profile', icon: ICONS.person },
     { key: 'organization', label: 'Organization', icon: ICONS.corporateFare },
     { key: 'people', label: 'People', icon: ICONS.group },
+    { key: 'invites', label: 'Invites', icon: ICONS.mail, badge: pendingInvites.length || undefined },
     { key: 'billing', label: 'Billing', icon: ICONS.creditCard },
   ]
 
@@ -50,6 +52,9 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
             >
               <span className="material-symbols-outlined">{tab.icon}</span>
               {tab.label}
+              {tab.badge != null && tab.badge > 0 && (
+                <span className="ss-auth-invite-badge" style={{ position: 'static', marginLeft: '6px' }}>{tab.badge}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -61,6 +66,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
           )}
           {activeTab === 'organization' && <OrganizationSection onOrgDeleted={onOrgDeleted} onOrgUpdated={onOrgUpdated} />}
           {activeTab === 'people' && <PeopleSection />}
+          {activeTab === 'invites' && <InvitesSection />}
           {activeTab === 'billing' && <BillingSection />}
         </div>
       </div>
@@ -807,6 +813,101 @@ function PeopleSection() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Invites Section                                                            */
+/* -------------------------------------------------------------------------- */
+
+function InvitesSection() {
+  const { invites, isLoading, error, setError, accept, decline, refresh } = useInvites()
+  const { refresh: refreshOrgs } = useOrg()
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  const handleAccept = async (inviteId: string) => {
+    setActionLoading(inviteId)
+    setError(null)
+    const result = await accept(inviteId)
+    setActionLoading(null)
+    if (result) {
+      refreshOrgs()
+    }
+  }
+
+  const handleDecline = async (inviteId: string) => {
+    setActionLoading(inviteId)
+    setError(null)
+    await decline(inviteId)
+    setActionLoading(null)
+  }
+
+  return (
+    <>
+      <h3>Invites</h3>
+
+      {error && (
+        <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
+          <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="ss-auth-settings-empty" style={{ padding: '40px' }}>
+          <span className="ss-auth-spinner" />
+        </div>
+      ) : invites.length === 0 ? (
+        <div className="ss-auth-settings-empty">
+          <span className="material-symbols-outlined">{ICONS.mail}</span>
+          <div>No pending invitations</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {invites.map((invite) => (
+            <div key={invite.id} className="ss-auth-settings-card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                  <div className="ss-auth-org-avatar" style={{ width: '40px', height: '40px', fontSize: '14px', flexShrink: 0 }}>
+                    {invite.orgName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {invite.orgName}
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.6, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span className="ss-auth-role-badge ss-auth-role-badge-member">{invite.role}</span>
+                      <span>Expires {new Date(invite.expiresAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    className="ss-auth-btn-ghost"
+                    style={{ padding: '6px 12px', fontSize: '13px' }}
+                    onClick={() => handleDecline(invite.id)}
+                    disabled={actionLoading === invite.id}
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    className="ss-auth-btn-primary ss-auth-btn-sm"
+                    style={{ width: 'auto', padding: '6px 16px', fontSize: '13px' }}
+                    onClick={() => handleAccept(invite.id)}
+                    disabled={actionLoading === invite.id}
+                  >
+                    {actionLoading === invite.id && <span className="ss-auth-spinner" />}
+                    Accept
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </>

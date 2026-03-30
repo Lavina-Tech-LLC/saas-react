@@ -1477,11 +1477,31 @@ export function generateCSS(theme: ResolvedTheme): string {
       height: 40px;
       border-radius: 50%;
       border: 2px solid ${theme.authPrimary};
-      overflow: hidden;
+      overflow: visible;
       transition: transform 0.15s, box-shadow 0.15s;
       padding: 0;
       background: none;
       flex-shrink: 0;
+      position: relative;
+    }
+
+    .ss-auth-invite-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: ${theme.authError || '#ef4444'};
+      color: #fff;
+      padding: 0 4px;
+      line-height: 1;
+      pointer-events: none;
     }
 
     .ss-auth-avatar-trigger img {

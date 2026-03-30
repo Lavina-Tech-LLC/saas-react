@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
-import { useAuth, useOrg } from './hooks'
+import { useAuth, useOrg, useInvites } from './hooks'
 import { SettingsPanel } from './SettingsPanel'
 import { ICONS } from '../../styles/icons'
 import type { Appearance } from '../../core/types'
@@ -36,6 +36,7 @@ export function UserButton({
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { orgs, selectedOrg, selectOrg, createOrg, refresh: refreshOrgs } = useOrg()
+  const { invites: pendingInvites } = useInvites()
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !e.composedPath().includes(dropdownRef.current)) {
@@ -105,6 +106,9 @@ export function UserButton({
               }}>
                 {(user.name || user.email).charAt(0).toUpperCase()}
               </div>
+            )}
+            {pendingInvites.length > 0 && (
+              <span className="ss-auth-invite-badge">{pendingInvites.length}</span>
             )}
           </span>
           {selectedOrg && (

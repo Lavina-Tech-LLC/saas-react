@@ -45,4 +45,5 @@ export const ICONS = {
   delete: 'delete',
   send: 'send',
   personRemove: 'person_remove',
+  notifications: 'notifications',
 } as const
