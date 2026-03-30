@@ -358,11 +358,13 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 /* -------------------------------------------------------------------------- */
 
 function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: () => void; onOrgUpdated?: () => void }) {
-  const { selectedOrg, updateOrg, deleteOrg, isLoading, error, setError } = useOrg()
+  const { selectedOrg, updateOrg, deleteOrg, uploadOrgAvatar, isLoading, error, setError } = useOrg()
   const [orgName, setOrgName] = useState(selectedOrg?.name ?? '')
+  const [orgAvatarUrl, setOrgAvatarUrl] = useState(selectedOrg?.avatarUrl ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [deleted, setDeleted] = useState(false)
+  const [showOrgAvatarUpload, setShowOrgAvatarUpload] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteNameConfirm, setDeleteNameConfirm] = useState('')
@@ -370,9 +372,23 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
   useEffect(() => {
     if (selectedOrg) {
       setOrgName(selectedOrg.name)
+      setOrgAvatarUrl(selectedOrg.avatarUrl ?? '')
       setDeleted(false)
     }
   }, [selectedOrg])
+
+  const handleOrgAvatarUpload = useCallback(
+    async (blob: Blob) => {
+      if (!selectedOrg) return
+      const result = await uploadOrgAvatar(selectedOrg.id, blob)
+      if (result) {
+        setOrgAvatarUrl(result.avatarUrl)
+        setShowOrgAvatarUpload(false)
+        onOrgUpdated?.()
+      }
+    },
+    [selectedOrg, uploadOrgAvatar, onOrgUpdated],
+  )
 
   if (deleted) {
     return (
@@ -444,6 +460,31 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
           </div>
         )}
 
+        {/* Org Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+          <div className="ss-auth-avatar-lg" onClick={() => setShowOrgAvatarUpload(true)} style={{ width: '72px', height: '72px', borderRadius: '12px' }}>
+            {orgAvatarUrl ? (
+              <img src={orgAvatarUrl} alt="" style={{ borderRadius: '12px' }} />
+            ) : (
+              <div className="ss-auth-org-avatar" style={{
+                width: '100%', height: '100%', borderRadius: '12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '24px', fontWeight: 800,
+              }}>
+                {selectedOrg.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="ss-auth-avatar-overlay" style={{ borderRadius: '12px' }}>
+              <span className="material-symbols-outlined">{ICONS.camera}</span>
+              <span>Edit</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '16px' }}>{selectedOrg.name}</div>
+            <div style={{ fontSize: '13px', opacity: 0.6 }}>{selectedOrg.slug}</div>
+          </div>
+        </div>
+
         <form onSubmit={handleSaveName}>
           <div className="ss-auth-field">
             <label className="ss-auth-label">Organization Name</label>
@@ -514,6 +555,14 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
           </button>
         )}
       </div>
+
+      {showOrgAvatarUpload && (
+        <AvatarUploadModal
+          onUpload={handleOrgAvatarUpload}
+          onClose={() => setShowOrgAvatarUpload(false)}
+          isLoading={isSaving}
+        />
+      )}
     </>
   )
 }
