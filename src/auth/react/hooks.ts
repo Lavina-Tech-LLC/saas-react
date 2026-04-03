@@ -101,7 +101,7 @@ export function useSignUp() {
 }
 
 export function useOrg() {
-  const { client } = useSaaSContext()
+  const { client, user, isLoaded } = useSaaSContext()
   const [orgs, setOrgs] = useState<Org[]>([])
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null)
   const [members, setMembers] = useState<Member[]>([])
@@ -150,7 +150,7 @@ export function useOrg() {
     }
   }, [client])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { if (isLoaded && user) refresh() }, [isLoaded, user, refresh])
 
   const selectOrg = useCallback(async (orgId: string) => {
     try {
@@ -378,7 +378,7 @@ export function useProfile() {
 }
 
 export function useInvites() {
-  const { client } = useSaaSContext()
+  const { client, user, isLoaded } = useSaaSContext()
   const [invites, setInvites] = useState<MyPendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -396,7 +396,7 @@ export function useInvites() {
     }
   }, [client])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { if (isLoaded && user) refresh() }, [isLoaded, user, refresh])
 
   const accept = useCallback(async (inviteId: string) => {
     try {
