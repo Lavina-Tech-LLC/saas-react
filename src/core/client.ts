@@ -15,7 +15,6 @@ export interface SaaSEvents {
 
 export class SaaSSupport {
   readonly auth: AuthClient
-  readonly baseUrl: string
 
   private tokenManager: TokenManager | null = null
   private emitter: EventEmitter<SaaSEvents>
@@ -28,7 +27,6 @@ export class SaaSSupport {
     }
 
     const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
-    this.baseUrl = baseUrl
     this.emitter = new EventEmitter()
 
     const authTransport = options.publishableKey

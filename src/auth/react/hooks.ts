@@ -327,8 +327,9 @@ export function useOrg() {
   }, [client])
 
   const getInviteLinkUrl = useCallback((code: string) => {
-    return `${client.baseUrl}/auth/invite-links/${code}`
-  }, [client])
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${origin}/invite/${code}`
+  }, [])
 
   return {
     orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
