@@ -1,6 +1,6 @@
 {
   "name": "@saas-support/react",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "type": "module",
   "description": "Embeddable auth SDK for SaaS Support",
   "exports": {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, type FormEvent } from 'react'
+import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
 import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
 import { ICONS } from '../../styles/icons'
@@ -568,6 +568,60 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 }
 
 /* -------------------------------------------------------------------------- */
+/* Role Select (custom dropdown to match dark UI)                             */
+/* -------------------------------------------------------------------------- */
+
+function RoleSelect({ value, onChange, roles, style }: {
+  value: string
+  onChange: (value: string) => void
+  roles: { id: string; key: string; name: string }[]
+  style?: React.CSSProperties
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  const selected = roles.find((r) => r.key === value)
+
+  return (
+    <div ref={ref} className="ss-auth-role-select" style={style}>
+      <button
+        type="button"
+        className="ss-auth-role-select-trigger ss-auth-input"
+        onClick={() => setOpen(!open)}
+      >
+        <span>{selected?.name ?? value}</span>
+        <span className="material-symbols-outlined" style={{ fontSize: '16px', marginLeft: 'auto' }}>
+          {open ? ICONS.expandLess : ICONS.expandMore}
+        </span>
+      </button>
+      {open && (
+        <div className="ss-auth-role-select-menu">
+          {roles.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={`ss-auth-role-select-option${r.key === value ? ' ss-auth-role-select-option-active' : ''}`}
+              onClick={() => { onChange(r.key); setOpen(false) }}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /* People Section                                                             */
 /* -------------------------------------------------------------------------- */
 
@@ -575,7 +629,7 @@ function PeopleSection() {
   const {
     selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
-    createInviteLink, refreshInviteLinks, revokeInviteLink,
+    createInviteLink, refreshInviteLinks, revokeInviteLink, getInviteLinkUrl,
     updateMemberRole, removeMember, refreshMembers,
   } = useOrg()
 
@@ -702,16 +756,7 @@ function PeopleSection() {
               </div>
               <div style={{ width: '160px' }}>
                 <label className="ss-auth-label">Role</label>
-                <select
-                  className="ss-auth-input"
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {assignableRoles.map((r) => (
-                    <option key={r.id} value={r.key}>{r.name}</option>
-                  ))}
-                </select>
+                <RoleSelect value={inviteRole} onChange={setInviteRole} roles={assignableRoles} />
               </div>
               <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto', marginBottom: '0' }}>
                 Send
@@ -830,16 +875,7 @@ function PeopleSection() {
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
               <div style={{ width: '160px' }}>
                 <label className="ss-auth-label">Role</label>
-                <select
-                  className="ss-auth-input"
-                  value={linkRole}
-                  onChange={(e) => setLinkRole(e.target.value)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {assignableRoles.map((r) => (
-                    <option key={r.id} value={r.key}>{r.name}</option>
-                  ))}
-                </select>
+                <RoleSelect value={linkRole} onChange={setLinkRole} roles={assignableRoles} />
               </div>
               <button
                 type="button"
@@ -868,46 +904,63 @@ function PeopleSection() {
           <table className="ss-auth-settings-table">
             <thead>
               <tr>
-                <th>Code</th>
+                <th>Link</th>
                 <th>Role</th>
                 <th>Uses</th>
                 <th>Expires</th>
-                <th style={{ width: '100px' }}>Actions</th>
+                <th style={{ width: '80px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {inviteLinks.map((link) => (
-                <tr key={link.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{link.code}</td>
-                  <td><span className={roleBadgeClass(link.role)}>{link.roleName || link.role}</span></td>
-                  <td>{link.useCount}{link.maxUses > 0 ? `/${link.maxUses}` : ''}</td>
-                  <td style={{ fontSize: '12px' }}>{new Date(link.expiresAt).toLocaleString()}</td>
-                  <td style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      type="button"
-                      className="ss-auth-icon-btn"
-                      title={copiedCode === link.code ? 'Copied!' : 'Copy code'}
-                      onClick={() => {
-                        navigator.clipboard.writeText(link.code)
-                        setCopiedCode(link.code)
-                        setTimeout(() => setCopiedCode(null), 2000)
-                      }}
-                    >
-                      <span className="material-symbols-outlined">
-                        {copiedCode === link.code ? ICONS.check : ICONS.copy}
+              {inviteLinks.map((link) => {
+                const linkUrl = getInviteLinkUrl(link.code)
+                return (
+                  <tr key={link.id}>
+                    <td>
+                      <span
+                        style={{ fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', opacity: 0.7 }}
+                        title={linkUrl}
+                        onClick={() => {
+                          navigator.clipboard.writeText(linkUrl)
+                          setCopiedCode(link.code)
+                          setTimeout(() => setCopiedCode(null), 2000)
+                        }}
+                      >
+                        {copiedCode === link.code ? 'Copied!' : `...${link.code.slice(-12)}`}
                       </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="ss-auth-icon-btn ss-auth-icon-btn-danger"
-                      title="Revoke link"
-                      onClick={() => revokeInviteLink(selectedOrg.id, link.id)}
-                    >
-                      <span className="material-symbols-outlined">{ICONS.close}</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td><span className={roleBadgeClass(link.role)}>{link.roleName || link.role}</span></td>
+                    <td>{link.useCount}{link.maxUses > 0 ? `/${link.maxUses}` : ''}</td>
+                    <td style={{ fontSize: '12px' }}>{new Date(link.expiresAt).toLocaleString()}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className="ss-auth-icon-btn"
+                          title={copiedCode === link.code ? 'Copied!' : 'Copy invite link'}
+                          onClick={() => {
+                            navigator.clipboard.writeText(linkUrl)
+                            setCopiedCode(link.code)
+                            setTimeout(() => setCopiedCode(null), 2000)
+                          }}
+                        >
+                          <span className="material-symbols-outlined">
+                            {copiedCode === link.code ? ICONS.check : ICONS.copy}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="ss-auth-icon-btn ss-auth-icon-btn-danger"
+                          title="Revoke link"
+                          onClick={() => revokeInviteLink(selectedOrg.id, link.id)}
+                        >
+                          <span className="material-symbols-outlined">{ICONS.close}</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -929,16 +982,7 @@ function PeopleSection() {
               </p>
               <div className="ss-auth-field">
                 <label className="ss-auth-label">Role</label>
-                <select
-                  className="ss-auth-input"
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {assignableRoles.map((r) => (
-                    <option key={r.id} value={r.key}>{r.name}</option>
-                  ))}
-                </select>
+                <RoleSelect value={editRole} onChange={setEditRole} roles={assignableRoles} />
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" className="ss-auth-btn-ghost" onClick={() => setEditMember(null)}>Cancel</button>

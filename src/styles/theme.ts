@@ -1161,19 +1161,60 @@ export function generateCSS(theme: ResolvedTheme): string {
 
     .ss-auth-input-with-icon { padding-left: 40px; }
 
-    /* Auth Select */
-    select.ss-auth-input {
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 36px;
+    /* Custom Role Select */
+    .ss-auth-role-select {
+      position: relative;
     }
 
-    select.ss-auth-input option {
-      background: ${theme.authSurfaceContainerLow};
+    .ss-auth-role-select-trigger {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .ss-auth-role-select-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      margin-top: 4px;
+      padding: 4px;
+      background: ${theme.authSurfaceContainer};
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px ${theme.authOutlineVariant}33;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .ss-auth-role-select-option {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: none;
       color: ${theme.authOnSurface};
+      font-size: 14px;
+      font-family: ${theme.authFontBody};
+      text-align: left;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .ss-auth-role-select-option:hover {
+      background: ${theme.authSurfaceContainerLow};
+    }
+
+    .ss-auth-role-select-option-active {
+      background: ${theme.authPrimary}22;
+      color: ${theme.authPrimary};
+      font-weight: 600;
+    }
+
+    .ss-auth-role-select-option-active:hover {
+      background: ${theme.authPrimary}33;
     }
 
     .ss-auth-field { margin-bottom: 16px; }

@@ -48,4 +48,6 @@ export const ICONS = {
   notifications: 'notifications',
   link: 'link',
   copy: 'content_copy',
+  expandMore: 'expand_more',
+  expandLess: 'expand_less',
 } as const

@@ -326,11 +326,15 @@ export function useOrg() {
     }
   }, [client])
 
+  const getInviteLinkUrl = useCallback((code: string) => {
+    return `${client.baseUrl}/auth/invite-links/${code}`
+  }, [client])
+
   return {
     orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     refresh, selectOrg, createOrg, updateOrg, deleteOrg,
     sendInvite, refreshInvites, revokeInvite,
-    createInviteLink, refreshInviteLinks, revokeInviteLink,
+    createInviteLink, refreshInviteLinks, revokeInviteLink, getInviteLinkUrl,
     updateMemberRole, removeMember, refreshMembers, refreshRoles, uploadOrgAvatar,
   }
 }
