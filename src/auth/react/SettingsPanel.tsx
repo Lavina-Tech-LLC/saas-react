@@ -573,8 +573,9 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 
 function PeopleSection() {
   const {
-    selectedOrg, members, invites, isLoading, error, setError,
+    selectedOrg, members, invites, inviteLinks, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
+    createInviteLink, refreshInviteLinks, revokeInviteLink,
     updateMemberRole, removeMember, refreshMembers,
   } = useOrg()
 
@@ -587,13 +588,17 @@ function PeopleSection() {
   const [editRole, setEditRole] = useState('')
 
   const [removingMember, setRemovingMember] = useState<{ userId: string; email: string } | null>(null)
+  const [showLinkForm, setShowLinkForm] = useState(false)
+  const [linkRole, setLinkRole] = useState('member')
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (selectedOrg) {
       refreshMembers(selectedOrg.id)
       refreshInvites(selectedOrg.id)
+      refreshInviteLinks(selectedOrg.id)
     }
-  }, [selectedOrg, refreshMembers, refreshInvites])
+  }, [selectedOrg, refreshMembers, refreshInvites, refreshInviteLinks])
 
   if (!selectedOrg) {
     return (
@@ -797,6 +802,111 @@ function PeopleSection() {
           </table>
         </div>
       )}
+
+      {/* Invite Links */}
+      <div className="ss-auth-settings-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h4 style={{ margin: 0 }}>
+            <span className="material-symbols-outlined">{ICONS.link}</span>
+            Invite Links
+          </h4>
+          <button
+            type="button"
+            className="ss-auth-btn-primary ss-auth-btn-sm"
+            style={{ width: 'auto' }}
+            onClick={() => setShowLinkForm(!showLinkForm)}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{ICONS.add}</span>
+            Create Link
+          </button>
+        </div>
+
+        {showLinkForm && (
+          <div style={{ marginBottom: '16px', padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+              <div style={{ width: '120px' }}>
+                <label className="ss-auth-label">Role</label>
+                <select
+                  className="ss-auth-input"
+                  value={linkRole}
+                  onChange={(e) => setLinkRole(e.target.value)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="member">Member</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                className="ss-auth-btn-primary ss-auth-btn-sm"
+                disabled={isLoading}
+                style={{ width: 'auto', marginBottom: '0' }}
+                onClick={async () => {
+                  const link = await createInviteLink(selectedOrg.id, linkRole)
+                  if (link) {
+                    setShowLinkForm(false)
+                    setLinkRole('member')
+                  }
+                }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        )}
+
+        {inviteLinks.length === 0 ? (
+          <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
+            <div>No active invite links.</div>
+          </div>
+        ) : (
+          <table className="ss-auth-settings-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Role</th>
+                <th>Uses</th>
+                <th>Expires</th>
+                <th style={{ width: '100px' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inviteLinks.map((link) => (
+                <tr key={link.id}>
+                  <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{link.code}</td>
+                  <td><span className={roleBadgeClass(link.role)}>{link.roleName || link.role}</span></td>
+                  <td>{link.useCount}{link.maxUses > 0 ? `/${link.maxUses}` : ''}</td>
+                  <td style={{ fontSize: '12px' }}>{new Date(link.expiresAt).toLocaleString()}</td>
+                  <td style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      className="ss-auth-icon-btn"
+                      title={copiedCode === link.code ? 'Copied!' : 'Copy code'}
+                      onClick={() => {
+                        navigator.clipboard.writeText(link.code)
+                        setCopiedCode(link.code)
+                        setTimeout(() => setCopiedCode(null), 2000)
+                      }}
+                    >
+                      <span className="material-symbols-outlined">
+                        {copiedCode === link.code ? ICONS.check : ICONS.copy}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ss-auth-icon-btn ss-auth-icon-btn-danger"
+                      title="Revoke link"
+                      onClick={() => revokeInviteLink(selectedOrg.id, link.id)}
+                    >
+                      <span className="material-symbols-outlined">{ICONS.close}</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* Edit Role Inline Modal */}
       {editMember && (

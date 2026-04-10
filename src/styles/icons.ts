@@ -46,4 +46,6 @@ export const ICONS = {
   send: 'send',
   personRemove: 'person_remove',
   notifications: 'notifications',
+  link: 'link',
+  copy: 'content_copy',
 } as const

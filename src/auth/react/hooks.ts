@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
-import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite } from '../types'
+import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult } from '../types'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -82,11 +82,11 @@ export function useSignUp() {
   const [error, setError] = useState<string | null>(null)
 
   const signUp = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, inviteToken?: string) => {
       setIsLoading(true)
       setError(null)
       try {
-        return await client.auth.signUp(email, password)
+        return await client.auth.signUp(email, password, inviteToken)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Sign up failed')
         return null
@@ -106,15 +106,23 @@ export function useOrg() {
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<PendingInvite[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const initialSelectDone = useRef(false)
+
+  const refreshRoles = useCallback(async () => {
+    try {
+      const list = await client.auth.listRoles()
+      setRoles(list)
+    } catch { /* best-effort */ }
+  }, [client])
 
   const refresh = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const list = await client.auth.listOrgs()
+      const [list] = await Promise.all([client.auth.listOrgs(), refreshRoles()])
       setOrgs(list)
 
       // Keep selectedOrg in sync with fresh data (e.g. after rename).
@@ -208,9 +216,9 @@ export function useOrg() {
     }
   }, [client, selectedOrg])
 
-  const sendInvite = useCallback(async (orgId: string, email: string, role: string) => {
+  const sendInvite = useCallback(async (orgId: string, email: string, role?: string, roleId?: string) => {
     try {
-      const invite = await client.auth.sendInvite(orgId, email, role)
+      const invite = await client.auth.sendInvite(orgId, email, role, roleId)
       return invite
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send invite')
@@ -238,10 +246,12 @@ export function useOrg() {
     }
   }, [client])
 
-  const updateMemberRole = useCallback(async (orgId: string, userId: string, role: string) => {
+  const updateMemberRole = useCallback(async (orgId: string, userId: string, role?: string, roleId?: string) => {
     try {
-      await client.auth.updateMemberRole(orgId, userId, role)
-      setMembers((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)))
+      await client.auth.updateMemberRole(orgId, userId, role, roleId)
+      // Refresh members to get accurate role data from the server.
+      const m = await client.auth.listMembers(orgId)
+      setMembers(m)
       return true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update member role')
@@ -281,11 +291,47 @@ export function useOrg() {
     }
   }, [client, selectedOrg])
 
+  // --- Invite Links ---
+
+  const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([])
+
+  const createInviteLink = useCallback(async (orgId: string, role?: string, roleId?: string, maxUses?: number) => {
+    try {
+      const link = await client.auth.createInviteLink(orgId, role, roleId, maxUses)
+      setInviteLinks((prev) => [link, ...prev])
+      return link
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create invite link')
+      return null
+    }
+  }, [client])
+
+  const refreshInviteLinks = useCallback(async (orgId: string) => {
+    try {
+      const list = await client.auth.listInviteLinks(orgId)
+      setInviteLinks(list)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invite links')
+    }
+  }, [client])
+
+  const revokeInviteLink = useCallback(async (orgId: string, linkId: string) => {
+    try {
+      await client.auth.revokeInviteLink(orgId, linkId)
+      setInviteLinks((prev) => prev.filter((l) => l.id !== linkId))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to revoke invite link')
+      return false
+    }
+  }, [client])
+
   return {
-    orgs, selectedOrg, members, invites, isLoading, error, setError,
+    orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     refresh, selectOrg, createOrg, updateOrg, deleteOrg,
     sendInvite, refreshInvites, revokeInvite,
-    updateMemberRole, removeMember, refreshMembers, uploadOrgAvatar,
+    createInviteLink, refreshInviteLinks, revokeInviteLink,
+    updateMemberRole, removeMember, refreshMembers, refreshRoles, uploadOrgAvatar,
   }
 }
 
@@ -421,4 +467,42 @@ export function useInvites() {
   }, [client])
 
   return { invites, isLoading, error, setError, refresh, accept, decline }
+}
+
+export function useInviteLink() {
+  const { client, user, isLoaded } = useSaaSContext()
+  const [info, setInfo] = useState<InviteLinkInfo | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchInfo = useCallback(async (code: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await client.auth.getInviteLinkInfo(code)
+      setInfo(result)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid or expired invite link')
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  const use = useCallback(async (code: string): Promise<UseInviteLinkResult | null> => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await client.auth.useInviteLink(code)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join organization')
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  return { info, isLoading, error, setError, fetchInfo, use, isAuthenticated: !!user, isLoaded }
 }

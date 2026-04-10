@@ -5,7 +5,7 @@ import type { SaaSEvents } from '../core/client'
 import type {
   User, ProjectSettings, AuthResult, SignInResult, SignUpResult,
   OAuthProvider, Org, Member, Invite, PendingInvite, MyPendingInvite, MfaSetupResult, MfaVerifyResult,
-  AuthStateCallback,
+  AuthStateCallback, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult,
 } from './types'
 
 const OAUTH_POPUP_WIDTH = 500
@@ -79,8 +79,10 @@ export class AuthClient {
     return signIn
   }
 
-  async signUp(email: string, password: string): Promise<SignUpResult> {
-    const result = await this.transport.post<SignUpResult>('/auth/register', { email, password })
+  async signUp(email: string, password: string, inviteToken?: string): Promise<SignUpResult> {
+    const body: Record<string, string> = { email, password }
+    if (inviteToken) body.inviteToken = inviteToken
+    const result = await this.transport.post<SignUpResult>('/auth/register', body)
     this.setSession(result)
     return result
   }
@@ -349,12 +351,12 @@ export class AuthClient {
     return this.transport.get<Member[]>(`/auth/orgs/${orgId}/members`, this.authHeaders())
   }
 
-  async sendInvite(orgId: string, email: string, role: string): Promise<Invite> {
-    return this.transport.post<Invite>(`/auth/orgs/${orgId}/invites`, { email, role }, this.authHeaders())
+  async sendInvite(orgId: string, email: string, role?: string, roleId?: string): Promise<Invite> {
+    return this.transport.post<Invite>(`/auth/orgs/${orgId}/invites`, { email, role, roleId }, this.authHeaders())
   }
 
-  async updateMemberRole(orgId: string, userId: string, role: string): Promise<void> {
-    await this.transport.patch(`/auth/orgs/${orgId}/members/${userId}`, { role }, this.authHeaders())
+  async updateMemberRole(orgId: string, userId: string, role?: string, roleId?: string): Promise<void> {
+    await this.transport.patch(`/auth/orgs/${orgId}/members/${userId}`, { role, roleId }, this.authHeaders())
   }
 
   async removeMember(orgId: string, userId: string): Promise<void> {
@@ -385,6 +387,57 @@ export class AuthClient {
 
   async declineInvite(inviteId: string): Promise<void> {
     await this.transport.del(`/auth/invites/${inviteId}/decline`, this.authHeaders())
+  }
+
+  // ---------------------------------------------------------------------------
+  // Roles
+  // ---------------------------------------------------------------------------
+
+  async listRoles(): Promise<Role[]> {
+    return this.transport.get<Role[]>('/auth/roles', this.authHeaders())
+  }
+
+  // ---------------------------------------------------------------------------
+  // Invite Links
+  // ---------------------------------------------------------------------------
+
+  async createInviteLink(
+    orgId: string,
+    role?: string,
+    roleId?: string,
+    maxUses?: number,
+  ): Promise<InviteLink> {
+    return this.transport.post<InviteLink>(
+      `/auth/orgs/${orgId}/invite-links`,
+      { role, roleId, maxUses: maxUses ?? 0 },
+      this.authHeaders(),
+    )
+  }
+
+  async listInviteLinks(orgId: string): Promise<InviteLink[]> {
+    return this.transport.get<InviteLink[]>(
+      `/auth/orgs/${orgId}/invite-links`,
+      this.authHeaders(),
+    )
+  }
+
+  async revokeInviteLink(orgId: string, linkId: string): Promise<void> {
+    await this.transport.del(
+      `/auth/orgs/${orgId}/invite-links/${linkId}`,
+      this.authHeaders(),
+    )
+  }
+
+  async getInviteLinkInfo(code: string): Promise<InviteLinkInfo> {
+    return this.transport.get<InviteLinkInfo>(`/auth/invite-links/${code}/info`)
+  }
+
+  async useInviteLink(code: string): Promise<UseInviteLinkResult> {
+    return this.transport.post<UseInviteLinkResult>(
+      `/auth/invite-links/${code}/use`,
+      undefined,
+      this.authHeaders(),
+    )
   }
 
   async deleteAccount(): Promise<void> {

@@ -26,5 +26,9 @@ export type {
   MyPendingInvite,
   MfaSetupResult,
   MfaVerifyResult,
+  Role,
+  InviteLink,
+  InviteLinkInfo,
+  UseInviteLinkResult,
 } from './auth/types'
 export { isMfaRequired } from './auth/types'

@@ -3,6 +3,7 @@ export interface User {
   email: string
   provider: string
   emailVerified: boolean
+  source?: 'self' | 'invite'
   metadata: Record<string, unknown>
   mfaEnabled?: boolean
   name?: string
@@ -18,6 +19,7 @@ export interface ProjectSettings {
   emailVerification: boolean
   privacyPolicyUrl?: string
   termsOfServiceUrl?: string
+  orgCreationPolicy: 'anyone' | 'self_registered_only'
 }
 
 export interface SignInResult {
@@ -60,12 +62,15 @@ export interface Member {
   userId: string
   email: string
   role: string
+  roleId?: string
+  roleName?: string
 }
 
 export interface Invite {
   inviteId: string
   email: string
   role: string
+  roleId?: string
   token: string
   expiresAt: string
 }
@@ -74,6 +79,8 @@ export interface PendingInvite {
   id: string
   email: string
   role: string
+  roleId?: string
+  roleName?: string
   expiresAt: string
   createdAt: string
 }
@@ -83,8 +90,45 @@ export interface MyPendingInvite {
   orgId: string
   orgName: string
   role: string
+  roleId?: string
+  roleName?: string
   expiresAt: string
   createdAt: string
+}
+
+export interface InviteLink {
+  id: string
+  code: string
+  role: string
+  roleId?: string
+  roleName?: string
+  maxUses: number
+  useCount: number
+  expiresAt: string
+  createdAt: string
+}
+
+export interface InviteLinkInfo {
+  orgName: string
+  orgAvatarUrl?: string
+  role: string
+  roleName?: string
+  expiresAt: string
+}
+
+export interface UseInviteLinkResult {
+  orgId: string
+  orgName: string
+  role: string
+  roleId?: string
+}
+
+export interface Role {
+  id: string
+  name: string
+  key: string
+  description?: string
+  isSystem: boolean
 }
 
 export interface MfaSetupResult {
