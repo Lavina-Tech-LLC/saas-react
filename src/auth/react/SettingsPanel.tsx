@@ -573,11 +573,14 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 
 function PeopleSection() {
   const {
-    selectedOrg, members, invites, inviteLinks, isLoading, error, setError,
+    selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
     createInviteLink, refreshInviteLinks, revokeInviteLink,
     updateMemberRole, removeMember, refreshMembers,
   } = useOrg()
+
+  // Assignable roles: all roles except "owner" (owner is assigned at org creation only).
+  const assignableRoles = roles.filter((r) => r.key !== 'owner')
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('member')
@@ -697,7 +700,7 @@ function PeopleSection() {
                   required
                 />
               </div>
-              <div style={{ width: '120px' }}>
+              <div style={{ width: '160px' }}>
                 <label className="ss-auth-label">Role</label>
                 <select
                   className="ss-auth-input"
@@ -705,8 +708,9 @@ function PeopleSection() {
                   onChange={(e) => setInviteRole(e.target.value)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
+                  {assignableRoles.map((r) => (
+                    <option key={r.id} value={r.key}>{r.name}</option>
+                  ))}
                 </select>
               </div>
               <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto', marginBottom: '0' }}>
@@ -824,7 +828,7 @@ function PeopleSection() {
         {showLinkForm && (
           <div style={{ marginBottom: '16px', padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-              <div style={{ width: '120px' }}>
+              <div style={{ width: '160px' }}>
                 <label className="ss-auth-label">Role</label>
                 <select
                   className="ss-auth-input"
@@ -832,8 +836,9 @@ function PeopleSection() {
                   onChange={(e) => setLinkRole(e.target.value)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
+                  {assignableRoles.map((r) => (
+                    <option key={r.id} value={r.key}>{r.name}</option>
+                  ))}
                 </select>
               </div>
               <button
@@ -930,8 +935,9 @@ function PeopleSection() {
                   onChange={(e) => setEditRole(e.target.value)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
+                  {assignableRoles.map((r) => (
+                    <option key={r.id} value={r.key}>{r.name}</option>
+                  ))}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
