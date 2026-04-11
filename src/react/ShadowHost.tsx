@@ -6,9 +6,16 @@ import type { Appearance } from '../core/types'
 interface ShadowHostProps {
   children: ReactNode
   appearance?: Appearance
+  /**
+   * When true, the shadow host element is portaled to `document.body` so
+   * `position: fixed` descendants escape any ancestor transform/filter/etc.
+   * that would otherwise form a containing block. Use for full-screen
+   * overlays that must appear above all consumer chrome.
+   */
+  portalToBody?: boolean
 }
 
-export function ShadowHost({ children, appearance }: ShadowHostProps) {
+export function ShadowHost({ children, appearance, portalToBody = false }: ShadowHostProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null)
 
@@ -62,9 +69,14 @@ export function ShadowHost({ children, appearance }: ShadowHostProps) {
 
   const container = shadowRoot?.querySelector('div') ?? null
 
-  return (
+  const host = (
     <div ref={hostRef} style={{ display: 'contents' }}>
       {container && createPortal(children, container)}
     </div>
   )
+
+  if (portalToBody && typeof document !== 'undefined') {
+    return createPortal(host, document.body)
+  }
+  return host
 }

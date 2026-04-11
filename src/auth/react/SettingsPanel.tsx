@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
+import { ShadowHost } from '../../react/ShadowHost'
+import { useSaaSContext } from '../../react/context'
 import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
 import { ICONS } from '../../styles/icons'
@@ -14,6 +16,7 @@ export interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'profile', onOrgDeleted, onOrgUpdated }: SettingsPanelProps) {
+  const { appearance } = useSaaSContext()
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
   const { invites: pendingInvites } = useInvites()
 
@@ -26,6 +29,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
   ]
 
   return (
+    <ShadowHost appearance={appearance} portalToBody>
     <div className="ss-auth-settings-page">
       {/* Header */}
       <div className="ss-auth-settings-header">
@@ -71,6 +75,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
         </div>
       </div>
     </div>
+    </ShadowHost>
   )
 }
 
