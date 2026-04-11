@@ -14,7 +14,7 @@ export { UserButton } from './auth/react'
 export type { UserButtonProps } from './auth/react'
 export { SettingsPanel } from './auth/react'
 export type { SettingsPanelProps } from './auth/react'
-export { useAuth, useUser, useSignIn, useSignUp, useOrg, useProfile, useDeleteAccount, useInvites, useInviteLink } from './auth/react'
+export { useAuth, useUser, useSignIn, useSignUp, useOrg, useProfile, useDeleteAccount, useInvites, useInviteLink, useInvite } from './auth/react'
 
 // Re-export core for convenience
 export { SaaSSupport } from './core/client'
@@ -41,4 +41,6 @@ export type {
   InviteLink,
   InviteLinkInfo,
   UseInviteLinkResult,
+  InviteInfo,
+  AcceptInviteByCodeResult,
 } from './auth/types'

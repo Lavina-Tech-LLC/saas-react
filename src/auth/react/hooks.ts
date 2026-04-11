@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
-import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult } from '../types'
+import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult } from '../types'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -82,11 +82,11 @@ export function useSignUp() {
   const [error, setError] = useState<string | null>(null)
 
   const signUp = useCallback(
-    async (email: string, password: string, inviteToken?: string) => {
+    async (email: string, password: string, inviteCode?: string) => {
       setIsLoading(true)
       setError(null)
       try {
-        return await client.auth.signUp(email, password, inviteToken)
+        return await client.auth.signUp(email, password, inviteCode)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Sign up failed')
         return null
@@ -512,4 +512,50 @@ export function useInviteLink() {
   }, [client])
 
   return { info, isLoading, error, setError, fetchInfo, use, isAuthenticated: !!user, isLoaded }
+}
+
+/**
+ * Unified invite hook. Works for both per-email `AuthInvite` raw tokens and
+ * reusable `AuthInviteLink` codes under a single `?invite_code=` URL param.
+ *
+ * `fetchInfo(code)` hits the public info endpoint — no auth required, safe to
+ * call on the login screen before the user has a session.
+ *
+ * `accept(code)` hits the authenticated accept endpoint — requires a session.
+ */
+export function useInvite() {
+  const { client, user, isLoaded } = useSaaSContext()
+  const [info, setInfo] = useState<InviteInfo | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchInfo = useCallback(async (code: string): Promise<InviteInfo | null> => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await client.auth.getInviteInfo(code)
+      setInfo(result)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid or expired invite')
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  const accept = useCallback(async (code: string): Promise<AcceptInviteByCodeResult | null> => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      return await client.auth.acceptInviteByCode(code)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to accept invite')
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client])
+
+  return { info, isLoading, error, setError, fetchInfo, accept, isAuthenticated: !!user, isLoaded }
 }

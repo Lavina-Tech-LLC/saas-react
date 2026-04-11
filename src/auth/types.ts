@@ -117,7 +117,35 @@ export interface InviteLinkInfo {
   expiresAt: string
 }
 
+/**
+ * Unified invite info returned by GET /auth/invites/info/:code. The `code`
+ * may be either a per-email AuthInvite raw token or a reusable AuthInviteLink
+ * code — the backend transparently resolves which. `type` discriminates the
+ * two so the UI can, e.g., pre-fill the email field for per-email invites.
+ */
+export interface InviteInfo {
+  type: 'email' | 'link'
+  orgId: string
+  orgName: string
+  orgAvatarUrl?: string
+  role: string
+  roleName?: string
+  inviterName?: string
+  inviterEmail?: string
+  inviterAvatarUrl?: string
+  /** Only populated when `type === 'email'`. */
+  targetEmail?: string
+  expiresAt: string
+}
+
 export interface UseInviteLinkResult {
+  orgId: string
+  orgName: string
+  role: string
+  roleId?: string
+}
+
+export interface AcceptInviteByCodeResult {
   orgId: string
   orgName: string
   role: string

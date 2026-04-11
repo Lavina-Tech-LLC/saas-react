@@ -6,6 +6,7 @@ import type {
   User, ProjectSettings, AuthResult, SignInResult, SignUpResult,
   OAuthProvider, Org, Member, Invite, PendingInvite, MyPendingInvite, MfaSetupResult, MfaVerifyResult,
   AuthStateCallback, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult,
+  InviteInfo, AcceptInviteByCodeResult,
 } from './types'
 
 const OAUTH_POPUP_WIDTH = 500
@@ -79,9 +80,9 @@ export class AuthClient {
     return signIn
   }
 
-  async signUp(email: string, password: string, inviteToken?: string): Promise<SignUpResult> {
+  async signUp(email: string, password: string, inviteCode?: string): Promise<SignUpResult> {
     const body: Record<string, string> = { email, password }
-    if (inviteToken) body.inviteToken = inviteToken
+    if (inviteCode) body.inviteCode = inviteCode
     const result = await this.transport.post<SignUpResult>('/auth/register', body)
     this.setSession(result)
     return result
@@ -435,6 +436,26 @@ export class AuthClient {
   async useInviteLink(code: string): Promise<UseInviteLinkResult> {
     return this.transport.post<UseInviteLinkResult>(
       `/auth/invite-links/${code}/use`,
+      undefined,
+      this.authHeaders(),
+    )
+  }
+
+  /**
+   * Fetch public info about an invite by code. Works for both per-email
+   * AuthInvite raw tokens and reusable AuthInviteLink codes. Unauthenticated.
+   */
+  async getInviteInfo(code: string): Promise<InviteInfo> {
+    return this.transport.get<InviteInfo>(`/auth/invites/info/${encodeURIComponent(code)}`)
+  }
+
+  /**
+   * Accept an invite by code (per-email token OR reusable link code) for the
+   * authenticated user. Creates the membership atomically.
+   */
+  async acceptInviteByCode(code: string): Promise<AcceptInviteByCodeResult> {
+    return this.transport.post<AcceptInviteByCodeResult>(
+      `/auth/invites/code/${encodeURIComponent(code)}/accept`,
       undefined,
       this.authHeaders(),
     )

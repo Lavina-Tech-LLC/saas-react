@@ -30,5 +30,7 @@ export type {
   InviteLink,
   InviteLinkInfo,
   UseInviteLinkResult,
+  InviteInfo,
+  AcceptInviteByCodeResult,
 } from './auth/types'
 export { isMfaRequired } from './auth/types'

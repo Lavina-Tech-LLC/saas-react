@@ -1,8 +1,9 @@
-import { useState, useCallback, useRef, type FormEvent, type KeyboardEvent } from 'react'
+import { useState, useEffect, useCallback, useRef, type FormEvent, type KeyboardEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
-import { useSignIn as useSignInHook, useSignUp as useSignUpHook } from './hooks'
+import { useSignIn as useSignInHook, useSignUp as useSignUpHook, useInvite, useAuth } from './hooks'
 import { isMfaRequired } from '../types'
+import type { InviteInfo } from '../types'
 import { GoogleIcon, GitHubIcon, ICONS } from '../../styles/icons'
 import type { Appearance } from '../../core/types'
 
@@ -11,6 +12,43 @@ export interface SignInProps {
   afterSignInUrl?: string
   afterSignUpUrl?: string
   initialMode?: 'signIn' | 'signUp'
+  /**
+   * Explicit invite code. When omitted, the component reads `?invite_code=`
+   * from `window.location.search` on mount. If a code is present (from either
+   * source), the component enters invite-landing mode instead of the normal
+   * sign-in UI.
+   */
+  inviteCode?: string
+}
+
+/**
+ * Strip `invite_code` from the current URL without reloading. Called after a
+ * successful accept/sign-up so the consumer's existing "redirect when user is
+ * set" effects fire with a clean URL.
+ */
+function clearInviteFromUrl() {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  if (!params.has('invite_code')) return
+  params.delete('invite_code')
+  const search = params.toString()
+  window.history.replaceState(
+    null,
+    '',
+    window.location.pathname + (search ? '?' + search : '') + window.location.hash,
+  )
+}
+
+function resolveInitialInviteCode(explicit?: string): string | null {
+  if (explicit) return explicit
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get('invite_code')
+}
+
+function formatInviterName(info: InviteInfo): string {
+  if (info.inviterName && info.inviterName.trim() !== '') return info.inviterName
+  if (info.inviterEmail) return info.inviterEmail.split('@')[0]
+  return 'Someone'
 }
 
 export function SignIn({
@@ -18,11 +56,31 @@ export function SignIn({
   afterSignInUrl,
   afterSignUpUrl,
   initialMode = 'signIn',
+  inviteCode: explicitInviteCode,
 }: SignInProps) {
   const { appearance: globalAppearance, settings } = useSaaSContext()
   const { signIn, signInWithOAuth, submitMfaCode, isLoading: signInLoading, error: signInError, setError: setSignInError } = useSignInHook()
   const { signUp, isLoading: signUpLoading, error: signUpError, setError: setSignUpError } = useSignUpHook()
+  const { isSignedIn, refreshUser } = useAuth()
+  const { info: inviteInfo, isLoading: inviteLoading, error: inviteError, setError: setInviteError, fetchInfo: fetchInviteInfo, accept: acceptInvite } = useInvite()
   const appearance = localAppearance ?? globalAppearance
+
+  // Invite-flow state. `code` tracks the active invite code; clearing it exits
+  // invite mode and falls through to the normal sign-in UI.
+  const [code, setCode] = useState<string | null>(() => resolveInitialInviteCode(explicitInviteCode))
+  // When true, the signed-out user has clicked "Accept" and we're showing the
+  // sign-up form (still within the invite context) so they can create an account.
+  const [showSignUpForInvite, setShowSignUpForInvite] = useState(false)
+  const [acceptError, setAcceptError] = useState<string | null>(null)
+  const [isAccepting, setIsAccepting] = useState(false)
+
+  // Fetch invite info whenever `code` is set. Clearing `code` exits invite
+  // mode and falls through to the normal sign-in UI.
+  useEffect(() => {
+    if (!code) return
+    if (inviteInfo || inviteLoading || inviteError) return
+    void fetchInviteInfo(code)
+  }, [code, inviteInfo, inviteLoading, inviteError, fetchInviteInfo])
 
   const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode)
 
@@ -89,9 +147,19 @@ export function SignIn({
         return
       }
 
-      await signUp(email, password)
+      // If this submit is part of an invite flow, strip the code from the URL
+      // *before* awaiting so the consumer's redirect effect reads a clean URL
+      // once the user state transitions on success.
+      if (showSignUpForInvite && code) {
+        clearInviteFromUrl()
+      }
+      await signUp(email, password, showSignUpForInvite && code ? code : undefined)
+      if (showSignUpForInvite) {
+        setCode(null)
+        setShowSignUpForInvite(false)
+      }
     },
-    [email, password, confirmPassword, settings, signUp],
+    [email, password, confirmPassword, settings, signUp, showSignUpForInvite, code],
   )
 
   const handleOAuth = useCallback(
@@ -100,6 +168,35 @@ export function SignIn({
     },
     [signInWithOAuth],
   )
+
+  const handleAccept = useCallback(async () => {
+    if (!code) return
+    setAcceptError(null)
+    if (isSignedIn) {
+      // Signed-in user: accept directly, then let the consumer's redirect fire
+      // when `refreshUser()` updates the user reference.
+      setIsAccepting(true)
+      try {
+        const result = await acceptInvite(code)
+        if (!result) {
+          setAcceptError(inviteError || 'Failed to accept invite')
+          return
+        }
+        clearInviteFromUrl()
+        setCode(null)
+        await refreshUser()
+      } finally {
+        setIsAccepting(false)
+      }
+    } else {
+      // Guest: reveal the sign-up form, pre-fill email if the invite targets one.
+      if (inviteInfo?.type === 'email' && inviteInfo.targetEmail) {
+        setEmail(inviteInfo.targetEmail)
+      }
+      setMode('signUp')
+      setShowSignUpForInvite(true)
+    }
+  }, [code, isSignedIn, acceptInvite, inviteError, refreshUser, inviteInfo])
 
   const handleDigitChange = useCallback((index: number, value: string) => {
     if (!/^\d*$/.test(value)) return
@@ -123,22 +220,150 @@ export function SignIn({
   const hasOAuth = settings?.googleEnabled || settings?.githubEnabled
   const isSignIn = mode === 'signIn'
 
+  // Invite-landing: while fetching info.
+  if (code && inviteLoading && !inviteInfo) {
+    return (
+      <ShadowHost appearance={appearance}>
+        <div className="ss-auth-card">
+          <div className="ss-auth-card-body">
+            <div className="ss-auth-header">
+              <div className="ss-auth-spinner" style={{ margin: '0 auto' }} />
+              <p className="ss-auth-subtitle" style={{ marginTop: 16 }}>Loading invite…</p>
+            </div>
+          </div>
+        </div>
+      </ShadowHost>
+    )
+  }
+
+  // Invite-landing: fetch failed (expired / invalid / revoked).
+  if (code && inviteError && !inviteInfo) {
+    return (
+      <ShadowHost appearance={appearance}>
+        <div className="ss-auth-card">
+          <div className="ss-auth-card-body">
+            <div className="ss-auth-header">
+              <h1 className="ss-auth-title">Invite unavailable</h1>
+              <p className="ss-auth-subtitle">{inviteError}</p>
+            </div>
+            <div className="ss-auth-footer">
+              <span
+                className="ss-auth-link"
+                onClick={() => {
+                  setInviteError(null)
+                  clearInviteFromUrl()
+                  setCode(null)
+                }}
+              >
+                Back to sign in
+              </span>
+            </div>
+          </div>
+        </div>
+      </ShadowHost>
+    )
+  }
+
+  // Invite-landing: info loaded, show the Accept card (no login / no OAuth).
+  if (code && inviteInfo && !showSignUpForInvite) {
+    return (
+      <ShadowHost appearance={appearance}>
+        <div className="ss-auth-card">
+          <div className="ss-auth-card-body">
+            <div className="ss-auth-header">
+              {inviteInfo.orgAvatarUrl ? (
+                <img
+                  src={inviteInfo.orgAvatarUrl}
+                  alt={inviteInfo.orgName}
+                  className="ss-auth-org-avatar"
+                />
+              ) : (
+                <div className="ss-auth-org-avatar ss-auth-org-avatar-fallback">
+                  {inviteInfo.orgName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <h1 className="ss-auth-title">
+                {formatInviterName(inviteInfo)} invites you to {inviteInfo.orgName}
+              </h1>
+              <p className="ss-auth-subtitle">
+                Join as <strong>{inviteInfo.roleName || inviteInfo.role}</strong>
+              </p>
+            </div>
+            {(acceptError || inviteError) && (
+              <div className="ss-auth-error">
+                <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+                <span>{acceptError || inviteError}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              className="ss-auth-btn-primary"
+              onClick={handleAccept}
+              disabled={isAccepting || inviteLoading}
+            >
+              {isAccepting && <span className="ss-auth-spinner" />}
+              Accept invite
+              {!isAccepting && (
+                <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
+              )}
+            </button>
+            <div className="ss-auth-footer">
+              <span
+                className="ss-auth-link"
+                onClick={() => {
+                  clearInviteFromUrl()
+                  setCode(null)
+                  setInviteError(null)
+                }}
+              >
+                Not now
+              </span>
+            </div>
+          </div>
+        </div>
+      </ShadowHost>
+    )
+  }
+
   return (
     <ShadowHost appearance={appearance}>
       <div className="ss-auth-card">
         <div className="ss-auth-card-body">
           {/* Header */}
           <div className="ss-auth-header">
-            <h1 className="ss-auth-title">
-              {isSignIn ? 'Sign in to your account' : 'Create your account'}
-            </h1>
-            <p className="ss-auth-subtitle">
-              {isSignIn ? 'Welcome back to your workspace' : 'Join the ecosystem'}
-            </p>
+            {showSignUpForInvite && inviteInfo ? (
+              <>
+                {inviteInfo.orgAvatarUrl ? (
+                  <img
+                    src={inviteInfo.orgAvatarUrl}
+                    alt={inviteInfo.orgName}
+                    className="ss-auth-org-avatar"
+                  />
+                ) : (
+                  <div className="ss-auth-org-avatar ss-auth-org-avatar-fallback">
+                    {inviteInfo.orgName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <h1 className="ss-auth-title">Join {inviteInfo.orgName}</h1>
+                <p className="ss-auth-subtitle">
+                  Invited by {formatInviterName(inviteInfo)} as{' '}
+                  <strong>{inviteInfo.roleName || inviteInfo.role}</strong>
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="ss-auth-title">
+                  {isSignIn ? 'Sign in to your account' : 'Create your account'}
+                </h1>
+                <p className="ss-auth-subtitle">
+                  {isSignIn ? 'Welcome back to your workspace' : 'Join the ecosystem'}
+                </p>
+              </>
+            )}
           </div>
 
           {/* OAuth */}
-          {!mfaMode && hasOAuth && (
+          {!mfaMode && hasOAuth && !showSignUpForInvite && (
             <>
               <div className="ss-auth-oauth-grid">
                 {settings?.googleEnabled && (
@@ -182,7 +407,7 @@ export function SignIn({
           )}
 
           {/* Email/password forms (hidden behind spoiler when OAuth is available) */}
-          {(!hasOAuth || showEmailForm || mfaMode) && (
+          {(!hasOAuth || showEmailForm || mfaMode || showSignUpForInvite) && (
             <>
           {/* Error */}
           {error && (
@@ -375,6 +600,20 @@ export function SignIn({
                 }}
               >
                 Back to sign in
+              </span>
+            </div>
+          ) : showSignUpForInvite ? (
+            <div className="ss-auth-footer">
+              <span
+                className="ss-auth-link"
+                onClick={() => {
+                  clearInviteFromUrl()
+                  setCode(null)
+                  setShowSignUpForInvite(false)
+                  setInviteError(null)
+                }}
+              >
+                Cancel
               </span>
             </div>
           ) : isSignIn ? (
