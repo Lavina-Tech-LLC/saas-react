@@ -101,7 +101,7 @@ export function useSignUp() {
 }
 
 export function useOrg() {
-  const { client, user, isLoaded } = useSaaSContext()
+  const { client, user, isLoaded, settings } = useSaaSContext()
   const [orgs, setOrgs] = useState<Org[]>([])
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null)
   const [members, setMembers] = useState<Member[]>([])
@@ -162,6 +162,7 @@ export function useOrg() {
 
   const selectOrg = useCallback(async (orgId: string) => {
     try {
+      setInviteLinks([])
       const org = await client.auth.getOrg(orgId)
       setSelectedOrg(org)
       if (typeof window !== 'undefined') {
@@ -327,9 +328,10 @@ export function useOrg() {
   }, [client])
 
   const getInviteLinkUrl = useCallback((code: string) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    return `${origin}/invite/${code}`
-  }, [])
+    const base = settings?.inviteLinkBaseUrl
+      || (typeof window !== 'undefined' ? window.location.origin + '/invite' : '')
+    return `${base}/${code}`
+  }, [settings])
 
   return {
     orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,

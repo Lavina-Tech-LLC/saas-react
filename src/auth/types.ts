@@ -20,6 +20,7 @@ export interface ProjectSettings {
   privacyPolicyUrl?: string
   termsOfServiceUrl?: string
   orgCreationPolicy: 'anyone' | 'self_registered_only'
+  inviteLinkBaseUrl?: string
 }
 
 export interface SignInResult {

@@ -649,6 +649,13 @@ function PeopleSection() {
   const [linkRole, setLinkRole] = useState('member')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
+  const copyLinkToClipboard = (code: string) => {
+    const url = getInviteLinkUrl(code)
+    navigator.clipboard.writeText(url)
+    setCopiedCode(code)
+    setTimeout(() => setCopiedCode(null), 2000)
+  }
+
   useEffect(() => {
     if (selectedOrg) {
       refreshMembers(selectedOrg.id)
@@ -920,11 +927,7 @@ function PeopleSection() {
                       <span
                         style={{ fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', opacity: 0.7 }}
                         title={linkUrl}
-                        onClick={() => {
-                          navigator.clipboard.writeText(linkUrl)
-                          setCopiedCode(link.code)
-                          setTimeout(() => setCopiedCode(null), 2000)
-                        }}
+                        onClick={() => copyLinkToClipboard(link.code)}
                       >
                         {copiedCode === link.code ? 'Copied!' : `...${link.code.slice(-12)}`}
                       </span>
@@ -938,11 +941,7 @@ function PeopleSection() {
                           type="button"
                           className="ss-auth-icon-btn"
                           title={copiedCode === link.code ? 'Copied!' : 'Copy invite link'}
-                          onClick={() => {
-                            navigator.clipboard.writeText(linkUrl)
-                            setCopiedCode(link.code)
-                            setTimeout(() => setCopiedCode(null), 2000)
-                          }}
+                          onClick={() => copyLinkToClipboard(link.code)}
                         >
                           <span className="material-symbols-outlined">
                             {copiedCode === link.code ? ICONS.check : ICONS.copy}
