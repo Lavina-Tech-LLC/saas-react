@@ -145,10 +145,15 @@ export function useOrg() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('ss_selected_org', orgToSelect.id)
           }
-          try {
-            const m = await client.auth.listMembers(orgToSelect.id)
-            setMembers(m)
-          } catch { /* best-effort */ }
+          // Only fetch members if the caller has permission (owner/admin).
+          if (orgToSelect.role === 'owner' || orgToSelect.role === 'admin') {
+            try {
+              const m = await client.auth.listMembers(orgToSelect.id)
+              setMembers(m)
+            } catch { /* best-effort */ }
+          } else {
+            setMembers([])
+          }
         }
       }
     } catch (err) {
@@ -168,8 +173,13 @@ export function useOrg() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('ss_selected_org', orgId)
       }
-      const m = await client.auth.listMembers(orgId)
-      setMembers(m)
+      // Only fetch members if the caller has permission (owner/admin).
+      if (org.role === 'owner' || org.role === 'admin') {
+        const m = await client.auth.listMembers(orgId)
+        setMembers(m)
+      } else {
+        setMembers([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load organization')
     }
@@ -256,6 +266,18 @@ export function useOrg() {
       return true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update member role')
+      return false
+    }
+  }, [client])
+
+  const updateMemberRoles = useCallback(async (orgId: string, userId: string, roles: string[]) => {
+    try {
+      await client.auth.updateMemberRoles(orgId, userId, roles)
+      const m = await client.auth.listMembers(orgId)
+      setMembers(m)
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update member roles')
       return false
     }
   }, [client])
@@ -349,7 +371,7 @@ export function useOrg() {
     refresh, selectOrg, createOrg, updateOrg, deleteOrg,
     sendInvite, refreshInvites, revokeInvite,
     createInviteLink, refreshInviteLinks, revokeInviteLink, getInviteLinkUrl,
-    updateMemberRole, removeMember, refreshMembers, refreshRoles, uploadOrgAvatar,
+    updateMemberRole, updateMemberRoles, removeMember, refreshMembers, refreshRoles, uploadOrgAvatar,
   }
 }
 

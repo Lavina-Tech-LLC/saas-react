@@ -360,6 +360,10 @@ export class AuthClient {
     await this.transport.patch(`/auth/orgs/${orgId}/members/${userId}`, { role, roleId }, this.authHeaders())
   }
 
+  async updateMemberRoles(orgId: string, userId: string, roles: string[]): Promise<void> {
+    await this.transport.patch(`/auth/orgs/${orgId}/members/${userId}`, { roles }, this.authHeaders())
+  }
+
   async removeMember(orgId: string, userId: string): Promise<void> {
     await this.transport.del(`/auth/orgs/${orgId}/members/${userId}`, this.authHeaders())
   }

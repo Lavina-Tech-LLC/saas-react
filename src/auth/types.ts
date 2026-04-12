@@ -57,6 +57,14 @@ export interface Org {
   avatarUrl?: string
   metadata?: string
   planName?: string
+  role?: string
+  roleId?: string
+}
+
+export interface RoleInfo {
+  id: string
+  key: string
+  name: string
 }
 
 export interface Member {
@@ -65,6 +73,7 @@ export interface Member {
   role: string
   roleId?: string
   roleName?: string
+  roles?: RoleInfo[]
 }
 
 export interface Invite {

@@ -61,7 +61,7 @@ export function SignIn({
   const { appearance: globalAppearance, settings } = useSaaSContext()
   const { signIn, signInWithOAuth, submitMfaCode, isLoading: signInLoading, error: signInError, setError: setSignInError } = useSignInHook()
   const { signUp, isLoading: signUpLoading, error: signUpError, setError: setSignUpError } = useSignUpHook()
-  const { isSignedIn, refreshUser } = useAuth()
+  const { isSignedIn, refreshUser, user: authUser } = useAuth()
   const { info: inviteInfo, isLoading: inviteLoading, error: inviteError, setError: setInviteError, fetchInfo: fetchInviteInfo, accept: acceptInvite } = useInvite()
   const appearance = localAppearance ?? globalAppearance
 
@@ -323,7 +323,9 @@ export function SignIn({
               disabled={isAccepting || inviteLoading}
             >
               {isAccepting && <span className="ss-auth-spinner" />}
-              Accept invite
+              {isSignedIn
+                ? `Accept as ${authUser?.name || authUser?.email || ''}`
+                : 'Accept invite'}
               {!isAccepting && (
                 <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
               )}

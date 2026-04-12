@@ -24,9 +24,10 @@ export function UserButton({
   onOrgChange,
   onOrgSettingsClick,
 }: UserButtonProps) {
-  const { appearance: globalAppearance } = useSaaSContext()
+  const { appearance: globalAppearance, settings } = useSaaSContext()
   const { user, signOut } = useAuth()
   const appearance = localAppearance ?? globalAppearance
+  const canCreateOrg = !(settings?.orgCreationPolicy === 'self_registered_only' && user?.source === 'invite')
 
   const [open, setOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -198,6 +199,7 @@ export function UserButton({
                 </div>
 
                 {/* Inline create org */}
+                {canCreateOrg && (
                 <div className="ss-auth-inline-create">
                   {createOrgError && (
                     <div className="ss-auth-error" style={{ marginBottom: '8px', fontSize: '12px' }}>
@@ -225,6 +227,7 @@ export function UserButton({
                     </div>
                   </form>
                 </div>
+                )}
 
                 {selectedOrg && onOrgSettingsClick && (
                   <div style={{ padding: '0 8px 4px' }}>

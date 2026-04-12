@@ -19,14 +19,40 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
   const { appearance } = useSaaSContext()
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
   const { invites: pendingInvites } = useInvites()
+  const { user } = useAuth()
+  const { selectedOrg, members } = useOrg()
 
-  const tabs: { key: SettingsTab; label: string; icon: string; badge?: number }[] = [
+  // Determine the caller's role in the selected org.
+  const myRole = selectedOrg?.role
+    ?? members.find((m) => m.userId === user?.id)?.role
+  const isOwner = myRole === 'owner'
+  const isAdminOrOwner = isOwner || myRole === 'admin'
+
+  const allTabs: { key: SettingsTab; label: string; icon: string; badge?: number }[] = [
     { key: 'profile', label: 'Profile', icon: ICONS.person },
     { key: 'organization', label: 'Organization', icon: ICONS.corporateFare },
     { key: 'people', label: 'People', icon: ICONS.group },
     { key: 'invites', label: 'Invites', icon: ICONS.mail, badge: pendingInvites.length || undefined },
     { key: 'billing', label: 'Billing', icon: ICONS.creditCard },
   ]
+
+  const tabs = allTabs.filter((tab) => {
+    switch (tab.key) {
+      case 'profile': return true
+      case 'invites': return true
+      case 'organization': return isOwner
+      case 'people': return isAdminOrOwner
+      case 'billing': return isOwner
+      default: return false
+    }
+  })
+
+  // Redirect to profile if the active tab is no longer visible.
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
+      setActiveTab('profile')
+    }
+  }, [myRole, activeTab])
 
   return (
     <ShadowHost appearance={appearance} portalToBody>
@@ -638,7 +664,7 @@ function PeopleSection() {
     selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
     createInviteLink, refreshInviteLinks, revokeInviteLink, getInviteLinkUrl,
-    updateMemberRole, removeMember, refreshMembers,
+    updateMemberRoles, removeMember, refreshMembers,
   } = useOrg()
 
   // Assignable roles: all roles except "owner" (owner is assigned at org creation only).
@@ -651,7 +677,7 @@ function PeopleSection() {
   const [copiedInviteEmail, setCopiedInviteEmail] = useState(false)
 
   const [editMember, setEditMember] = useState<{ userId: string; email: string; role: string } | null>(null)
-  const [editRole, setEditRole] = useState('')
+  const [editRoles, setEditRoles] = useState<string[]>([])
 
   const [removingMember, setRemovingMember] = useState<{ userId: string; email: string } | null>(null)
   const [showLinkForm, setShowLinkForm] = useState(false)
@@ -699,8 +725,8 @@ function PeopleSection() {
   }
 
   const handleEditConfirm = async () => {
-    if (!editMember) return
-    const ok = await updateMemberRole(selectedOrg.id, editMember.userId, editRole)
+    if (!editMember || editRoles.length === 0) return
+    const ok = await updateMemberRoles(selectedOrg.id, editMember.userId, editRoles)
     if (ok) setEditMember(null)
   }
 
@@ -826,7 +852,16 @@ function PeopleSection() {
               {members.map((member) => (
                 <tr key={member.userId}>
                   <td>{member.email}</td>
-                  <td><span className={roleBadgeClass(member.role)}>{member.role}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {member.roles && member.roles.length > 0
+                        ? member.roles.map((r) => (
+                            <span key={r.id} className={roleBadgeClass(r.key)}>{r.name}</span>
+                          ))
+                        : <span className={roleBadgeClass(member.role)}>{member.roleName || member.role}</span>
+                      }
+                    </div>
+                  </td>
                   <td>
                     {member.role === 'owner' ? (
                       <span style={{ fontSize: '12px', opacity: 0.4 }}>—</span>
@@ -836,7 +871,7 @@ function PeopleSection() {
                           type="button"
                           className="ss-auth-icon-btn"
                           title="Edit role"
-                          onClick={() => { setEditMember(member); setEditRole(member.role) }}
+                          onClick={() => { setEditMember(member); setEditRoles(member.roles?.map((r) => r.key) ?? [member.role]) }}
                         >
                           <span className="material-symbols-outlined">{ICONS.edit}</span>
                         </button>
@@ -1002,27 +1037,51 @@ function PeopleSection() {
         )}
       </div>
 
-      {/* Edit Role Inline Modal */}
+      {/* Edit Roles Modal */}
       {editMember && (
         <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setEditMember(null) }}>
           <div className="ss-auth-modal" style={{ maxWidth: '400px' }}>
             <div className="ss-auth-modal-header">
-              <h2>Edit Role</h2>
+              <h2>Edit Roles</h2>
               <button type="button" className="ss-auth-modal-close" onClick={() => setEditMember(null)}>
                 <span className="material-symbols-outlined">{ICONS.close}</span>
               </button>
             </div>
             <div className="ss-auth-modal-body">
               <p style={{ fontSize: '14px', marginBottom: '16px', margin: '0 0 16px 0' }}>
-                Change role for <strong>{editMember.email}</strong>
+                Change roles for <strong>{editMember.email}</strong>
               </p>
               <div className="ss-auth-field">
-                <label className="ss-auth-label">Role</label>
-                <RoleSelect value={editRole} onChange={setEditRole} roles={assignableRoles} />
+                <label className="ss-auth-label">Roles</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {assignableRoles.map((r) => (
+                    <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                      <input
+                        type="checkbox"
+                        checked={editRoles.includes(r.key)}
+                        onChange={() => {
+                          if (editRoles.includes(r.key)) {
+                            setEditRoles(editRoles.filter((k) => k !== r.key))
+                          } else {
+                            setEditRoles([...editRoles, r.key])
+                          }
+                        }}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span className={roleBadgeClass(r.key)}>{r.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
                 <button type="button" className="ss-auth-btn-ghost" onClick={() => setEditMember(null)}>Cancel</button>
-                <button type="button" className="ss-auth-btn-primary ss-auth-btn-sm" style={{ width: 'auto' }} onClick={handleEditConfirm}>
+                <button
+                  type="button"
+                  className="ss-auth-btn-primary ss-auth-btn-sm"
+                  style={{ width: 'auto' }}
+                  onClick={handleEditConfirm}
+                  disabled={editRoles.length === 0}
+                >
                   Save
                 </button>
               </div>
