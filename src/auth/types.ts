@@ -73,6 +73,8 @@ export interface Invite {
   role: string
   roleId?: string
   token: string
+  /** Canonical shareable invite URL, built by the backend from AuthSettings.InviteLinkBaseURL. */
+  url?: string
   expiresAt: string
 }
 
@@ -100,6 +102,8 @@ export interface MyPendingInvite {
 export interface InviteLink {
   id: string
   code: string
+  /** Canonical shareable invite URL, built by the backend from AuthSettings.InviteLinkBaseURL. */
+  url?: string
   role: string
   roleId?: string
   roleName?: string

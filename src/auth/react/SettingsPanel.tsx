@@ -588,7 +588,10 @@ function RoleSelect({ value, onChange, roles, style }: {
   useEffect(() => {
     if (!open) return
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      // `contains()` fails for events inside a ShadowRoot because the browser
+      // retargets the event's `target` to the shadow host. Use composedPath()
+      // to reach the real target across the shadow boundary.
+      if (ref.current && !e.composedPath().includes(ref.current)) setOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -644,7 +647,8 @@ function PeopleSection() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('member')
   const [showInviteForm, setShowInviteForm] = useState(false)
-  const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [inviteSuccess, setInviteSuccess] = useState<{ email: string; url?: string } | null>(null)
+  const [copiedInviteEmail, setCopiedInviteEmail] = useState(false)
 
   const [editMember, setEditMember] = useState<{ userId: string; email: string; role: string } | null>(null)
   const [editRole, setEditRole] = useState('')
@@ -654,10 +658,10 @@ function PeopleSection() {
   const [linkRole, setLinkRole] = useState('member')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-  const copyLinkToClipboard = (code: string) => {
-    const url = getInviteLinkUrl(code)
+  const copyLinkToClipboard = (link: { code: string; url?: string }) => {
+    const url = getInviteLinkUrl(link)
     navigator.clipboard.writeText(url)
-    setCopiedCode(code)
+    setCopiedCode(link.code)
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
@@ -683,12 +687,12 @@ function PeopleSection() {
 
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault()
-    setInviteSuccess(false)
+    setInviteSuccess(null)
     const result = await sendInvite(selectedOrg.id, inviteEmail, inviteRole)
     if (result) {
+      setInviteSuccess({ email: inviteEmail, url: result.url })
       setInviteEmail('')
       setInviteRole('member')
-      setInviteSuccess(true)
       setShowInviteForm(false)
       refreshInvites(selectedOrg.id)
     }
@@ -727,9 +731,37 @@ function PeopleSection() {
         </div>
       )}
       {inviteSuccess && (
-        <div className="ss-auth-info-box" style={{ marginBottom: '16px' }}>
-          <span className="material-symbols-outlined">{ICONS.check}</span>
-          <span>Invitation sent</span>
+        <div className="ss-auth-info-box" style={{ marginBottom: '16px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined">{ICONS.check}</span>
+            <span>Invitation created for <strong>{inviteSuccess.email}</strong></span>
+          </div>
+          {inviteSuccess.url && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                className="ss-auth-input"
+                readOnly
+                value={inviteSuccess.url}
+                style={{ flex: 1, fontFamily: 'monospace', fontSize: '12px' }}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                type="button"
+                className="ss-auth-icon-btn"
+                title={copiedInviteEmail ? 'Copied!' : 'Copy invite link'}
+                onClick={() => {
+                  if (!inviteSuccess.url) return
+                  navigator.clipboard.writeText(inviteSuccess.url)
+                  setCopiedInviteEmail(true)
+                  setTimeout(() => setCopiedInviteEmail(false), 2000)
+                }}
+              >
+                <span className="material-symbols-outlined">
+                  {copiedInviteEmail ? ICONS.check : ICONS.copy}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -925,14 +957,14 @@ function PeopleSection() {
             </thead>
             <tbody>
               {inviteLinks.map((link) => {
-                const linkUrl = getInviteLinkUrl(link.code)
+                const linkUrl = getInviteLinkUrl(link)
                 return (
                   <tr key={link.id}>
                     <td>
                       <span
                         style={{ fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', opacity: 0.7 }}
                         title={linkUrl}
-                        onClick={() => copyLinkToClipboard(link.code)}
+                        onClick={() => copyLinkToClipboard(link)}
                       >
                         {copiedCode === link.code ? 'Copied!' : `...${link.code.slice(-12)}`}
                       </span>
@@ -946,7 +978,7 @@ function PeopleSection() {
                           type="button"
                           className="ss-auth-icon-btn"
                           title={copiedCode === link.code ? 'Copied!' : 'Copy invite link'}
-                          onClick={() => copyLinkToClipboard(link.code)}
+                          onClick={() => copyLinkToClipboard(link)}
                         >
                           <span className="material-symbols-outlined">
                             {copiedCode === link.code ? ICONS.check : ICONS.copy}

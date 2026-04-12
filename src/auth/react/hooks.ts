@@ -101,7 +101,7 @@ export function useSignUp() {
 }
 
 export function useOrg() {
-  const { client, user, isLoaded, settings } = useSaaSContext()
+  const { client, user, isLoaded } = useSaaSContext()
   const [orgs, setOrgs] = useState<Org[]>([])
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null)
   const [members, setMembers] = useState<Member[]>([])
@@ -327,11 +327,22 @@ export function useOrg() {
     }
   }, [client])
 
-  const getInviteLinkUrl = useCallback((code: string) => {
-    const base = settings?.inviteLinkBaseUrl
-      || (typeof window !== 'undefined' ? window.location.origin + '/invite' : '')
-    return `${base}/${code}`
-  }, [settings])
+  const getInviteLinkUrl = useCallback((link: { code: string; url?: string }) => {
+    // Prefer the backend-built URL. Absolute values are returned as-is; a
+    // relative value (starts with `?`) is resolved against the current
+    // origin+pathname so the copied string is usable.
+    if (link.url) {
+      if (link.url.startsWith('http://') || link.url.startsWith('https://')) {
+        return link.url
+      }
+      if (typeof window !== 'undefined') {
+        return window.location.origin + window.location.pathname + link.url
+      }
+      return link.url
+    }
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/login?invite_code=${link.code}`
+  }, [])
 
   return {
     orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,

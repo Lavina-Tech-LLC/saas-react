@@ -82,6 +82,25 @@ export function SignIn({
     void fetchInviteInfo(code)
   }, [code, inviteInfo, inviteLoading, inviteError, fetchInviteInfo])
 
+  // Once the guest becomes authenticated while in invite-reveal mode (sign-up,
+  // sign-in, or OAuth completion), auto-accept the invite. Sign-up already
+  // attached the membership server-side in `Register`, so this call will 409
+  // for that path — `useInvite` turns that into an error we intentionally
+  // swallow. Sign-in/OAuth paths need this call to create the membership.
+  useEffect(() => {
+    if (!showSignUpForInvite || !code || !isSignedIn) return
+    let cancelled = false
+    ;(async () => {
+      await acceptInvite(code)
+      if (cancelled) return
+      clearInviteFromUrl()
+      setCode(null)
+      setShowSignUpForInvite(false)
+      await refreshUser()
+    })()
+    return () => { cancelled = true }
+  }, [showSignUpForInvite, code, isSignedIn, acceptInvite, refreshUser])
+
   const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode)
 
   // Shared fields
@@ -189,11 +208,13 @@ export function SignIn({
         setIsAccepting(false)
       }
     } else {
-      // Guest: reveal the sign-up form, pre-fill email if the invite targets one.
+      // Guest: reveal the full standard SignIn UI (OAuth + email form + sign-in/
+      // sign-up toggle). Keep the invite context in state so the post-auth effect
+      // can auto-accept once the user is authenticated. Pre-fill email for
+      // per-email invites so the target user doesn't need to retype it.
       if (inviteInfo?.type === 'email' && inviteInfo.targetEmail) {
         setEmail(inviteInfo.targetEmail)
       }
-      setMode('signUp')
       setShowSignUpForInvite(true)
     }
   }, [code, isSignedIn, acceptInvite, inviteError, refreshUser, inviteInfo])
@@ -363,7 +384,7 @@ export function SignIn({
           </div>
 
           {/* OAuth */}
-          {!mfaMode && hasOAuth && !showSignUpForInvite && (
+          {!mfaMode && hasOAuth && (
             <>
               <div className="ss-auth-oauth-grid">
                 {settings?.googleEnabled && (
@@ -604,17 +625,30 @@ export function SignIn({
             </div>
           ) : showSignUpForInvite ? (
             <div className="ss-auth-footer">
-              <span
-                className="ss-auth-link"
-                onClick={() => {
-                  clearInviteFromUrl()
-                  setCode(null)
-                  setShowSignUpForInvite(false)
-                  setInviteError(null)
-                }}
-              >
-                Cancel
-              </span>
+              {isSignIn ? (
+                <>
+                  Don&apos;t have an account?{' '}
+                  <span className="ss-auth-link" onClick={() => switchMode('signUp')}>Sign up</span>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <span className="ss-auth-link" onClick={() => switchMode('signIn')}>Sign in</span>
+                </>
+              )}
+              <div style={{ marginTop: 8 }}>
+                <span
+                  className="ss-auth-link"
+                  onClick={() => {
+                    clearInviteFromUrl()
+                    setCode(null)
+                    setShowSignUpForInvite(false)
+                    setInviteError(null)
+                  }}
+                >
+                  Cancel
+                </span>
+              </div>
             </div>
           ) : isSignIn ? (
             <div className="ss-auth-footer">
