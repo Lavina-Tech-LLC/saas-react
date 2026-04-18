@@ -50,4 +50,6 @@ export const ICONS = {
   copy: 'content_copy',
   expandMore: 'expand_more',
   expandLess: 'expand_less',
+  vpnKey: 'vpn_key',
+  warning: 'warning',
 } as const

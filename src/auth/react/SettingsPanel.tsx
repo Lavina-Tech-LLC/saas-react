@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
-import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites } from './hooks'
+import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites, useApiKeys } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
 import { ICONS } from '../../styles/icons'
+import type { CreatedApiKey } from '../types'
 
-type SettingsTab = 'profile' | 'organization' | 'people' | 'invites' | 'billing'
+type SettingsTab = 'profile' | 'organization' | 'people' | 'apiKeys' | 'invites' | 'billing'
 
 export interface SettingsPanelProps {
   onClose: () => void
@@ -32,6 +33,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
     { key: 'profile', label: 'Profile', icon: ICONS.person },
     { key: 'organization', label: 'Organization', icon: ICONS.corporateFare },
     { key: 'people', label: 'People', icon: ICONS.group },
+    { key: 'apiKeys', label: 'API Keys', icon: ICONS.vpnKey },
     { key: 'invites', label: 'Invites', icon: ICONS.mail, badge: pendingInvites.length || undefined },
     { key: 'billing', label: 'Billing', icon: ICONS.creditCard },
   ]
@@ -42,6 +44,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
       case 'invites': return true
       case 'organization': return isOwner
       case 'people': return isAdminOrOwner
+      case 'apiKeys': return isAdminOrOwner
       case 'billing': return isOwner
       default: return false
     }
@@ -96,6 +99,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
           )}
           {activeTab === 'organization' && <OrganizationSection onOrgDeleted={onOrgDeleted} onOrgUpdated={onOrgUpdated} />}
           {activeTab === 'people' && <PeopleSection />}
+          {activeTab === 'apiKeys' && <ApiKeysSection />}
           {activeTab === 'invites' && <InvitesSection />}
           {activeTab === 'billing' && <BillingSection />}
         </div>
@@ -1113,6 +1117,339 @@ function PeopleSection() {
                   onClick={handleRemoveConfirm}
                 >
                   Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* API Keys Section                                                           */
+/* -------------------------------------------------------------------------- */
+
+const EXPIRATION_OPTIONS: { label: string; days: number | null }[] = [
+  { label: '30 days', days: 30 },
+  { label: '60 days', days: 60 },
+  { label: '90 days', days: 90 },
+  { label: '1 year', days: 365 },
+  { label: 'Never', days: null },
+]
+
+function formatKeyDate(iso?: string) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString()
+}
+
+function ApiKeysSection() {
+  const { selectedOrg, roles } = useOrg()
+  const { keys, isLoading, error, setError, create, revoke } = useApiKeys(selectedOrg?.id ?? null)
+
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [newKeyRoleIds, setNewKeyRoleIds] = useState<string[]>([])
+  const [newKeyExpDays, setNewKeyExpDays] = useState<number | null>(30)
+  const [createdKey, setCreatedKey] = useState<CreatedApiKey | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [revokingKey, setRevokingKey] = useState<{ id: string; name: string } | null>(null)
+
+  if (!selectedOrg) {
+    return (
+      <>
+        <h3>API Keys</h3>
+        <div className="ss-auth-settings-empty">
+          <span className="material-symbols-outlined">{ICONS.vpnKey}</span>
+          <div>Select an organization from the user menu to manage API keys.</div>
+        </div>
+      </>
+    )
+  }
+
+  const resetCreateForm = () => {
+    setNewKeyName('')
+    setNewKeyRoleIds([])
+    setNewKeyExpDays(30)
+    setError(null)
+  }
+
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!newKeyName.trim()) return
+    const expiresAt = newKeyExpDays == null
+      ? null
+      : new Date(Date.now() + newKeyExpDays * 24 * 60 * 60 * 1000).toISOString()
+    const result = await create({
+      name: newKeyName.trim(),
+      roleIds: newKeyRoleIds,
+      expiresAt,
+    })
+    if (result) {
+      setCreatedKey(result)
+      setShowCreateModal(false)
+      resetCreateForm()
+    }
+  }
+
+  const handleCopy = () => {
+    if (!createdKey) return
+    navigator.clipboard.writeText(createdKey.key)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRevokeConfirm = async () => {
+    if (!revokingKey) return
+    const ok = await revoke(revokingKey.id)
+    if (ok) setRevokingKey(null)
+  }
+
+  const toggleRole = (roleId: string) => {
+    setNewKeyRoleIds((prev) =>
+      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId],
+    )
+  }
+
+  return (
+    <>
+      <h3>API Keys</h3>
+
+      {error && (
+        <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
+          <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {createdKey && (
+        <div
+          className="ss-auth-info-box"
+          style={{ marginBottom: '16px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined">{ICONS.warning}</span>
+            <span>
+              <strong>Save this key now.</strong> It won't be shown again.
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              className="ss-auth-input"
+              readOnly
+              value={createdKey.key}
+              style={{ flex: 1, fontFamily: 'monospace', fontSize: '12px' }}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <button
+              type="button"
+              className="ss-auth-icon-btn"
+              title={copied ? 'Copied!' : 'Copy key'}
+              onClick={handleCopy}
+            >
+              <span className="material-symbols-outlined">
+                {copied ? ICONS.check : ICONS.copy}
+              </span>
+            </button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="ss-auth-btn-ghost ss-auth-btn-sm"
+              onClick={() => setCreatedKey(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="ss-auth-settings-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h4 style={{ margin: 0 }}>
+            <span className="material-symbols-outlined">{ICONS.vpnKey}</span>
+            Your API Keys
+          </h4>
+          <button
+            type="button"
+            className="ss-auth-btn-primary ss-auth-btn-sm"
+            style={{ width: 'auto' }}
+            onClick={() => { resetCreateForm(); setShowCreateModal(true) }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{ICONS.add}</span>
+            Create API Key
+          </button>
+        </div>
+
+        {keys.length === 0 ? (
+          <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
+            <div>No API keys yet.</div>
+          </div>
+        ) : (
+          <table className="ss-auth-settings-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Prefix</th>
+                <th>Roles</th>
+                <th>Expires</th>
+                <th>Last used</th>
+                <th style={{ width: '80px' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {keys.map((k) => (
+                <tr key={k.id}>
+                  <td>{k.name}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{k.keyPrefix}</td>
+                  <td>
+                    {k.roles.length === 0
+                      ? <span style={{ opacity: 0.6 }}>—</span>
+                      : k.roles.map((r) => (
+                          <span key={r.id} className="ss-auth-role-badge ss-auth-role-badge-member" style={{ marginRight: '4px' }}>
+                            {r.name}
+                          </span>
+                        ))}
+                  </td>
+                  <td>{k.expiresAt ? formatKeyDate(k.expiresAt) : <span style={{ opacity: 0.6 }}>Never</span>}</td>
+                  <td>{formatKeyDate(k.lastUsedAt)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="ss-auth-icon-btn"
+                      title="Revoke"
+                      onClick={() => setRevokingKey({ id: k.id, name: k.name })}
+                    >
+                      <span className="material-symbols-outlined">{ICONS.delete}</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div
+          className="ss-auth-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false) }}
+        >
+          <div className="ss-auth-modal" style={{ maxWidth: '480px' }}>
+            <div className="ss-auth-modal-header">
+              <h2>Create API Key</h2>
+              <button type="button" className="ss-auth-modal-close" onClick={() => setShowCreateModal(false)}>
+                <span className="material-symbols-outlined">{ICONS.close}</span>
+              </button>
+            </div>
+            <form onSubmit={handleCreate}>
+              <div className="ss-auth-modal-body">
+                <div className="ss-auth-field">
+                  <label className="ss-auth-label">Name</label>
+                  <input
+                    className="ss-auth-input"
+                    type="text"
+                    placeholder="e.g. Production backend"
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    maxLength={100}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="ss-auth-field">
+                  <label className="ss-auth-label">Expiration</label>
+                  <select
+                    className="ss-auth-input"
+                    value={newKeyExpDays == null ? 'never' : String(newKeyExpDays)}
+                    onChange={(e) => setNewKeyExpDays(e.target.value === 'never' ? null : Number(e.target.value))}
+                  >
+                    {EXPIRATION_OPTIONS.map((opt) => (
+                      <option
+                        key={opt.label}
+                        value={opt.days == null ? 'never' : String(opt.days)}
+                      >
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="ss-auth-field">
+                  <label className="ss-auth-label">Roles</label>
+                  {roles.length === 0 ? (
+                    <div style={{ fontSize: '13px', opacity: 0.7 }}>No roles available.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {roles.map((r) => (
+                        <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                          <input
+                            type="checkbox"
+                            checked={newKeyRoleIds.includes(r.id)}
+                            onChange={() => toggleRole(r.id)}
+                          />
+                          <span>{r.name}</span>
+                          {r.description && (
+                            <span style={{ opacity: 0.6, fontSize: '12px' }}>— {r.description}</span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <button type="button" className="ss-auth-btn-ghost" onClick={() => setShowCreateModal(false)}>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="ss-auth-btn-primary ss-auth-btn-sm"
+                    style={{ width: 'auto' }}
+                    disabled={isLoading || !newKeyName.trim()}
+                  >
+                    Create
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Confirmation */}
+      {revokingKey && (
+        <div
+          className="ss-auth-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setRevokingKey(null) }}
+        >
+          <div className="ss-auth-modal" style={{ maxWidth: '400px' }}>
+            <div className="ss-auth-modal-header">
+              <h2>Revoke API Key</h2>
+              <button type="button" className="ss-auth-modal-close" onClick={() => setRevokingKey(null)}>
+                <span className="material-symbols-outlined">{ICONS.close}</span>
+              </button>
+            </div>
+            <div className="ss-auth-modal-body">
+              <p style={{ fontSize: '14px', margin: '0 0 16px 0' }}>
+                Revoke <strong>{revokingKey.name}</strong>? Any integration using this key will stop working.
+              </p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button type="button" className="ss-auth-btn-ghost" onClick={() => setRevokingKey(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="ss-auth-btn-primary ss-auth-btn-sm"
+                  style={{ width: 'auto', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                  onClick={handleRevokeConfirm}
+                >
+                  Revoke
                 </button>
               </div>
             </div>

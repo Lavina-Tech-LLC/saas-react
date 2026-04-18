@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
-import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult } from '../types'
+import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput } from '../types'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -591,4 +591,74 @@ export function useInvite() {
   }, [client])
 
   return { info, isLoading, error, setError, fetchInfo, accept, isAuthenticated: !!user, isLoaded }
+}
+
+/**
+ * Manages the current user's programmatic API keys within a specific org.
+ * Pass the active orgId; the hook auto-refreshes whenever it changes.
+ * The plaintext secret returned by `create` is only available in that call's
+ * resolved value — it is never stored by the hook.
+ */
+export function useApiKeys(orgId: string | null | undefined) {
+  const { client, user, isLoaded } = useSaaSContext()
+  const [keys, setKeys] = useState<ApiKey[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const refresh = useCallback(async () => {
+    if (!orgId) {
+      setKeys([])
+      return
+    }
+    setIsLoading(true)
+    setError(null)
+    try {
+      const list = await client.auth.listApiKeys(orgId)
+      setKeys(list)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load API keys')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client, orgId])
+
+  useEffect(() => {
+    if (isLoaded && user && orgId) refresh()
+  }, [isLoaded, user, orgId, refresh])
+
+  const create = useCallback(
+    async (input: CreateApiKeyInput): Promise<CreatedApiKey | null> => {
+      if (!orgId) return null
+      setError(null)
+      try {
+        const created = await client.auth.createApiKey(orgId, input)
+        const { key: _plaintext, ...rest } = created
+        void _plaintext
+        setKeys((prev) => [rest as ApiKey, ...prev])
+        return created
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create API key')
+        return null
+      }
+    },
+    [client, orgId],
+  )
+
+  const revoke = useCallback(
+    async (keyId: string): Promise<boolean> => {
+      if (!orgId) return false
+      setError(null)
+      try {
+        await client.auth.revokeApiKey(orgId, keyId)
+        setKeys((prev) => prev.filter((k) => k.id !== keyId))
+        return true
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to revoke API key')
+        return false
+      }
+    },
+    [client, orgId],
+  )
+
+  return { keys, isLoading, error, setError, refresh, create, revoke }
 }

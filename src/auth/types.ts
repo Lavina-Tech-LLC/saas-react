@@ -181,3 +181,25 @@ export interface MfaSetupResult {
 export interface MfaVerifyResult {
   backupCodes: string[]
 }
+
+export interface ApiKey {
+  id: string
+  name: string
+  keyPrefix: string
+  roles: RoleInfo[]
+  expiresAt?: string
+  lastUsedAt?: string
+  createdAt: string
+}
+
+export interface CreatedApiKey extends ApiKey {
+  /** Plaintext API key. Returned only at creation time and never again. */
+  key: string
+}
+
+export interface CreateApiKeyInput {
+  name: string
+  roleIds: string[]
+  /** ISO timestamp. Omit or pass null for a non-expiring key. */
+  expiresAt?: string | null
+}

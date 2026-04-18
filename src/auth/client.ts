@@ -6,7 +6,7 @@ import type {
   User, ProjectSettings, AuthResult, SignInResult, SignUpResult,
   OAuthProvider, Org, Member, Invite, PendingInvite, MyPendingInvite, MfaSetupResult, MfaVerifyResult,
   AuthStateCallback, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult,
-  InviteInfo, AcceptInviteByCodeResult,
+  InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput,
 } from './types'
 
 const OAUTH_POPUP_WIDTH = 500
@@ -468,6 +468,32 @@ export class AuthClient {
   async deleteAccount(): Promise<void> {
     await this.transport.del('/auth/account', this.authHeaders())
     this.clearSession()
+  }
+
+  // ---------------------------------------------------------------------------
+  // API Keys (end-user programmatic credentials, scoped to one org membership)
+  // ---------------------------------------------------------------------------
+
+  async listApiKeys(orgId: string): Promise<ApiKey[]> {
+    return this.transport.get<ApiKey[]>(
+      `/auth/orgs/${orgId}/api-keys`,
+      this.authHeaders(),
+    )
+  }
+
+  async createApiKey(orgId: string, input: CreateApiKeyInput): Promise<CreatedApiKey> {
+    return this.transport.post<CreatedApiKey>(
+      `/auth/orgs/${orgId}/api-keys`,
+      input,
+      this.authHeaders(),
+    )
+  }
+
+  async revokeApiKey(orgId: string, keyId: string): Promise<void> {
+    await this.transport.del(
+      `/auth/orgs/${orgId}/api-keys/${keyId}`,
+      this.authHeaders(),
+    )
   }
 
   // ---------------------------------------------------------------------------
