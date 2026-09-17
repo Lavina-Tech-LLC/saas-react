@@ -1225,6 +1225,41 @@ export function generateCSS(theme: ResolvedTheme): string {
       margin-bottom: 6px;
     }
 
+    /* Email / phone switch above the identifier input. Shown only when the
+       project accepts both kinds of identifier. */
+    .ss-auth-identifier-toggle {
+      display: inline-flex;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 999px;
+      background: ${theme.authSurfaceContainerHigh};
+      border: 1px solid ${theme.authOutlineVariant}33;
+    }
+
+    .ss-auth-identifier-option {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: transparent;
+      color: ${theme.authOnSurfaceVariant};
+      font-family: ${theme.authFontBody};
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .ss-auth-identifier-option:hover {
+      color: ${theme.authOnSurface};
+    }
+
+    .ss-auth-identifier-option-active {
+      background: ${theme.authPrimary};
+      color: ${theme.authOnPrimary};
+    }
+
     .ss-auth-field-icon {
       position: absolute;
       left: 12px;
@@ -1673,6 +1708,78 @@ export function generateCSS(theme: ResolvedTheme): string {
       letter-spacing: 0.15em;
       color: ${theme.authOnSurfaceVariant}99;
       padding: 8px 16px 4px;
+    }
+
+    /* ---- Face capture ---- */
+
+    .ss-auth-face-consent {
+      font-family: ${theme.authFontBody};
+      font-size: 13px;
+      line-height: 1.6;
+      color: ${theme.authOnSurfaceVariant};
+      margin: 0 0 16px;
+    }
+
+    .ss-auth-face-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      margin-bottom: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: ${theme.authSurfaceContainerHighest};
+    }
+
+    .ss-auth-face-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* Mirror the preview so turning left on screen matches turning left. */
+      transform: scaleX(-1);
+    }
+
+    .ss-auth-face-ring {
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+      border: 2px dashed ${theme.authPrimary}80;
+      pointer-events: none;
+    }
+
+    .ss-auth-face-steps {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .ss-auth-face-step {
+      width: 28px;
+      height: 4px;
+      border-radius: 999px;
+      background: ${theme.authOutlineVariant}66;
+      transition: background 0.2s ease;
+    }
+
+    .ss-auth-face-step-active { background: ${theme.authPrimary}99; }
+    .ss-auth-face-step-done { background: ${theme.authSuccess}; }
+
+    .ss-auth-face-hint {
+      font-family: ${theme.authFontBody};
+      font-size: 14px;
+      text-align: center;
+      color: ${theme.authOnSurface};
+      margin: 0 0 8px;
+      min-height: 20px;
+    }
+
+    /* Shown in the org switcher when the user has no memberships yet. */
+    .ss-auth-org-empty {
+      font-family: ${theme.authFontBody};
+      font-size: 13px;
+      line-height: 1.5;
+      color: ${theme.authOnSurfaceVariant};
+      padding: 8px 8px 4px;
     }
 
     /* Sign Out Section */

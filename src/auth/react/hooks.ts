@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
+import { SaaSError } from '../../core/error'
+import type { PhoneOtpPurpose, SignUpOptions, FaceSample, FaceStatus } from '../types'
 import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput } from '../types'
+import type { IdentifierKind } from '../identifier'
 
 export function useAuth() {
   const { client, user, isLoaded } = useSaaSContext()
@@ -26,11 +29,11 @@ export function useSignIn() {
   const [error, setError] = useState<string | null>(null)
 
   const signIn = useCallback(
-    async (email: string, password: string): Promise<AuthResult | null> => {
+    async (identifier: string, password: string, kind?: IdentifierKind): Promise<AuthResult | null> => {
       setIsLoading(true)
       setError(null)
       try {
-        return await client.auth.signIn(email, password)
+        return await client.auth.signIn(identifier, password, kind)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Sign in failed')
         return null
@@ -42,11 +45,11 @@ export function useSignIn() {
   )
 
   const signInWithOAuth = useCallback(
-    async (provider: OAuthProvider) => {
+    async (provider: OAuthProvider, inviteCode?: string) => {
       setIsLoading(true)
       setError(null)
       try {
-        return await client.auth.signInWithOAuth(provider)
+        return await client.auth.signInWithOAuth(provider, inviteCode)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'OAuth sign in failed')
         return null
@@ -82,11 +85,16 @@ export function useSignUp() {
   const [error, setError] = useState<string | null>(null)
 
   const signUp = useCallback(
-    async (email: string, password: string, inviteCode?: string) => {
+    async (
+      identifier: string,
+      password: string,
+      optionsOrInviteCode?: SignUpOptions | string,
+      kind?: IdentifierKind,
+    ) => {
       setIsLoading(true)
       setError(null)
       try {
-        return await client.auth.signUp(email, password, inviteCode)
+        return await client.auth.signUp(identifier, password, optionsOrInviteCode, kind)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Sign up failed')
         return null
@@ -98,6 +106,159 @@ export function useSignUp() {
   )
 
   return { signUp, isLoading, error, setError }
+}
+
+/**
+ * Face control operations: enrolling a template, verifying against it, and
+ * reading or clearing the current user's enrollment.
+ *
+ * Capturing the face itself is the `<FaceScanner/>` component's job — this hook
+ * only talks to the API with the samples it produces.
+ */
+export function useFace() {
+  const { client } = useSaaSContext()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<FaceStatus | null>(null)
+
+  const refreshStatus = useCallback(async () => {
+    try {
+      const result = await client.auth.getFaceStatus()
+      setStatus(result)
+      return result
+    } catch {
+      return null
+    }
+  }, [client])
+
+  const enroll = useCallback(
+    async (samples: FaceSample[], options?: { faceToken?: string; model?: string }) => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        return await client.auth.enrollFace(samples, options ?? {})
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to save face data')
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  const verify = useCallback(
+    async (faceToken: string, descriptor: number[]) => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        return await client.auth.verifyFace(faceToken, descriptor)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Face verification failed')
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  const remove = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      await client.auth.deleteFace()
+      await refreshStatus()
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove face data')
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }, [client, refreshStatus])
+
+  return { enroll, verify, remove, status, refreshStatus, isLoading, error, setError }
+}
+
+/** What happened when a one-time code was requested. */
+export type PhoneOtpSendOutcome =
+  | { status: 'sent'; resendAfterSeconds: number }
+  /** The project has no SMS provider — continue without verification. */
+  | { status: 'unavailable' }
+  | { status: 'error' }
+
+/**
+ * Drives the SMS verification step of a phone sign-up or password reset.
+ *
+ * `unavailable` turns true when the project has no SMS provider configured. The
+ * UI must then skip verification rather than block the user: the backend does
+ * not require a code in that configuration either.
+ */
+export function usePhoneOtp() {
+  const { client } = useSaaSContext()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [unavailable, setUnavailable] = useState(false)
+  const [otpToken, setOtpToken] = useState<string | null>(null)
+  const [resendAfterSeconds, setResendAfterSeconds] = useState(0)
+
+  // Count the resend cooldown down so the UI can disable the button.
+  useEffect(() => {
+    if (resendAfterSeconds <= 0) return
+    const timer = setTimeout(() => setResendAfterSeconds((s) => s - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendAfterSeconds])
+
+  const send = useCallback(
+    async (phone: string, purpose: PhoneOtpPurpose = 'register'): Promise<PhoneOtpSendOutcome> => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await client.auth.sendPhoneOtp(phone, purpose)
+        setResendAfterSeconds(result.resendAfterSeconds)
+        return { status: 'sent', resendAfterSeconds: result.resendAfterSeconds }
+      } catch (err) {
+        // 409 means the project has no SMS provider. That is a configuration
+        // state, not a failure: the caller continues without verification.
+        if (err instanceof SaaSError && err.isConflict) {
+          setUnavailable(true)
+          return { status: 'unavailable' }
+        }
+        setError(err instanceof Error ? err.message : 'Failed to send the code')
+        return { status: 'error' }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  const verify = useCallback(
+    async (phone: string, code: string, purpose: PhoneOtpPurpose = 'register') => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await client.auth.verifyPhoneOtp(phone, code, purpose)
+        setOtpToken(result.otpToken)
+        return result
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invalid verification code')
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [client],
+  )
+
+  const reset = useCallback(() => {
+    setOtpToken(null)
+    setError(null)
+    setResendAfterSeconds(0)
+  }, [])
+
+  return { send, verify, reset, otpToken, resendAfterSeconds, unavailable, isLoading, error, setError }
 }
 
 export function useOrg() {

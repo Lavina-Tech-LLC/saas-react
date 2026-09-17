@@ -81,10 +81,46 @@ import { SignIn } from '@saas-support/react/react'
 
 Features:
 - Email/password sign-in and sign-up
+- Phone/password sign-in and sign-up, with an email/phone switch when the project enables both
 - OAuth (Google, GitHub) when enabled in project settings
 - MFA verification (6-digit code)
 - Built-in toggle between sign-in and sign-up modes
 - Password validation against project settings
+- Invite landing card for `?invite_code=` links, including sign-up into the inviting organization
+
+The component follows the project's auth settings: when self-service registration
+is switched off it hides the sign-up toggle, and it keeps accepting sign-ups that
+carry an invite code.
+
+### `<FaceScanner />`
+
+Guided camera capture for face verification. `<SignIn />` renders it on its own
+when a project enables face control, so you only need it directly if you build a
+custom flow.
+
+```tsx
+import { FaceScanner } from '@saas-support/react/react'
+
+<FaceScanner
+  poses={['center', 'left', 'right']}
+  title="Set up face verification"
+  confirmLabel="Allow camera and start"
+  onComplete={(samples) => client.auth.enrollFace(samples)}
+/>
+```
+
+Notes:
+- The camera image never leaves the browser. Each pose is reduced to a
+  128-number descriptor, and only that is sent to the API.
+- `getUserMedia` requires a secure context, so face verification only works over
+  HTTPS (or on `localhost`).
+- The recognition model (a few MB) is fetched from a CDN the first time the
+  scanner runs — nothing is added to your bundle, and nothing is downloaded for
+  projects that leave face verification off. Point `faceModelUrl` in the project
+  settings at your own host to avoid the public CDN.
+- Face matching happens server-side against the stored descriptor. It stops a
+  user from handing their password to a colleague; it is not a defence against
+  someone calling the API directly with a stolen descriptor.
 
 ### `<UserButton />`
 
@@ -181,6 +217,20 @@ if (result && isMfaRequired(result)) {
   await submitMfaCode(result.mfaToken, code)
 }
 
+// A project may also require face verification. `<SignIn />` handles this for
+// you; in a custom flow, capture a descriptor and finish the sign-in with it.
+if (result && isFaceRequired(result)) {
+  if (result.enrolled) {
+    await client.auth.verifyFace(result.faceToken, descriptor)
+  } else {
+    await client.auth.enrollFace(samples, { faceToken: result.faceToken })
+  }
+}
+
+// Phone sign-in. The third argument is optional — without it the identifier is
+// classified by shape — but pass it when your form already knows.
+await signIn('+992901112233', password, 'phone')
+
 await signInWithOAuth('google') // or 'github'
 ```
 
@@ -191,6 +241,13 @@ Programmatic sign-up.
 ```tsx
 const { signUp, isLoading, error, setError } = useSignUp()
 await signUp(email, password)
+
+// Register through an invite: the user joins the inviting organization and no
+// personal organization is created. Works even when registration is disabled.
+await signUp(email, password, inviteCode)
+
+// Register with a phone number.
+await signUp('+992901112233', password, undefined, 'phone')
 ```
 
 ### `useOrg()`
@@ -279,11 +336,18 @@ saas.destroy()
 
 | Method | Returns |
 |--------|---------|
-| `signIn(email, password)` | `Promise<AuthResult>` |
-| `signUp(email, password)` | `Promise<SignUpResult>` |
+| `signIn(identifier, password, kind?)` | `Promise<AuthResult>` |
+| `signUp(identifier, password, inviteCode?, kind?)` | `Promise<SignUpResult>` |
 | `signOut()` | `Promise<void>` |
-| `signInWithOAuth(provider)` | `Promise<SignInResult>` |
-| `submitMfaCode(mfaToken, code)` | `Promise<SignInResult>` |
+| `signInWithOAuth(provider, inviteCode?)` | `Promise<SignInResult>` |
+| `submitMfaCode(mfaToken, code)` | `Promise<AuthResult>` |
+| `sendPhoneOtp(phone, purpose?)` | `Promise<PhoneOtpSendResult>` |
+| `verifyPhoneOtp(phone, code, purpose?)` | `Promise<PhoneOtpVerifyResult>` |
+| `resetPasswordByPhone(phone, otpToken, newPassword)` | `Promise<void>` |
+| `enrollFace(samples, options?)` | `Promise<FaceEnrollResult>` |
+| `verifyFace(faceToken, descriptor)` | `Promise<SignInResult>` |
+| `getFaceStatus()` | `Promise<FaceStatus>` |
+| `deleteFace()` | `Promise<void>` |
 | `getToken()` | `Promise<string \| null>` |
 | `getUser()` | `Promise<User \| null>` |
 | `refreshUser()` | `Promise<User \| null>` |

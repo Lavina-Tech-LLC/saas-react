@@ -32,5 +32,17 @@ export type {
   UseInviteLinkResult,
   InviteInfo,
   AcceptInviteByCodeResult,
+  SignUpOptions,
+  PhoneOtpPurpose,
+  PhoneOtpSendResult,
+  PhoneOtpVerifyResult,
+  FaceRequiredResult,
+  FaceSample,
+  FaceStatus,
+  FaceEnrollResult,
 } from './auth/types'
-export { isMfaRequired } from './auth/types'
+export { isMfaRequired, isFaceRequired } from './auth/types'
+export { loadFaceEngine, readFace, FaceEngineError, POSE_PROMPTS, ISSUE_PROMPTS } from './auth/face/engine'
+export type { FacePose, FaceReading, FaceCaptureIssue } from './auth/face/engine'
+export { looksLikePhone, identifierPayload } from './auth/identifier'
+export type { IdentifierKind } from './auth/identifier'

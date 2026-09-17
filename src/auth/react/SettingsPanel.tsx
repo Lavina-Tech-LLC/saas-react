@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
 import { useSaaSContext } from '../../react/context'
-import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites, useApiKeys } from './hooks'
+import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites, useApiKeys, useFace } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
+import { FaceScanner } from './FaceScanner'
 import { ICONS } from '../../styles/icons'
-import type { CreatedApiKey } from '../types'
+import type { CreatedApiKey, FaceSample } from '../types'
+import type { FacePose } from '../face/engine'
 
 type SettingsTab = 'profile' | 'organization' | 'people' | 'apiKeys' | 'invites' | 'billing'
 
@@ -314,6 +316,9 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
         </div>
       )}
 
+      {/* Face verification */}
+      <FaceSettingsSection />
+
       {/* Danger Zone */}
       <div className="ss-auth-settings-card ss-auth-settings-danger">
         <h4>Danger Zone</h4>
@@ -391,6 +396,95 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 /* -------------------------------------------------------------------------- */
 /* Organization Section                                                       */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Lets a user manage their face template: scan one when the project offers face
+ * verification, re-scan it, or delete it. Nothing renders while the project has
+ * face control switched off.
+ */
+function FaceSettingsSection() {
+  const { settings } = useSaaSContext()
+  const { enroll, remove, status, refreshStatus, isLoading, error, setError } = useFace()
+  const [scanning, setScanning] = useState(false)
+
+  const mode = settings?.faceVerificationMode ?? 'off'
+  const enabled = mode === 'optional' || mode === 'required'
+
+  useEffect(() => {
+    if (enabled) void refreshStatus()
+  }, [enabled, refreshStatus])
+
+  const handleComplete = useCallback(
+    async (samples: FaceSample[]) => {
+      const result = await enroll(samples)
+      if (!result) return
+      setScanning(false)
+      await refreshStatus()
+    },
+    [enroll, refreshStatus],
+  )
+
+  if (!enabled) return null
+
+  const poses = (status?.poses as FacePose[] | undefined) ?? ['center', 'left', 'right', 'up', 'down']
+
+  return (
+    <div className="ss-auth-settings-card">
+      <h4>
+        <span className="material-symbols-outlined">{ICONS.security}</span>
+        Face Verification
+      </h4>
+
+      {scanning ? (
+        <FaceScanner
+          poses={poses}
+          title={status?.enrolled ? 'Re-scan your face' : 'Set up face verification'}
+          subtitle="Follow the prompts to capture a few angles."
+          consentText="Your camera is used to build a face signature. The video never leaves this device — only the signature is stored, encrypted, and you can delete it here at any time."
+          confirmLabel="Allow camera and start"
+          modelUrl={settings?.faceModelUrl}
+          isSubmitting={isLoading}
+          error={error}
+          onComplete={handleComplete}
+          onCancel={() => { setScanning(false); setError(null) }}
+        />
+      ) : (
+        <>
+          <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
+            {status?.enrolled
+              ? 'Your face is enrolled. You will be asked to look at the camera when you sign in.'
+              : mode === 'required'
+                ? 'This workspace requires face verification. You will be asked to scan your face at your next sign-in.'
+                : 'Add a face check on top of your password. You can remove it at any time.'}
+          </p>
+
+          {error && (
+            <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
+              <span className="material-symbols-outlined">{ICONS.errorOutline}</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button type="button" className="ss-auth-btn-ghost" onClick={() => setScanning(true)}>
+              {status?.enrolled ? 'Re-scan face' : 'Set up face verification'}
+            </button>
+            {status?.enrolled && (
+              <button
+                type="button"
+                className="ss-auth-btn-ghost"
+                disabled={isLoading}
+                onClick={() => { void remove() }}
+              >
+                Delete face data
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: () => void; onOrgUpdated?: () => void }) {
   const { selectedOrg, updateOrg, deleteOrg, uploadOrgAvatar, isLoading, error, setError } = useOrg()

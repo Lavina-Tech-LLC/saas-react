@@ -196,6 +196,16 @@ export function UserButton({
                       </button>
                     )
                   })}
+
+                  {/* A project may skip auto-creating a personal org on sign-up,
+                      so having no memberships at all is a normal state. */}
+                  {orgs.length === 0 && (
+                    <div className="ss-auth-org-empty">
+                      {canCreateOrg
+                        ? 'You are not a member of any organization yet. Create one below.'
+                        : 'You are not a member of any organization yet. Ask for an invite to get access.'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Inline create org */}
