@@ -19,6 +19,7 @@ export * from './auth/react'
 export * from './auth/types'
 export * from './auth/identifier'
 export * from './auth/face/engine'
+export * from './i18n'
 
 // Re-export core for convenience
 export { SaaSSupport } from './core/client'

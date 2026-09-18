@@ -40,6 +40,11 @@ export interface ProjectSettings {
   faceVerificationMode: 'off' | 'optional' | 'required'
   /** Overrides where the SDK downloads the face model weights from. */
   faceModelUrl?: string
+  /**
+   * Default UI language of the embedded components for this project
+   * ("en" | "ru" | "uz"). A `locale` prop on `<SaaSProvider>` overrides it.
+   */
+  defaultLocale?: string
   mfaEnforced: boolean
   passwordMinLength: number
   emailVerification: boolean

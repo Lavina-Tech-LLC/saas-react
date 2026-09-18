@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
-import { useSaaSContext } from '../../react/context'
+import { useSaaSContext, useT } from '../../react/context'
 import { useAuth, useOrg, useInvites } from './hooks'
 import { SettingsPanel } from './SettingsPanel'
 import { ICONS } from '../../styles/icons'
@@ -25,6 +25,7 @@ export function UserButton({
   onOrgSettingsClick,
 }: UserButtonProps) {
   const { appearance: globalAppearance, settings } = useSaaSContext()
+  const t = useT()
   const { user, signOut } = useAuth()
   const appearance = localAppearance ?? globalAppearance
   const canCreateOrg = !(settings?.orgCreationPolicy === 'self_registered_only' && user?.source === 'invite')
@@ -72,12 +73,12 @@ export function UserButton({
           setOpen(false)
         }
       } catch (err) {
-        setCreateOrgError(err instanceof Error ? err.message : 'Failed to create organization')
+        setCreateOrgError(err instanceof Error ? err.message : t('org.createFailed'))
       } finally {
         setIsCreatingOrg(false)
       }
     },
-    [newOrgName, createOrg, selectOrg, onOrgChange],
+    [newOrgName, createOrg, selectOrg, onOrgChange, t],
   )
 
   if (!user) return null
@@ -90,7 +91,7 @@ export function UserButton({
           type="button"
           className="ss-auth-user-trigger"
           onClick={() => setOpen(!open)}
-          aria-label="User menu"
+          aria-label={t('user.menu')}
         >
           <span className="ss-auth-avatar-trigger">
             {user.avatarUrl ? (
@@ -156,14 +157,14 @@ export function UserButton({
                 }}
               >
                 <span className="material-symbols-outlined">{ICONS.settings}</span>
-                Settings
+                {t('user.settings')}
               </button>
             </div>
 
             {/* Organizations */}
             {showOrgSwitcher && (
               <>
-                <div className="ss-auth-section-label">Organizations</div>
+                <div className="ss-auth-section-label">{t('org.section')}</div>
                 <div style={{ padding: '0 8px 4px' }}>
                   {orgs.map((org) => {
                     const isActive = selectedOrg?.id === org.id
@@ -201,9 +202,7 @@ export function UserButton({
                       so having no memberships at all is a normal state. */}
                   {orgs.length === 0 && (
                     <div className="ss-auth-org-empty">
-                      {canCreateOrg
-                        ? 'You are not a member of any organization yet. Create one below.'
-                        : 'You are not a member of any organization yet. Ask for an invite to get access.'}
+                      {canCreateOrg ? t('org.emptyCanCreate') : t('org.emptyInviteOnly')}
                     </div>
                   )}
                 </div>
@@ -221,7 +220,7 @@ export function UserButton({
                       <input
                         className="ss-auth-input"
                         type="text"
-                        placeholder="New organization name"
+                        placeholder={t('org.newPlaceholder')}
                         value={newOrgName}
                         onChange={(e) => setNewOrgName(e.target.value)}
                         required
@@ -250,7 +249,7 @@ export function UserButton({
                       }}
                     >
                       <span className="material-symbols-outlined">{ICONS.corporateFare}</span>
-                      Org settings
+                      {t('org.settings')}
                     </button>
                   </div>
                 )}
@@ -272,7 +271,7 @@ export function UserButton({
                 style={{ color: 'inherit' }}
               >
                 <span className="material-symbols-outlined" style={{ color: 'inherit' }}>{ICONS.logout}</span>
-                Sign out
+                {t('user.signOut')}
               </button>
             </div>
           </div>

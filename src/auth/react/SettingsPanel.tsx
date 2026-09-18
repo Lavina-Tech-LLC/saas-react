@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
-import { useSaaSContext } from '../../react/context'
+import { useSaaSContext, useT } from '../../react/context'
 import { useAuth, useProfile, useOrg, useDeleteAccount, useInvites, useApiKeys, useFace } from './hooks'
 import { AvatarUploadModal } from './AvatarUploadModal'
 import { FaceScanner } from './FaceScanner'
 import { ICONS } from '../../styles/icons'
 import type { CreatedApiKey, FaceSample } from '../types'
 import type { FacePose } from '../face/engine'
+import type { TranslationKey } from '../../i18n'
 
 type SettingsTab = 'profile' | 'organization' | 'people' | 'apiKeys' | 'invites' | 'billing'
 
@@ -20,6 +21,7 @@ export interface SettingsPanelProps {
 
 export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'profile', onOrgDeleted, onOrgUpdated }: SettingsPanelProps) {
   const { appearance } = useSaaSContext()
+  const t = useT()
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
   const { invites: pendingInvites } = useInvites()
   const { user } = useAuth()
@@ -32,12 +34,12 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
   const isAdminOrOwner = isOwner || myRole === 'admin'
 
   const allTabs: { key: SettingsTab; label: string; icon: string; badge?: number }[] = [
-    { key: 'profile', label: 'Profile', icon: ICONS.person },
-    { key: 'organization', label: 'Organization', icon: ICONS.corporateFare },
-    { key: 'people', label: 'People', icon: ICONS.group },
-    { key: 'apiKeys', label: 'API Keys', icon: ICONS.vpnKey },
-    { key: 'invites', label: 'Invites', icon: ICONS.mail, badge: pendingInvites.length || undefined },
-    { key: 'billing', label: 'Billing', icon: ICONS.creditCard },
+    { key: 'profile', label: t('settings.tab.profile'), icon: ICONS.person },
+    { key: 'organization', label: t('settings.tab.organization'), icon: ICONS.corporateFare },
+    { key: 'people', label: t('settings.tab.people'), icon: ICONS.group },
+    { key: 'apiKeys', label: t('settings.tab.apiKeys'), icon: ICONS.vpnKey },
+    { key: 'invites', label: t('settings.tab.invites'), icon: ICONS.mail, badge: pendingInvites.length || undefined },
+    { key: 'billing', label: t('settings.tab.billing'), icon: ICONS.creditCard },
   ]
 
   const tabs = allTabs.filter((tab) => {
@@ -54,7 +56,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
 
   // Redirect to profile if the active tab is no longer visible.
   useEffect(() => {
-    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
+    if (tabs.length > 0 && !tabs.some((tab) => tab.key === activeTab)) {
       setActiveTab('profile')
     }
   }, [myRole, activeTab])
@@ -68,7 +70,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
           <button type="button" className="ss-auth-settings-back" onClick={onClose}>
             <span className="material-symbols-outlined">{ICONS.arrowBack}</span>
           </button>
-          <h2>Settings</h2>
+          <h2>{t('settings.title')}</h2>
         </div>
         <button type="button" className="ss-auth-modal-close" onClick={onClose}>
           <span className="material-symbols-outlined">{ICONS.close}</span>
@@ -116,6 +118,7 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
 /* -------------------------------------------------------------------------- */
 
 function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: string }) {
+  const t = useT()
   const { user, updateProfile, uploadAvatar, changePassword, isLoading, error, success, setError, setSuccess } = useProfile()
   const { signOut } = useAuth()
   const { deleteAccount, isLoading: isDeleting, error: deleteError, setError: setDeleteError } = useDeleteAccount()
@@ -160,11 +163,11 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
       setError(null)
       setSuccess(null)
       if (newPassword !== confirmPassword) {
-        setPasswordError('Passwords do not match')
+        setPasswordError(t('error.passwordMismatch'))
         return
       }
       if (newPassword.length < 8) {
-        setPasswordError('Password must be at least 8 characters')
+        setPasswordError(t('error.passwordTooShort', { min: 8 }))
         return
       }
       const ok = await changePassword(currentPassword, newPassword)
@@ -194,13 +197,15 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
   // Comparing against an empty email would let a phone-only user unlock the
   // delete button with an empty field.
   const deleteIdentifier = user?.email || user?.phone || ''
-  const deleteIdentifierLabel = user?.email ? 'email' : 'phone number'
+  const deleteIdentifierLabel = user?.email
+    ? t('settings.identifier.email')
+    : t('settings.identifier.phone')
   const identifierMatches = deleteIdentifier !== '' && deleteConfirmValue === deleteIdentifier
   const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
 
   return (
     <>
-      <h3>Profile</h3>
+      <h3>{t('settings.tab.profile')}</h3>
 
       {/* Avatar + Info */}
       <div className="ss-auth-settings-card">
@@ -219,12 +224,12 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
             )}
             <div className="ss-auth-avatar-overlay">
               <span className="material-symbols-outlined">{ICONS.camera}</span>
-              <span>Edit</span>
+              <span>{t('common.edit')}</span>
             </div>
           </div>
           <div className="ss-auth-profile-info">
             <h2 className="ss-auth-profile-name">
-              {user?.name || 'Unnamed User'}
+              {user?.name || t('settings.unnamedUser')}
               {user?.emailVerified && (
                 <span className="ss-auth-badge ss-auth-badge-success">
                   <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>{ICONS.verified}</span>
@@ -251,11 +256,11 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 
         <form onSubmit={handleSaveProfile}>
           <div className="ss-auth-field">
-            <label className="ss-auth-label">Full Name</label>
+            <label className="ss-auth-label">{t('settings.fullName')}</label>
             <input
               className="ss-auth-input"
               type="text"
-              placeholder="Your name"
+              placeholder={t('settings.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -263,7 +268,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 
           <div className="ss-auth-profile-grid" style={{ marginBottom: '16px' }}>
             <div>
-              <label className="ss-auth-label">Email Address</label>
+              <label className="ss-auth-label">{t('identifier.email')}</label>
               <div style={{ position: 'relative' }}>
                 <input className="ss-auth-input ss-auth-input-readonly" type="email" value={user?.email ?? ''} readOnly />
                 <span className="ss-auth-visibility-toggle" style={{ cursor: 'default' }}>
@@ -272,7 +277,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
               </div>
             </div>
             <div>
-              <label className="ss-auth-label">Auth Provider</label>
+              <label className="ss-auth-label">{t('settings.authProvider')}</label>
               <input className="ss-auth-input ss-auth-input-readonly" type="text" value={user?.provider ?? ''} readOnly />
             </div>
           </div>
@@ -280,7 +285,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto' }}>
               {isLoading && <span className="ss-auth-spinner" />}
-              Save changes
+              {t('common.save')}
             </button>
           </div>
         </form>
@@ -291,7 +296,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
         <div className="ss-auth-settings-card">
           <h4>
             <span className="material-symbols-outlined">{ICONS.security}</span>
-            Security Credentials
+            {t('settings.security')}
           </h4>
 
           {passwordError && (
@@ -303,21 +308,21 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 
           <form onSubmit={handleChangePassword}>
             <div className="ss-auth-field">
-              <label className="ss-auth-label">Current Password</label>
+              <label className="ss-auth-label">{t('settings.currentPassword')}</label>
               <input className="ss-auth-input" type="password" placeholder="••••••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
             </div>
             <div className="ss-auth-profile-grid" style={{ marginBottom: '16px' }}>
               <div>
-                <label className="ss-auth-label">New Password</label>
-                <input className="ss-auth-input" type="password" placeholder="Min. 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                <label className="ss-auth-label">{t('settings.newPassword')}</label>
+                <input className="ss-auth-input" type="password" placeholder={t('settings.minChars')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
               </div>
               <div>
-                <label className="ss-auth-label">Confirm New Password</label>
-                <input className="ss-auth-input" type="password" placeholder="Repeat new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                <label className="ss-auth-label">{t('settings.confirmNewPassword')}</label>
+                <input className="ss-auth-input" type="password" placeholder={t('settings.repeatPassword')} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="ss-auth-btn-ghost" disabled={isLoading}>Update Security</button>
+              <button type="submit" className="ss-auth-btn-ghost" disabled={isLoading}>{t('settings.updateSecurity')}</button>
             </div>
           </form>
         </div>
@@ -328,9 +333,9 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
 
       {/* Danger Zone */}
       <div className="ss-auth-settings-card ss-auth-settings-danger">
-        <h4>Danger Zone</h4>
+        <h4>{t('settings.dangerZone')}</h4>
         <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
-          Deleting your account is permanent. All organizations you own will also be deleted.
+          {t('settings.deleteAccountWarning')}
         </p>
 
         {deleteError && (
@@ -344,7 +349,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
           <div>
             <div className="ss-auth-field">
               <label className="ss-auth-label">
-                Type your {deleteIdentifierLabel} to confirm
+                {t('settings.typeToConfirm', { identifier: deleteIdentifierLabel })}
               </label>
               <input
                 className="ss-auth-input"
@@ -413,6 +418,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
  */
 function FaceSettingsSection() {
   const { settings } = useSaaSContext()
+  const t = useT()
   const { enroll, remove, status, refreshStatus, isLoading, error, setError } = useFace()
   const [scanning, setScanning] = useState(false)
 
@@ -441,16 +447,16 @@ function FaceSettingsSection() {
     <div className="ss-auth-settings-card">
       <h4>
         <span className="material-symbols-outlined">{ICONS.security}</span>
-        Face Verification
+        {t('face.section')}
       </h4>
 
       {scanning ? (
         <FaceScanner
           poses={poses}
-          title={status?.enrolled ? 'Re-scan your face' : 'Set up face verification'}
-          subtitle="Follow the prompts to capture a few angles."
-          consentText="Your camera is used to build a face signature. The video never leaves this device — only the signature is stored, encrypted, and you can delete it here at any time."
-          confirmLabel="Allow camera and start"
+          title={status?.enrolled ? t('face.rescan.title') : t('face.enroll.title')}
+          subtitle={t('face.settings.subtitle')}
+          consentText={t('face.consent')}
+          confirmLabel={t('face.enroll.start')}
           modelUrl={settings?.faceModelUrl}
           isSubmitting={isLoading}
           error={error}
@@ -461,10 +467,10 @@ function FaceSettingsSection() {
         <>
           <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
             {status?.enrolled
-              ? 'Your face is enrolled. You will be asked to look at the camera when you sign in.'
+              ? t('face.enrolled')
               : mode === 'required'
-                ? 'This workspace requires face verification. You will be asked to scan your face at your next sign-in.'
-                : 'Add a face check on top of your password. You can remove it at any time.'}
+                ? t('face.requiredHint')
+                : t('face.optionalHint')}
           </p>
 
           {error && (
@@ -476,7 +482,7 @@ function FaceSettingsSection() {
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button type="button" className="ss-auth-btn-ghost" onClick={() => setScanning(true)}>
-              {status?.enrolled ? 'Re-scan face' : 'Set up face verification'}
+              {status?.enrolled ? t('face.rescanButton') : t('face.enroll.title')}
             </button>
             {status?.enrolled && (
               <button
@@ -485,7 +491,7 @@ function FaceSettingsSection() {
                 disabled={isLoading}
                 onClick={() => { void remove() }}
               >
-                Delete face data
+                {t('face.deleteData')}
               </button>
             )}
           </div>
@@ -496,6 +502,7 @@ function FaceSettingsSection() {
 }
 
 function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: () => void; onOrgUpdated?: () => void }) {
+  const t = useT()
   const { selectedOrg, updateOrg, deleteOrg, uploadOrgAvatar, isLoading, error, setError } = useOrg()
   const [orgName, setOrgName] = useState(selectedOrg?.name ?? '')
   const [orgAvatarUrl, setOrgAvatarUrl] = useState(selectedOrg?.avatarUrl ?? '')
@@ -531,11 +538,11 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
   if (deleted) {
     return (
       <>
-        <h3>Organization</h3>
+        <h3>{t('org.title')}</h3>
         <div className="ss-auth-settings-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.4, marginBottom: '16px', display: 'block' }}>{ICONS.check}</span>
-          <h4 style={{ margin: '0 0 8px' }}>Organization deleted</h4>
-          <p className="ss-auth-section-desc">The organization has been permanently deleted.</p>
+          <h4 style={{ margin: '0 0 8px' }}>{t('org.deleted')}</h4>
+          <p className="ss-auth-section-desc">{t('org.deletedHint')}</p>
         </div>
       </>
     )
@@ -544,10 +551,10 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
   if (!selectedOrg) {
     return (
       <>
-        <h3>Organization</h3>
+        <h3>{t('org.title')}</h3>
         <div className="ss-auth-settings-empty">
           <span className="material-symbols-outlined">{ICONS.corporateFare}</span>
-          <div>Select an organization from the user menu to manage its settings.</div>
+          <div>{t('settings.selectOrgSettings')}</div>
         </div>
       </>
     )
@@ -577,7 +584,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 
   return (
     <>
-      <h3>Organization</h3>
+      <h3>{t('org.title')}</h3>
 
       <div className="ss-auth-settings-card">
         <h4>
@@ -594,7 +601,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
         {saveSuccess && (
           <div className="ss-auth-info-box" style={{ marginBottom: '16px' }}>
             <span className="material-symbols-outlined">{ICONS.check}</span>
-            <span>Organization updated</span>
+            <span>{t('org.updated')}</span>
           </div>
         )}
 
@@ -614,7 +621,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
             )}
             <div className="ss-auth-avatar-overlay" style={{ borderRadius: '12px' }}>
               <span className="material-symbols-outlined">{ICONS.camera}</span>
-              <span>Edit</span>
+              <span>{t('common.edit')}</span>
             </div>
           </div>
           <div>
@@ -625,7 +632,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 
         <form onSubmit={handleSaveName}>
           <div className="ss-auth-field">
-            <label className="ss-auth-label">Organization Name</label>
+            <label className="ss-auth-label">{t('org.name')}</label>
             <input
               className="ss-auth-input"
               type="text"
@@ -634,7 +641,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
             />
           </div>
           <div className="ss-auth-field">
-            <label className="ss-auth-label">Slug</label>
+            <label className="ss-auth-label">{t('org.slug')}</label>
             <input className="ss-auth-input ss-auth-input-readonly" type="text" value={selectedOrg.slug} readOnly />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -648,7 +655,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
 
       {/* Danger Zone */}
       <div className="ss-auth-settings-card ss-auth-settings-danger">
-        <h4>Danger Zone</h4>
+        <h4>{t('settings.dangerZone')}</h4>
         <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
           Deleting this organization is permanent and will remove all members.
         </p>
@@ -656,7 +663,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
         {showDeleteConfirm ? (
           <div>
             <div className="ss-auth-field">
-              <label className="ss-auth-label">Type the organization name to confirm</label>
+              <label className="ss-auth-label">{t('org.typeNameToConfirm')}</label>
               <input
                 className="ss-auth-input"
                 type="text"
@@ -767,6 +774,7 @@ function RoleSelect({ value, onChange, roles, style }: {
 /* -------------------------------------------------------------------------- */
 
 function PeopleSection() {
+  const t = useT()
   const {
     selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
@@ -809,10 +817,10 @@ function PeopleSection() {
   if (!selectedOrg) {
     return (
       <>
-        <h3>People</h3>
+        <h3>{t('people.title')}</h3>
         <div className="ss-auth-settings-empty">
           <span className="material-symbols-outlined">{ICONS.group}</span>
-          <div>Select an organization from the user menu to manage members.</div>
+          <div>{t('settings.selectOrgMembers')}</div>
         </div>
       </>
     )
@@ -855,7 +863,7 @@ function PeopleSection() {
 
   return (
     <>
-      <h3>People</h3>
+      <h3>{t('people.title')}</h3>
 
       {error && (
         <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
@@ -867,7 +875,7 @@ function PeopleSection() {
         <div className="ss-auth-info-box" style={{ marginBottom: '16px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined">{ICONS.check}</span>
-            <span>Invitation created for <strong>{inviteSuccess.email}</strong></span>
+            <span>{t('people.inviteCreatedFor')} <strong>{inviteSuccess.email}</strong></span>
           </div>
           {inviteSuccess.url && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -881,7 +889,7 @@ function PeopleSection() {
               <button
                 type="button"
                 className="ss-auth-icon-btn"
-                title={copiedInviteEmail ? 'Copied!' : 'Copy invite link'}
+                title={copiedInviteEmail ? t('common.copied') : t('people.copyInviteLink')}
                 onClick={() => {
                   if (!inviteSuccess.url) return
                   navigator.clipboard.writeText(inviteSuccess.url)
@@ -921,18 +929,18 @@ function PeopleSection() {
           <form onSubmit={handleInvite} style={{ marginBottom: '16px', padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label className="ss-auth-label">Email</label>
+                <label className="ss-auth-label">{t('common.email')}</label>
                 <input
                   className="ss-auth-input"
                   type="email"
-                  placeholder="member@example.com"
+                  placeholder={t('people.emailPlaceholder')}
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   required
                 />
               </div>
               <div style={{ width: '160px' }}>
-                <label className="ss-auth-label">Role</label>
+                <label className="ss-auth-label">{t('common.role')}</label>
                 <RoleSelect value={inviteRole} onChange={setInviteRole} roles={assignableRoles} />
               </div>
               <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto', marginBottom: '0' }}>
@@ -944,15 +952,15 @@ function PeopleSection() {
 
         {members.length === 0 ? (
           <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
-            <div>No members yet.</div>
+            <div>{t('people.noMembers')}</div>
           </div>
         ) : (
           <table className="ss-auth-settings-table">
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Role</th>
-                <th style={{ width: '80px' }}>Actions</th>
+                <th>{t('common.email')}</th>
+                <th>{t('common.role')}</th>
+                <th style={{ width: '80px' }}>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -977,7 +985,7 @@ function PeopleSection() {
                         <button
                           type="button"
                           className="ss-auth-icon-btn"
-                          title="Edit role"
+                          title={t('people.editRole')}
                           onClick={() => { setEditMember(member); setEditRoles(member.roles?.map((r) => r.key) ?? [member.role]) }}
                         >
                           <span className="material-symbols-outlined">{ICONS.edit}</span>
@@ -985,7 +993,7 @@ function PeopleSection() {
                         <button
                           type="button"
                           className="ss-auth-icon-btn ss-auth-icon-btn-danger"
-                          title="Remove member"
+                          title={t('people.removeMember')}
                           onClick={() => setRemovingMember(member)}
                         >
                           <span className="material-symbols-outlined">{ICONS.personRemove}</span>
@@ -1011,9 +1019,9 @@ function PeopleSection() {
           <table className="ss-auth-settings-table">
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Role</th>
-                <th style={{ width: '80px' }}>Actions</th>
+                <th>{t('common.email')}</th>
+                <th>{t('common.role')}</th>
+                <th style={{ width: '80px' }}>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1025,7 +1033,7 @@ function PeopleSection() {
                     <button
                       type="button"
                       className="ss-auth-icon-btn ss-auth-icon-btn-danger"
-                      title="Revoke invite"
+                      title={t('people.revokeInvite')}
                       onClick={() => handleRevokeInvite(invite.id)}
                     >
                       <span className="material-symbols-outlined">{ICONS.close}</span>
@@ -1060,7 +1068,7 @@ function PeopleSection() {
           <div style={{ marginBottom: '16px', padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
               <div style={{ width: '160px' }}>
-                <label className="ss-auth-label">Role</label>
+                <label className="ss-auth-label">{t('common.role')}</label>
                 <RoleSelect value={linkRole} onChange={setLinkRole} roles={assignableRoles} />
               </div>
               <button
@@ -1084,17 +1092,17 @@ function PeopleSection() {
 
         {inviteLinks.length === 0 ? (
           <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
-            <div>No active invite links.</div>
+            <div>{t('people.noInviteLinks')}</div>
           </div>
         ) : (
           <table className="ss-auth-settings-table">
             <thead>
               <tr>
-                <th>Link</th>
-                <th>Role</th>
-                <th>Uses</th>
-                <th>Expires</th>
-                <th style={{ width: '80px' }}>Actions</th>
+                <th>{t('people.link')}</th>
+                <th>{t('common.role')}</th>
+                <th>{t('people.uses')}</th>
+                <th>{t('people.expires')}</th>
+                <th style={{ width: '80px' }}>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1108,7 +1116,7 @@ function PeopleSection() {
                         title={linkUrl}
                         onClick={() => copyLinkToClipboard(link)}
                       >
-                        {copiedCode === link.code ? 'Copied!' : `...${link.code.slice(-12)}`}
+                        {copiedCode === link.code ? t('common.copied') : `...${link.code.slice(-12)}`}
                       </span>
                     </td>
                     <td><span className={roleBadgeClass(link.role)}>{link.roleName || link.role}</span></td>
@@ -1119,7 +1127,7 @@ function PeopleSection() {
                         <button
                           type="button"
                           className="ss-auth-icon-btn"
-                          title={copiedCode === link.code ? 'Copied!' : 'Copy invite link'}
+                          title={copiedCode === link.code ? t('common.copied') : t('people.copyInviteLink')}
                           onClick={() => copyLinkToClipboard(link)}
                         >
                           <span className="material-symbols-outlined">
@@ -1129,7 +1137,7 @@ function PeopleSection() {
                         <button
                           type="button"
                           className="ss-auth-icon-btn ss-auth-icon-btn-danger"
-                          title="Revoke link"
+                          title={t('people.revokeLink')}
                           onClick={() => revokeInviteLink(selectedOrg.id, link.id)}
                         >
                           <span className="material-symbols-outlined">{ICONS.close}</span>
@@ -1149,7 +1157,7 @@ function PeopleSection() {
         <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setEditMember(null) }}>
           <div className="ss-auth-modal" style={{ maxWidth: '400px' }}>
             <div className="ss-auth-modal-header">
-              <h2>Edit Roles</h2>
+              <h2>{t('people.editRoles')}</h2>
               <button type="button" className="ss-auth-modal-close" onClick={() => setEditMember(null)}>
                 <span className="material-symbols-outlined">{ICONS.close}</span>
               </button>
@@ -1159,7 +1167,7 @@ function PeopleSection() {
                 Change roles for <strong>{editMember.email}</strong>
               </p>
               <div className="ss-auth-field">
-                <label className="ss-auth-label">Roles</label>
+                <label className="ss-auth-label">{t('common.roles')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {assignableRoles.map((r) => (
                     <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
@@ -1181,7 +1189,7 @@ function PeopleSection() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" className="ss-auth-btn-ghost" onClick={() => setEditMember(null)}>Cancel</button>
+                <button type="button" className="ss-auth-btn-ghost" onClick={() => setEditMember(null)}>{t('common.cancel')}</button>
                 <button
                   type="button"
                   className="ss-auth-btn-primary ss-auth-btn-sm"
@@ -1202,7 +1210,7 @@ function PeopleSection() {
         <div className="ss-auth-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setRemovingMember(null) }}>
           <div className="ss-auth-modal" style={{ maxWidth: '400px' }}>
             <div className="ss-auth-modal-header">
-              <h2>Remove Member</h2>
+              <h2>{t('people.removeMemberTitle')}</h2>
               <button type="button" className="ss-auth-modal-close" onClick={() => setRemovingMember(null)}>
                 <span className="material-symbols-outlined">{ICONS.close}</span>
               </button>
@@ -1212,7 +1220,7 @@ function PeopleSection() {
                 Are you sure you want to remove <strong>{removingMember.email}</strong> from the organization?
               </p>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button type="button" className="ss-auth-btn-ghost" onClick={() => setRemovingMember(null)}>Cancel</button>
+                <button type="button" className="ss-auth-btn-ghost" onClick={() => setRemovingMember(null)}>{t('common.cancel')}</button>
                 <button
                   type="button"
                   className="ss-auth-btn-primary ss-auth-btn-sm"
@@ -1234,12 +1242,13 @@ function PeopleSection() {
 /* API Keys Section                                                           */
 /* -------------------------------------------------------------------------- */
 
-const EXPIRATION_OPTIONS: { label: string; days: number | null }[] = [
-  { label: '30 days', days: 30 },
-  { label: '60 days', days: 60 },
-  { label: '90 days', days: 90 },
-  { label: '1 year', days: 365 },
-  { label: 'Never', days: null },
+// Labels are translated at render time, so the list itself holds keys.
+const EXPIRATION_OPTIONS: { key: TranslationKey; days: number | null }[] = [
+  { key: 'apiKeys.exp30', days: 30 },
+  { key: 'apiKeys.exp60', days: 60 },
+  { key: 'apiKeys.exp90', days: 90 },
+  { key: 'apiKeys.exp365', days: 365 },
+  { key: 'common.never', days: null },
 ]
 
 function formatKeyDate(iso?: string) {
@@ -1250,6 +1259,7 @@ function formatKeyDate(iso?: string) {
 }
 
 function ApiKeysSection() {
+  const t = useT()
   const { selectedOrg, roles } = useOrg()
   const { keys, isLoading, error, setError, create, revoke } = useApiKeys(selectedOrg?.id ?? null)
 
@@ -1264,10 +1274,10 @@ function ApiKeysSection() {
   if (!selectedOrg) {
     return (
       <>
-        <h3>API Keys</h3>
+        <h3>{t('apiKeys.title')}</h3>
         <div className="ss-auth-settings-empty">
           <span className="material-symbols-outlined">{ICONS.vpnKey}</span>
-          <div>Select an organization from the user menu to manage API keys.</div>
+          <div>{t('settings.selectOrgApiKeys')}</div>
         </div>
       </>
     )
@@ -1319,7 +1329,7 @@ function ApiKeysSection() {
 
   return (
     <>
-      <h3>API Keys</h3>
+      <h3>{t('apiKeys.title')}</h3>
 
       {error && (
         <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
@@ -1336,7 +1346,7 @@ function ApiKeysSection() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined">{ICONS.warning}</span>
             <span>
-              <strong>Save this key now.</strong> It won't be shown again.
+              <strong>{t('apiKeys.saveNow')}</strong> It won't be shown again.
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1350,7 +1360,7 @@ function ApiKeysSection() {
             <button
               type="button"
               className="ss-auth-icon-btn"
-              title={copied ? 'Copied!' : 'Copy key'}
+              title={copied ? t('common.copied') : t('apiKeys.copyKey')}
               onClick={handleCopy}
             >
               <span className="material-symbols-outlined">
@@ -1383,24 +1393,24 @@ function ApiKeysSection() {
             onClick={() => { resetCreateForm(); setShowCreateModal(true) }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{ICONS.add}</span>
-            Create API Key
+            {t('apiKeys.create')}
           </button>
         </div>
 
         {keys.length === 0 ? (
           <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
-            <div>No API keys yet.</div>
+            <div>{t('apiKeys.none')}</div>
           </div>
         ) : (
           <table className="ss-auth-settings-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Prefix</th>
-                <th>Roles</th>
-                <th>Expires</th>
-                <th>Last used</th>
-                <th style={{ width: '80px' }}>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('apiKeys.prefix')}</th>
+                <th>{t('common.roles')}</th>
+                <th>{t('people.expires')}</th>
+                <th>{t('apiKeys.lastUsed')}</th>
+                <th style={{ width: '80px' }}>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1417,13 +1427,13 @@ function ApiKeysSection() {
                           </span>
                         ))}
                   </td>
-                  <td>{k.expiresAt ? formatKeyDate(k.expiresAt) : <span style={{ opacity: 0.6 }}>Never</span>}</td>
+                  <td>{k.expiresAt ? formatKeyDate(k.expiresAt) : <span style={{ opacity: 0.6 }}>{t('common.never')}</span>}</td>
                   <td>{formatKeyDate(k.lastUsedAt)}</td>
                   <td>
                     <button
                       type="button"
                       className="ss-auth-icon-btn"
-                      title="Revoke"
+                      title={t('apiKeys.revoke')}
                       onClick={() => setRevokingKey({ id: k.id, name: k.name })}
                     >
                       <span className="material-symbols-outlined">{ICONS.delete}</span>
@@ -1444,7 +1454,7 @@ function ApiKeysSection() {
         >
           <div className="ss-auth-modal" style={{ maxWidth: '480px' }}>
             <div className="ss-auth-modal-header">
-              <h2>Create API Key</h2>
+              <h2>{t('apiKeys.create')}</h2>
               <button type="button" className="ss-auth-modal-close" onClick={() => setShowCreateModal(false)}>
                 <span className="material-symbols-outlined">{ICONS.close}</span>
               </button>
@@ -1452,11 +1462,11 @@ function ApiKeysSection() {
             <form onSubmit={handleCreate}>
               <div className="ss-auth-modal-body">
                 <div className="ss-auth-field">
-                  <label className="ss-auth-label">Name</label>
+                  <label className="ss-auth-label">{t('common.name')}</label>
                   <input
                     className="ss-auth-input"
                     type="text"
-                    placeholder="e.g. Production backend"
+                    placeholder={t('apiKeys.namePlaceholder')}
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                     maxLength={100}
@@ -1466,7 +1476,7 @@ function ApiKeysSection() {
                 </div>
 
                 <div className="ss-auth-field">
-                  <label className="ss-auth-label">Expiration</label>
+                  <label className="ss-auth-label">{t('apiKeys.expiration')}</label>
                   <select
                     className="ss-auth-input"
                     value={newKeyExpDays == null ? 'never' : String(newKeyExpDays)}
@@ -1474,19 +1484,19 @@ function ApiKeysSection() {
                   >
                     {EXPIRATION_OPTIONS.map((opt) => (
                       <option
-                        key={opt.label}
+                        key={opt.key}
                         value={opt.days == null ? 'never' : String(opt.days)}
                       >
-                        {opt.label}
+                        {t(opt.key)}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="ss-auth-field">
-                  <label className="ss-auth-label">Roles</label>
+                  <label className="ss-auth-label">{t('common.roles')}</label>
                   {roles.length === 0 ? (
-                    <div style={{ fontSize: '13px', opacity: 0.7 }}>No roles available.</div>
+                    <div style={{ fontSize: '13px', opacity: 0.7 }}>{t('apiKeys.noRoles')}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {roles.map((r) => (
@@ -1533,7 +1543,7 @@ function ApiKeysSection() {
         >
           <div className="ss-auth-modal" style={{ maxWidth: '400px' }}>
             <div className="ss-auth-modal-header">
-              <h2>Revoke API Key</h2>
+              <h2>{t('apiKeys.revokeTitle')}</h2>
               <button type="button" className="ss-auth-modal-close" onClick={() => setRevokingKey(null)}>
                 <span className="material-symbols-outlined">{ICONS.close}</span>
               </button>
@@ -1568,6 +1578,7 @@ function ApiKeysSection() {
 /* -------------------------------------------------------------------------- */
 
 function InvitesSection() {
+  const t = useT()
   const { invites, isLoading, error, setError, accept, decline, refresh } = useInvites()
   const { refresh: refreshOrgs } = useOrg()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -1591,7 +1602,7 @@ function InvitesSection() {
 
   return (
     <>
-      <h3>Invites</h3>
+      <h3>{t('invites.title')}</h3>
 
       {error && (
         <div className="ss-auth-error" style={{ marginBottom: '16px' }}>
@@ -1607,7 +1618,7 @@ function InvitesSection() {
       ) : invites.length === 0 ? (
         <div className="ss-auth-settings-empty">
           <span className="material-symbols-outlined">{ICONS.mail}</span>
-          <div>No pending invitations</div>
+          <div>{t('invites.none')}</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1663,15 +1674,16 @@ function InvitesSection() {
 /* -------------------------------------------------------------------------- */
 
 function BillingSection() {
+  const t = useT()
   const { selectedOrg } = useOrg()
 
   if (!selectedOrg) {
     return (
       <>
-        <h3>Billing</h3>
+        <h3>{t('billing.title')}</h3>
         <div className="ss-auth-settings-empty">
           <span className="material-symbols-outlined">{ICONS.creditCard}</span>
-          <div>Select an organization from the user menu to manage billing.</div>
+          <div>{t('settings.selectOrgBilling')}</div>
         </div>
       </>
     )
@@ -1679,7 +1691,7 @@ function BillingSection() {
 
   return (
     <>
-      <h3>Billing</h3>
+      <h3>{t('billing.title')}</h3>
 
       <div className="ss-auth-settings-card">
         <h4>
@@ -1687,7 +1699,7 @@ function BillingSection() {
           Plan &amp; Billing
         </h4>
         <div className="ss-auth-settings-empty" style={{ padding: '20px' }}>
-          <div>No billing plan configured for this organization.</div>
+          <div>{t('billing.none')}</div>
         </div>
       </div>
     </>

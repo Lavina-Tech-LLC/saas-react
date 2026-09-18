@@ -51,8 +51,31 @@ import { SaaSProvider } from '@saas-support/react/react'
 | `apiKey` | `string` | No* | API key for server-side operations |
 | `baseUrl` | `string` | No | API base URL override |
 | `appearance` | `Appearance` | No | Global theme configuration |
+| `locale` | `string` | No | UI language: `en`, `ru` or `uz` (regional tags like `ru-RU` are accepted) |
 
 \* At least one of `publishableKey` or `apiKey` is required.
+
+### Language
+
+Every string the components render is available in English, Russian and Uzbek.
+The language is resolved in this order, most explicit first:
+
+1. the `locale` prop above — pass your app's current language to keep the
+   sign-in screen in step with the rest of your interface;
+2. the project's default language, set in the SaaS Support dashboard;
+3. the browser's language;
+4. English.
+
+```tsx
+const { i18n } = useTranslation()
+
+<SaaSProvider publishableKey="pub_live_..." locale={i18n.language}>
+  <App />
+</SaaSProvider>
+```
+
+Messages returned by the API (for example "Invalid email or password") are
+worded by the server and are not translated by the SDK.
 
 ---
 

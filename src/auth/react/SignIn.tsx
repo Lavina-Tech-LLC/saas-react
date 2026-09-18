@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent, type KeyboardEvent } from 'react'
 import { ShadowHost } from '../../react/ShadowHost'
-import { useSaaSContext } from '../../react/context'
+import { useSaaSContext, useT } from '../../react/context'
 import { useSignIn as useSignInHook, useSignUp as useSignUpHook, useInvite, useAuth, usePhoneOtp, useFace } from './hooks'
 import { FaceScanner } from './FaceScanner'
 import { isMfaRequired, isFaceRequired } from '../types'
 import type { InviteInfo, FaceRequiredResult, FaceSample } from '../types'
+import type { Translate } from '../../i18n'
 import type { FacePose } from '../face/engine'
 import type { IdentifierKind } from '../identifier'
 import { GoogleIcon, GitHubIcon, ICONS } from '../../styles/icons'
@@ -51,10 +52,10 @@ function resolveInitialInviteCode(explicit?: string): string | null {
   return new URLSearchParams(window.location.search).get('invite_code')
 }
 
-function formatInviterName(info: InviteInfo): string {
+function formatInviterName(info: InviteInfo, t: Translate): string {
   if (info.inviterName && info.inviterName.trim() !== '') return info.inviterName
   if (info.inviterEmail) return info.inviterEmail.split('@')[0]
-  return 'Someone'
+  return t('invite.someone')
 }
 
 export function SignIn({
@@ -65,6 +66,7 @@ export function SignIn({
   inviteCode: explicitInviteCode,
 }: SignInProps) {
   const { appearance: globalAppearance, settings } = useSaaSContext()
+  const t = useT()
   const { signIn, signInWithOAuth, submitMfaCode, isLoading: signInLoading, error: signInError, setError: setSignInError } = useSignInHook()
   const { signUp, isLoading: signUpLoading, error: signUpError, setError: setSignUpError } = useSignUpHook()
   const { isSignedIn, refreshUser, user: authUser } = useAuth()
@@ -135,17 +137,17 @@ export function SignIn({
   }, [emailAuthEnabled, phoneAuthEnabled])
 
   const isPhoneMode = identifierKind === 'phone'
-  const identifierLabel = isPhoneMode ? 'Phone Number' : 'Email Address'
+  const identifierLabel = isPhoneMode ? t('identifier.phone') : t('identifier.email')
   // What the credentials form actually accepts, so a phone-only project never
   // offers to "sign in with email".
   const credentialsLabel = showIdentifierToggle
-    ? 'email or phone'
+    ? t('method.both')
     : phoneAuthEnabled
-      ? 'phone number'
-      : 'email'
+      ? t('method.phone')
+      : t('method.email')
   const identifierPlaceholder = isPhoneMode
     ? `${settings?.defaultPhoneCountryCode || '+992'} 90 111 22 33`
-    : 'name@company.com'
+    : t('identifier.emailPlaceholder')
 
   // Sign-up fields
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -218,13 +220,13 @@ export function SignIn({
       setValidationError(null)
 
       if (password !== confirmPassword) {
-        setValidationError('Passwords do not match')
+        setValidationError(t('error.passwordMismatch'))
         return
       }
 
       const minLen = settings?.passwordMinLength ?? 8
       if (password.length < minLen) {
-        setValidationError(`Password must be at least ${minLen} characters`)
+        setValidationError(t('error.passwordTooShort', { min: minLen }))
         return
       }
 
@@ -337,7 +339,7 @@ export function SignIn({
       try {
         const result = await acceptInvite(code)
         if (!result) {
-          setAcceptError(inviteError || 'Failed to accept invite')
+          setAcceptError(inviteError || t('invite.failed'))
           return
         }
         clearInviteFromUrl()
@@ -420,14 +422,14 @@ export function SignIn({
               className={`ss-auth-identifier-option${!isPhoneMode ? ' ss-auth-identifier-option-active' : ''}`}
               onClick={() => switchIdentifierKind('email')}
             >
-              Email
+              {t('identifier.toggleEmail')}
             </button>
             <button
               type="button"
               className={`ss-auth-identifier-option${isPhoneMode ? ' ss-auth-identifier-option-active' : ''}`}
               onClick={() => switchIdentifierKind('phone')}
             >
-              Phone
+              {t('identifier.togglePhone')}
             </button>
           </div>
         </div>
@@ -458,7 +460,7 @@ export function SignIn({
           <div className="ss-auth-card-body">
             <div className="ss-auth-header">
               <div className="ss-auth-spinner" style={{ margin: '0 auto' }} />
-              <p className="ss-auth-subtitle" style={{ marginTop: 16 }}>Loading invite…</p>
+              <p className="ss-auth-subtitle" style={{ marginTop: 16 }}>{t('invite.loading')}</p>
             </div>
           </div>
         </div>
@@ -473,7 +475,7 @@ export function SignIn({
         <div className="ss-auth-card">
           <div className="ss-auth-card-body">
             <div className="ss-auth-header">
-              <h1 className="ss-auth-title">Invite unavailable</h1>
+              <h1 className="ss-auth-title">{t('invite.unavailable')}</h1>
               <p className="ss-auth-subtitle">{inviteError}</p>
             </div>
             <div className="ss-auth-footer">
@@ -485,7 +487,7 @@ export function SignIn({
                   setCode(null)
                 }}
               >
-                Back to sign in
+                {t('invite.backToSignIn')}
               </span>
             </div>
           </div>
@@ -513,10 +515,13 @@ export function SignIn({
                 </div>
               )}
               <h1 className="ss-auth-title">
-                {formatInviterName(inviteInfo)} invites you to {inviteInfo.orgName}
+                {t('invite.invitesYou', {
+                  inviter: formatInviterName(inviteInfo, t),
+                  org: inviteInfo.orgName,
+                })}
               </h1>
               <p className="ss-auth-subtitle">
-                Join as <strong>{inviteInfo.roleName || inviteInfo.role}</strong>
+                {t('invite.joinAs', { role: inviteInfo.roleName || inviteInfo.role })}
               </p>
             </div>
             {(acceptError || inviteError) && (
@@ -533,8 +538,8 @@ export function SignIn({
             >
               {isAccepting && <span className="ss-auth-spinner" />}
               {isSignedIn
-                ? `Accept as ${authUser?.name || authUser?.email || ''}`
-                : 'Accept invite'}
+                ? t('invite.acceptAs', { name: authUser?.name || authUser?.email || '' })
+                : t('invite.accept')}
               {!isAccepting && (
                 <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
               )}
@@ -548,7 +553,7 @@ export function SignIn({
                   setInviteError(null)
                 }}
               >
-                Not now
+                {t('invite.notNow')}
               </span>
             </div>
           </div>
@@ -570,18 +575,10 @@ export function SignIn({
         <div className="ss-auth-card">
           <FaceScanner
             poses={poses}
-            title={enrolling ? 'Set up face verification' : 'Face verification'}
-            subtitle={
-              enrolling
-                ? 'Follow the prompts so we can recognise you next time you sign in.'
-                : 'Look at the camera to finish signing in.'
-            }
-            consentText={
-              enrolling
-                ? 'Your camera is used to build a face signature. The video never leaves this device — only the signature is stored, encrypted, and you can delete it at any time from your account settings.'
-                : undefined
-            }
-            confirmLabel={enrolling ? 'Allow camera and start' : 'Start camera'}
+            title={enrolling ? t('face.enroll.title') : t('face.verify.title')}
+            subtitle={enrolling ? t('face.enroll.subtitle') : t('face.verify.subtitle')}
+            consentText={enrolling ? t('face.consent') : undefined}
+            confirmLabel={enrolling ? t('face.enroll.start') : t('face.verify.start')}
             modelUrl={settings?.faceModelUrl}
             isSubmitting={face.isLoading}
             error={face.error}
@@ -606,8 +603,8 @@ export function SignIn({
         <div className="ss-auth-card">
           <div className="ss-auth-card-body">
             <div className="ss-auth-header">
-              <h1 className="ss-auth-title">Confirm your number</h1>
-              <p className="ss-auth-subtitle">We sent a 6-digit code to {identifier}</p>
+              <h1 className="ss-auth-title">{t('otp.title')}</h1>
+              <p className="ss-auth-subtitle">{t('otp.subtitle', { identifier })}</p>
             </div>
 
             {phoneOtp.error && (
@@ -619,7 +616,7 @@ export function SignIn({
 
             <form onSubmit={handleOtpSubmit}>
               <div className="ss-auth-field">
-                <label className="ss-auth-label">Verification Code</label>
+                <label className="ss-auth-label">{t('otp.label')}</label>
                 <div className="ss-auth-mfa-group">
                   {otpDigits.map((digit, i) => (
                     <input
@@ -645,7 +642,7 @@ export function SignIn({
                 disabled={phoneOtp.isLoading || signUpLoading || otpDigits.some((d) => d === '')}
               >
                 {(phoneOtp.isLoading || signUpLoading) && <span className="ss-auth-spinner" />}
-                Confirm and sign up
+                {t('otp.submit')}
                 {!phoneOtp.isLoading && !signUpLoading && (
                   <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
                 )}
@@ -654,13 +651,13 @@ export function SignIn({
 
             <div className="ss-auth-footer">
               {phoneOtp.resendAfterSeconds > 0 ? (
-                <span>Resend available in {phoneOtp.resendAfterSeconds}s</span>
+                <span>{t('otp.resendIn', { seconds: phoneOtp.resendAfterSeconds })}</span>
               ) : (
                 <span
                   className="ss-auth-link"
                   onClick={() => { void phoneOtp.send(identifier, 'register') }}
                 >
-                  Send a new code
+                  {t('otp.resend')}
                 </span>
               )}
               <div style={{ marginTop: 8 }}>
@@ -672,7 +669,7 @@ export function SignIn({
                     phoneOtp.reset()
                   }}
                 >
-                  Change number
+                  {t('otp.changeNumber')}
                 </span>
               </div>
             </div>
@@ -701,19 +698,23 @@ export function SignIn({
                     {inviteInfo.orgName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <h1 className="ss-auth-title">Join {inviteInfo.orgName}</h1>
+                <h1 className="ss-auth-title">
+                  {t('invite.joinOrg', { org: inviteInfo.orgName })}
+                </h1>
                 <p className="ss-auth-subtitle">
-                  Invited by {formatInviterName(inviteInfo)} as{' '}
-                  <strong>{inviteInfo.roleName || inviteInfo.role}</strong>
+                  {t('invite.invitedBy', {
+                    inviter: formatInviterName(inviteInfo, t),
+                    role: inviteInfo.roleName || inviteInfo.role,
+                  })}
                 </p>
               </>
             ) : (
               <>
                 <h1 className="ss-auth-title">
-                  {isSignIn ? 'Sign in to your account' : 'Create your account'}
+                  {isSignIn ? t('signIn.title') : t('signUp.title')}
                 </h1>
                 <p className="ss-auth-subtitle">
-                  {isSignIn ? 'Welcome back to your workspace' : 'Join the ecosystem'}
+                  {isSignIn ? t('signIn.subtitle') : t('signUp.subtitle')}
                 </p>
               </>
             )}
@@ -753,15 +754,15 @@ export function SignIn({
                     onClick={() => setShowCredentialsForm(true)}
                   >
                     {isSignIn
-                      ? `or sign in with ${credentialsLabel}`
-                      : `or sign up with ${credentialsLabel}`}
+                      ? t('divider.signIn', { method: credentialsLabel })
+                      : t('divider.signUp', { method: credentialsLabel })}
                   </span>
                 </div>
               ) : (
                 <div className="ss-auth-divider">
                   {isSignIn
-                    ? `or continue with ${credentialsLabel}`
-                    : `or sign up with ${credentialsLabel}`}
+                    ? t('divider.continue', { method: credentialsLabel })
+                    : t('divider.signUp', { method: credentialsLabel })}
                 </div>
               )}
             </>
@@ -784,10 +785,10 @@ export function SignIn({
               {mfaMode ? (
                 <>
                   <div className="ss-auth-mfa-divider">
-                    <span>Verification Required</span>
+                    <span>{t('mfa.divider')}</span>
                   </div>
                   <div className="ss-auth-field">
-                    <label className="ss-auth-label">6-Digit Code</label>
+                    <label className="ss-auth-label">{t('mfa.label')}</label>
                     <div className="ss-auth-mfa-group">
                       {mfaDigits.map((digit, i) => (
                         <input
@@ -804,7 +805,7 @@ export function SignIn({
                         />
                       ))}
                     </div>
-                    <p className="ss-auth-mfa-hint">Enter the 6-digit code from your authenticator app.</p>
+                    <p className="ss-auth-mfa-hint">{t('mfa.hint')}</p>
                   </div>
                 </>
               ) : (
@@ -812,8 +813,8 @@ export function SignIn({
                   {identifierField('ss-identifier')}
                   <div className="ss-auth-field">
                     <div className="ss-auth-field-row">
-                      <label className="ss-auth-label" htmlFor="ss-password" style={{ marginBottom: 0 }}>Password</label>
-                      <span className="ss-auth-link" style={{ fontSize: '12px' }}>Forgot?</span>
+                      <label className="ss-auth-label" htmlFor="ss-password" style={{ marginBottom: 0 }}>{t('signIn.password')}</label>
+                      <span className="ss-auth-link" style={{ fontSize: '12px' }}>{t('signIn.forgot')}</span>
                     </div>
                     <div style={{ position: 'relative' }}>
                       <input
@@ -842,7 +843,7 @@ export function SignIn({
 
               <button type="submit" className="ss-auth-btn-primary" disabled={isLoading}>
                 {isLoading && <span className="ss-auth-spinner" />}
-                {mfaMode ? 'Verify' : 'Sign in'}
+                {mfaMode ? t('signIn.verify') : t('signIn.submit')}
                 {!isLoading && (
                   <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
                 )}
@@ -856,7 +857,7 @@ export function SignIn({
               {identifierField('ss-signup-identifier')}
 
               <div className="ss-auth-field">
-                <label className="ss-auth-label" htmlFor="ss-signup-password">Password</label>
+                <label className="ss-auth-label" htmlFor="ss-signup-password">{t('signIn.password')}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     id="ss-signup-password"
@@ -884,7 +885,7 @@ export function SignIn({
               </div>
 
               <div className="ss-auth-field">
-                <label className="ss-auth-label" htmlFor="ss-signup-confirm">Confirm Password</label>
+                <label className="ss-auth-label" htmlFor="ss-signup-confirm">{t('signIn.passwordConfirm')}</label>
                 <input
                   id="ss-signup-confirm"
                   className="ss-auth-input"
@@ -902,7 +903,7 @@ export function SignIn({
 
               <button type="submit" className="ss-auth-btn-primary" disabled={isLoading}>
                 {isLoading && <span className="ss-auth-spinner" />}
-                Sign up
+                {t('signUp.submit')}
                 {!isLoading && (
                   <span className="material-symbols-outlined">{ICONS.arrowForward}</span>
                 )}
@@ -916,11 +917,11 @@ export function SignIn({
           {(settings?.privacyPolicyUrl || settings?.termsOfServiceUrl) && (
             <div className="ss-auth-legal-links">
               {settings.privacyPolicyUrl && (
-                <a href={settings.privacyPolicyUrl} target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                <a href={settings.privacyPolicyUrl} target="_blank" rel="noopener noreferrer">{t('legal.privacy')}</a>
               )}
               {settings.privacyPolicyUrl && settings.termsOfServiceUrl && <span> · </span>}
               {settings.termsOfServiceUrl && (
-                <a href={settings.termsOfServiceUrl} target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                <a href={settings.termsOfServiceUrl} target="_blank" rel="noopener noreferrer">{t('legal.terms')}</a>
               )}
             </div>
           )}
@@ -936,20 +937,20 @@ export function SignIn({
                   setSignInError(null)
                 }}
               >
-                Back to sign in
+                {t('mfa.back')}
               </span>
             </div>
           ) : showSignUpForInvite ? (
             <div className="ss-auth-footer">
               {isSignIn ? (
                 <>
-                  Don&apos;t have an account?{' '}
-                  <span className="ss-auth-link" onClick={() => switchMode('signUp')}>Sign up</span>
+                  {t('signIn.noAccount')}{' '}
+                  <span className="ss-auth-link" onClick={() => switchMode('signUp')}>{t('signUp.submit')}</span>
                 </>
               ) : (
                 <>
-                  Already have an account?{' '}
-                  <span className="ss-auth-link" onClick={() => switchMode('signIn')}>Sign in</span>
+                  {t('signIn.hasAccount')}{' '}
+                  <span className="ss-auth-link" onClick={() => switchMode('signIn')}>{t('signIn.submit')}</span>
                 </>
               )}
               <div style={{ marginTop: 8 }}>
@@ -962,21 +963,21 @@ export function SignIn({
                     setInviteError(null)
                   }}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </span>
               </div>
             </div>
           ) : isSignIn ? (
             canSignUp && (
               <div className="ss-auth-footer">
-                Don&apos;t have an account?{' '}
-                <span className="ss-auth-link" onClick={() => switchMode('signUp')}>Sign up</span>
+                {t('signIn.noAccount')}{' '}
+                <span className="ss-auth-link" onClick={() => switchMode('signUp')}>{t('signUp.submit')}</span>
               </div>
             )
           ) : (
             <div className="ss-auth-footer">
-              Already have an account?{' '}
-              <span className="ss-auth-link" onClick={() => switchMode('signIn')}>Sign in</span>
+              {t('signIn.hasAccount')}{' '}
+              <span className="ss-auth-link" onClick={() => switchMode('signIn')}>{t('signIn.submit')}</span>
             </div>
           )}
         </div>

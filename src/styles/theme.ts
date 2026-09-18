@@ -1738,9 +1738,15 @@ export function generateCSS(theme: ResolvedTheme): string {
       transform: scaleX(-1);
     }
 
+    /* Portrait oval: a face is taller than it is wide, so an ellipse stretched
+       across the landscape frame would leave the user guessing where to sit. */
     .ss-auth-face-ring {
       position: absolute;
-      inset: 12%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 46%;
+      height: 88%;
       border-radius: 50%;
       border: 2px dashed ${theme.authPrimary}80;
       pointer-events: none;

@@ -3,12 +3,23 @@ import {
   loadFaceEngine,
   readFace,
   FaceEngineError,
-  ISSUE_PROMPTS,
-  POSE_PROMPTS,
+  type FaceCaptureIssue,
   type FacePose,
 } from '../face/engine'
+import { useT } from '../../react/context'
+import type { TranslationKey } from '../../i18n'
 import type { FaceSample } from '../types'
 import { ICONS } from '../../styles/icons'
+
+// The issue identifiers are kebab-case while the translation keys are not, so
+// the mapping is spelled out instead of being derived.
+const ISSUE_KEYS: Record<FaceCaptureIssue, TranslationKey> = {
+  'no-face': 'face.issue.noFace',
+  'multiple-faces': 'face.issue.multipleFaces',
+  'too-far': 'face.issue.tooFar',
+  'low-quality': 'face.issue.lowQuality',
+  'wrong-pose': 'face.issue.wrongPose',
+}
 
 export interface FaceScannerProps {
   /**
@@ -55,6 +66,7 @@ export function FaceScanner({
   onCancel,
   onComplete,
 }: FaceScannerProps) {
+  const t = useT()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const samplesRef = useRef<FaceSample[]>([])
@@ -90,7 +102,7 @@ export function FaceScanner({
     // getUserMedia needs a secure context; say so plainly instead of surfacing
     // the browser's generic error.
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setEngineError('Camera access needs a secure (https) connection')
+      setEngineError(t('face.error.insecure'))
       setPhase('failed')
       return
     }
@@ -102,21 +114,21 @@ export function FaceScanner({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       })
       if (cancelledRef.current) {
-        stream.getTracks().forEach((t) => t.stop())
+        stream.getTracks().forEach((track) => track.stop())
         return
       }
       streamRef.current = stream
 
       const video = videoRef.current
       if (!video) {
-        stream.getTracks().forEach((t) => t.stop())
+        stream.getTracks().forEach((track) => track.stop())
         return
       }
       video.srcObject = stream
       await video.play()
 
       setPhase('scanning')
-      setHint(POSE_PROMPTS[poses[0]])
+      setHint(t(`face.pose.${poses[0]}`))
 
       // Read frames until every pose has been captured.
       const tick = async () => {
@@ -135,13 +147,16 @@ export function FaceScanner({
 
         if ('issue' in outcome) {
           stableRef.current = 0
-          setHint(ISSUE_PROMPTS[outcome.issue])
+          setHint(t(ISSUE_KEYS[outcome.issue]))
         } else if (outcome.reading.pose !== wanted) {
           stableRef.current = 0
-          setHint(POSE_PROMPTS[wanted])
+          setHint(t(`face.pose.${wanted}`))
         } else {
           stableRef.current += 1
-          setHint(`Hold still… ${Math.min(stableRef.current, REQUIRED_STABLE_FRAMES)}/${REQUIRED_STABLE_FRAMES}`)
+          setHint(t('face.hold', {
+            done: Math.min(stableRef.current, REQUIRED_STABLE_FRAMES),
+            total: REQUIRED_STABLE_FRAMES,
+          }))
 
           if (stableRef.current >= REQUIRED_STABLE_FRAMES) {
             samplesRef.current = [
@@ -161,7 +176,7 @@ export function FaceScanner({
               return
             }
             setStepIndex(samplesRef.current.length)
-            setHint(POSE_PROMPTS[poses[samplesRef.current.length]])
+            setHint(t(`face.pose.${poses[samplesRef.current.length]}`))
           }
         }
 
@@ -174,15 +189,15 @@ export function FaceScanner({
       if (err instanceof FaceEngineError) {
         setEngineError(err.message)
       } else if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setEngineError('Camera access was denied. Allow it in your browser to continue.')
+        setEngineError(t('face.error.denied'))
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
-        setEngineError('No camera found on this device.')
+        setEngineError(t('face.error.noCamera'))
       } else {
-        setEngineError(err instanceof Error ? err.message : 'Could not start the camera')
+        setEngineError(err instanceof Error ? err.message : t('face.error.start'))
       }
       setPhase('failed')
     }
-  }, [modelUrl, onComplete, poses, stopCamera])
+  }, [modelUrl, onComplete, poses, stopCamera, t])
 
   const handleCancel = useCallback(() => {
     cancelledRef.current = true
@@ -233,15 +248,15 @@ export function FaceScanner({
           </div>
 
           <p className="ss-auth-face-hint">
-            {phase === 'loading' && 'Preparing the camera…'}
+            {phase === 'loading' && t('face.status.preparing')}
             {phase === 'scanning' && hint}
-            {phase === 'done' && (isSubmitting ? 'Saving…' : 'Done')}
-            {phase === 'failed' && 'Scanning stopped'}
+            {phase === 'done' && (isSubmitting ? t('face.status.saving') : t('face.status.done'))}
+            {phase === 'failed' && t('face.status.stopped')}
           </p>
 
           {phase === 'failed' && (
             <button type="button" className="ss-auth-btn-primary" onClick={() => void start()}>
-              Try again
+              {t('face.retry')}
             </button>
           )}
         </>
@@ -249,7 +264,7 @@ export function FaceScanner({
 
       {onCancel && (
         <div className="ss-auth-footer">
-          <span className="ss-auth-link" onClick={handleCancel}>Cancel</span>
+          <span className="ss-auth-link" onClick={handleCancel}>{t('common.cancel')}</span>
         </div>
       )}
     </div>
