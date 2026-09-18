@@ -136,6 +136,13 @@ export function SignIn({
 
   const isPhoneMode = identifierKind === 'phone'
   const identifierLabel = isPhoneMode ? 'Phone Number' : 'Email Address'
+  // What the credentials form actually accepts, so a phone-only project never
+  // offers to "sign in with email".
+  const credentialsLabel = showIdentifierToggle
+    ? 'email or phone'
+    : phoneAuthEnabled
+      ? 'phone number'
+      : 'email'
   const identifierPlaceholder = isPhoneMode
     ? `${settings?.defaultPhoneCountryCode || '+992'} 90 111 22 33`
     : 'name@company.com'
@@ -144,8 +151,8 @@ export function SignIn({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
 
-  // Email form visibility (collapsed when OAuth is available)
-  const [showEmailForm, setShowEmailForm] = useState(false)
+  // Credentials form visibility (collapsed when OAuth is available)
+  const [showCredentialsForm, setShowCredentialsForm] = useState(false)
 
   // MFA fields
   const [mfaMode, setMfaMode] = useState(false)
@@ -739,25 +746,29 @@ export function SignIn({
                   </button>
                 )}
               </div>
-              {!showEmailForm ? (
+              {!showCredentialsForm ? (
                 <div className="ss-auth-divider">
                   <span
                     className="ss-auth-link"
-                    onClick={() => setShowEmailForm(true)}
+                    onClick={() => setShowCredentialsForm(true)}
                   >
-                    {isSignIn ? 'or sign in with email' : 'or sign up with email'}
+                    {isSignIn
+                      ? `or sign in with ${credentialsLabel}`
+                      : `or sign up with ${credentialsLabel}`}
                   </span>
                 </div>
               ) : (
                 <div className="ss-auth-divider">
-                  {isSignIn ? 'or continue with' : 'or sign up with email'}
+                  {isSignIn
+                    ? `or continue with ${credentialsLabel}`
+                    : `or sign up with ${credentialsLabel}`}
                 </div>
               )}
             </>
           )}
 
           {/* Email/password forms (hidden behind spoiler when OAuth is available) */}
-          {(!hasOAuth || showEmailForm || mfaMode || showSignUpForInvite) && (
+          {(!hasOAuth || showCredentialsForm || mfaMode || showSignUpForInvite) && (
             <>
           {/* Error */}
           {error && (
@@ -793,7 +804,7 @@ export function SignIn({
                         />
                       ))}
                     </div>
-                    <p className="ss-auth-mfa-hint">We sent a 6-digit code to your registered email.</p>
+                    <p className="ss-auth-mfa-hint">Enter the 6-digit code from your authenticator app.</p>
                   </div>
                 </>
               ) : (

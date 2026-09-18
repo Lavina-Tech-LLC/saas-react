@@ -130,7 +130,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteEmailConfirm, setDeleteEmailConfirm] = useState('')
+  const [deleteConfirmValue, setDeleteConfirmValue] = useState('')
 
   const handleSaveProfile = useCallback(
     async (e: FormEvent) => {
@@ -187,8 +187,15 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
     }
   }, [deleteAccount, signOut, afterDeleteAccountUrl])
 
-  const isEmailProvider = user?.provider === 'email'
-  const emailMatches = deleteEmailConfirm === user?.email
+  // Both email and phone accounts hold a local password; OAuth accounts do not.
+  const hasPassword = user?.provider === 'email' || user?.provider === 'phone'
+
+  // Confirm the deletion against whichever identifier the account actually has.
+  // Comparing against an empty email would let a phone-only user unlock the
+  // delete button with an empty field.
+  const deleteIdentifier = user?.email || user?.phone || ''
+  const deleteIdentifierLabel = user?.email ? 'email' : 'phone number'
+  const identifierMatches = deleteIdentifier !== '' && deleteConfirmValue === deleteIdentifier
   const initial = (user?.name || user?.email || '?').charAt(0).toUpperCase()
 
   return (
@@ -280,7 +287,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
       </div>
 
       {/* Password Section */}
-      {isEmailProvider && (
+      {hasPassword && (
         <div className="ss-auth-settings-card">
           <h4>
             <span className="material-symbols-outlined">{ICONS.security}</span>
@@ -336,13 +343,15 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
         {showDeleteConfirm ? (
           <div>
             <div className="ss-auth-field">
-              <label className="ss-auth-label">Type your email to confirm</label>
+              <label className="ss-auth-label">
+                Type your {deleteIdentifierLabel} to confirm
+              </label>
               <input
                 className="ss-auth-input"
-                type="email"
-                placeholder={user?.email}
-                value={deleteEmailConfirm}
-                onChange={(e) => setDeleteEmailConfirm(e.target.value)}
+                type="text"
+                placeholder={deleteIdentifier}
+                value={deleteConfirmValue}
+                onChange={(e) => setDeleteConfirmValue(e.target.value)}
                 autoFocus
               />
             </div>
@@ -352,7 +361,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
                 className="ss-auth-btn-ghost"
                 onClick={() => {
                   setShowDeleteConfirm(false)
-                  setDeleteEmailConfirm('')
+                  setDeleteConfirmValue('')
                   setDeleteError(null)
                 }}
               >
@@ -362,7 +371,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
                 type="button"
                 className="ss-auth-btn-primary ss-auth-btn-sm"
                 style={{ width: 'auto', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
-                disabled={!emailMatches || isDeleting}
+                disabled={!identifierMatches || isDeleting}
                 onClick={handleDeleteAccount}
               >
                 {isDeleting && <span className="ss-auth-spinner" />}

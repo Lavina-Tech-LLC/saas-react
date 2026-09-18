@@ -1,5 +1,9 @@
 // Vanilla entry point (no React dependency).
 // Usage: import { SaaSSupport, AuthClient } from '@saas-support/react'
+//
+// The auth modules are re-exported wholesale rather than name by name: each of
+// those files is already a curated public surface, and listing their exports
+// again here only created a second place to forget to update.
 
 export { SaaSSupport } from './core/client'
 export type { SaaSEvents } from './core/client'
@@ -10,39 +14,6 @@ export type { SaaSOptions, Appearance, ThemeVariables, ElementOverrides } from '
 
 // Auth
 export { AuthClient } from './auth/client'
-export type {
-  User,
-  ProjectSettings,
-  SignInResult,
-  SignUpResult,
-  MfaRequiredResult,
-  AuthResult,
-  OAuthProvider,
-  AuthStateCallback,
-  Org,
-  Member,
-  Invite,
-  PendingInvite,
-  MyPendingInvite,
-  MfaSetupResult,
-  MfaVerifyResult,
-  Role,
-  InviteLink,
-  InviteLinkInfo,
-  UseInviteLinkResult,
-  InviteInfo,
-  AcceptInviteByCodeResult,
-  SignUpOptions,
-  PhoneOtpPurpose,
-  PhoneOtpSendResult,
-  PhoneOtpVerifyResult,
-  FaceRequiredResult,
-  FaceSample,
-  FaceStatus,
-  FaceEnrollResult,
-} from './auth/types'
-export { isMfaRequired, isFaceRequired } from './auth/types'
-export { loadFaceEngine, readFace, FaceEngineError, POSE_PROMPTS, ISSUE_PROMPTS } from './auth/face/engine'
-export type { FacePose, FaceReading, FaceCaptureIssue } from './auth/face/engine'
-export { looksLikePhone, identifierPayload } from './auth/identifier'
-export type { IdentifierKind } from './auth/identifier'
+export * from './auth/types'
+export * from './auth/identifier'
+export * from './auth/face/engine'
