@@ -177,7 +177,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
         setConfirmPassword('')
       }
     },
-    [currentPassword, newPassword, confirmPassword, changePassword, setError, setSuccess],
+    [currentPassword, newPassword, confirmPassword, changePassword, setError, setSuccess, t],
   )
 
   const handleDeleteAccount = useCallback(async () => {
