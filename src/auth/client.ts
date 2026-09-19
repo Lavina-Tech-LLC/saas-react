@@ -488,8 +488,26 @@ export class AuthClient {
     return this.transport.get<Member[]>(`/auth/orgs/${orgId}/members`, this.authHeaders())
   }
 
-  async sendInvite(orgId: string, email: string, role?: string, roleId?: string): Promise<Invite> {
-    return this.transport.post<Invite>(`/auth/orgs/${orgId}/invites`, { email, role, roleId }, this.authHeaders())
+  /**
+   * Invites somebody to an organization by e-mail or phone number, whichever
+   * the project accepts. Nothing is delivered: the response carries the link,
+   * which the inviter passes on however they like.
+   *
+   * Re-inviting the same person replaces their pending invite with a fresh
+   * link — the previous token is not recoverable.
+   */
+  async sendInvite(
+    orgId: string,
+    identifier: string,
+    role?: string,
+    roleId?: string,
+    kind?: IdentifierKind,
+  ): Promise<Invite> {
+    return this.transport.post<Invite>(
+      `/auth/orgs/${orgId}/invites`,
+      { ...identifierPayload(identifier, kind), role, roleId },
+      this.authHeaders(),
+    )
   }
 
   async updateMemberRole(orgId: string, userId: string, role?: string, roleId?: string): Promise<void> {

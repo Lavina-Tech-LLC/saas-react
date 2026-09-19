@@ -388,9 +388,15 @@ export function useOrg() {
     }
   }, [client, selectedOrg])
 
-  const sendInvite = useCallback(async (orgId: string, email: string, role?: string, roleId?: string) => {
+  const sendInvite = useCallback(async (
+    orgId: string,
+    identifier: string,
+    role?: string,
+    roleId?: string,
+    kind?: IdentifierKind,
+  ) => {
     try {
-      const invite = await client.auth.sendInvite(orgId, email, role, roleId)
+      const invite = await client.auth.sendInvite(orgId, identifier, role, roleId, kind)
       return invite
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send invite')

@@ -181,6 +181,8 @@ export interface RoleInfo {
 export interface Member {
   userId: string
   email: string
+  /** Set for accounts registered with a phone number. */
+  phone?: string
   role: string
   roleId?: string
   roleName?: string
@@ -189,7 +191,10 @@ export interface Member {
 
 export interface Invite {
   inviteId: string
+  /** Empty when the invite was addressed to a phone number. */
   email: string
+  /** Empty when the invite was addressed to an e-mail. */
+  phone?: string
   role: string
   roleId?: string
   token: string
@@ -201,6 +206,7 @@ export interface Invite {
 export interface PendingInvite {
   id: string
   email: string
+  phone?: string
   role: string
   roleId?: string
   roleName?: string
@@ -210,6 +216,7 @@ export interface PendingInvite {
 
 export interface MyPendingInvite {
   id: string
+  phone?: string
   orgId: string
   orgName: string
   role: string
@@ -259,6 +266,8 @@ export interface InviteInfo {
   inviterAvatarUrl?: string
   /** Only populated when `type === 'email'`. */
   targetEmail?: string
+  /** Set when the invite was addressed to a phone number. */
+  targetPhone?: string
   expiresAt: string
 }
 

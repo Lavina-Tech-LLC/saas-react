@@ -242,26 +242,28 @@ export function SignIn({
         if (outcome.status === 'error') return
       }
 
-      // If this submit is part of an invite flow, strip the code from the URL
-      // *before* awaiting so the consumer's redirect effect reads a clean URL
-      // once the user state transitions on success.
-      if (showSignUpForInvite && code) {
-        clearInviteFromUrl()
-      }
       const result = await signUp(identifier, password, {
         inviteCode: showSignUpForInvite && code ? code : undefined,
         kind: identifierKind,
         otpToken: phoneOtp.otpToken ?? undefined,
       })
+      // Only retire the invite once it has actually been used. Dropping it on a
+      // failed attempt left the retry without any invite context, so the user
+      // ended up outside the inviting organisation — or blocked outright on a
+      // project where self-service registration is closed.
+      if (result && showSignUpForInvite) {
+        clearInviteFromUrl()
+        setCode(null)
+        setShowSignUpForInvite(false)
+        // Rewriting the URL does not re-render the host app, so refresh the user
+        // to make its "redirect once signed in" effect run against a clean URL.
+        await refreshUser()
+      }
       if (result?.faceEnrollmentRequired) {
         setFaceEnrollAfterSignUp(true)
       }
-      if (showSignUpForInvite) {
-        setCode(null)
-        setShowSignUpForInvite(false)
-      }
     },
-    [identifier, identifierKind, isPhoneMode, password, confirmPassword, settings, signUp, showSignUpForInvite, code, phoneOtp],
+    [identifier, identifierKind, isPhoneMode, password, confirmPassword, settings, signUp, showSignUpForInvite, code, phoneOtp, refreshUser, t],
   )
 
   // Confirms the SMS code, then replays the sign-up with the proof token.
@@ -271,25 +273,26 @@ export function SignIn({
       const verified = await phoneOtp.verify(identifier, otpDigits.join(''), 'register')
       if (!verified) return
 
-      if (showSignUpForInvite && code) {
-        clearInviteFromUrl()
-      }
       const result = await signUp(identifier, password, {
         inviteCode: showSignUpForInvite && code ? code : undefined,
         kind: 'phone',
         otpToken: verified.otpToken,
       })
-      if (result?.faceEnrollmentRequired) {
-        setFaceEnrollAfterSignUp(true)
-      }
+      if (!result) return
+
       setOtpStep(false)
       setOtpDigits(['', '', '', '', '', ''])
       if (showSignUpForInvite) {
+        clearInviteFromUrl()
         setCode(null)
         setShowSignUpForInvite(false)
+        await refreshUser()
+      }
+      if (result.faceEnrollmentRequired) {
+        setFaceEnrollAfterSignUp(true)
       }
     },
-    [phoneOtp, identifier, otpDigits, password, signUp, showSignUpForInvite, code],
+    [phoneOtp, identifier, otpDigits, password, signUp, showSignUpForInvite, code, refreshUser],
   )
 
   const handleFaceEnroll = useCallback(
@@ -357,6 +360,9 @@ export function SignIn({
         setIdentifier(inviteInfo.targetEmail)
         setIdentifierKind('email')
       }
+      // An invite is normally sent to somebody who has no account yet, so open
+      // on sign-up. The footer still offers "Already have an account? Sign in".
+      setMode('signUp')
       setShowSignUpForInvite(true)
     }
   }, [code, isSignedIn, acceptInvite, inviteError, refreshUser, inviteInfo])

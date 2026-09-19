@@ -7,6 +7,7 @@ import { FaceScanner } from './FaceScanner'
 import { ICONS } from '../../styles/icons'
 import type { CreatedApiKey, FaceSample } from '../types'
 import type { FacePose } from '../face/engine'
+import type { IdentifierKind } from '../identifier'
 import type { TranslationKey } from '../../i18n'
 
 type SettingsTab = 'profile' | 'organization' | 'people' | 'apiKeys' | 'invites' | 'billing'
@@ -233,7 +234,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
               {user?.emailVerified && (
                 <span className="ss-auth-badge ss-auth-badge-success">
                   <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>{ICONS.verified}</span>
-                  Verified
+                  {t('common.verified')}
                 </span>
               )}
             </h2>
@@ -370,7 +371,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
                   setDeleteError(null)
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -380,7 +381,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
                 onClick={handleDeleteAccount}
               >
                 {isDeleting && <span className="ss-auth-spinner" />}
-                Delete account
+                {t('settings.deleteAccount')}
               </button>
             </div>
           </div>
@@ -391,7 +392,7 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
             style={{ borderColor: 'currentColor', width: 'auto' }}
             onClick={() => setShowDeleteConfirm(true)}
           >
-            Delete my account
+            {t('settings.deleteMyAccount')}
           </button>
         )}
       </div>
@@ -589,7 +590,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
       <div className="ss-auth-settings-card">
         <h4>
           <span className="material-symbols-outlined">{ICONS.corporateFare}</span>
-          General
+          {t('org.general')}
         </h4>
 
         {error && (
@@ -647,7 +648,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isSaving} style={{ width: 'auto' }}>
               {isSaving && <span className="ss-auth-spinner" />}
-              Save
+              {t('common.saveShort')}
             </button>
           </div>
         </form>
@@ -657,7 +658,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
       <div className="ss-auth-settings-card ss-auth-settings-danger">
         <h4>{t('settings.dangerZone')}</h4>
         <p className="ss-auth-section-desc" style={{ marginBottom: '16px' }}>
-          Deleting this organization is permanent and will remove all members.
+          {t('org.deleteWarning')}
         </p>
 
         {showDeleteConfirm ? (
@@ -675,7 +676,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button type="button" className="ss-auth-btn-ghost" onClick={() => { setShowDeleteConfirm(false); setDeleteNameConfirm('') }}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -685,7 +686,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
                 onClick={handleDeleteOrg}
               >
                 {isLoading && <span className="ss-auth-spinner" />}
-                Delete organization
+                {t('org.delete')}
               </button>
             </div>
           </div>
@@ -696,7 +697,7 @@ function OrganizationSection({ onOrgDeleted, onOrgUpdated }: { onOrgDeleted?: ()
             style={{ borderColor: 'currentColor', width: 'auto' }}
             onClick={() => setShowDeleteConfirm(true)}
           >
-            Delete this organization
+            {t('org.deleteThis')}
           </button>
         )}
       </div>
@@ -775,6 +776,11 @@ function RoleSelect({ value, onChange, roles, style }: {
 
 function PeopleSection() {
   const t = useT()
+  const { settings } = useSaaSContext()
+  // Invitations follow the project's sign-in methods: there is no point
+  // addressing an invite to a phone number a project will not accept.
+  const canInviteByEmail = settings?.emailAuthEnabled ?? settings?.emailEnabled ?? true
+  const canInviteByPhone = settings?.phoneAuthEnabled ?? false
   const {
     selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,
     sendInvite, refreshInvites, revokeInvite,
@@ -785,10 +791,17 @@ function PeopleSection() {
   // Assignable roles: all roles except "owner" (owner is assigned at org creation only).
   const assignableRoles = roles.filter((r) => r.key !== 'owner')
 
-  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteIdentifier, setInviteIdentifier] = useState('')
+  const [inviteKind, setInviteKind] = useState<IdentifierKind>('email')
+
+  // A phone-only project must not open the form on an e-mail field.
+  useEffect(() => {
+    if (!canInviteByEmail && canInviteByPhone) setInviteKind('phone')
+    if (canInviteByEmail && !canInviteByPhone) setInviteKind('email')
+  }, [canInviteByEmail, canInviteByPhone])
   const [inviteRole, setInviteRole] = useState('member')
   const [showInviteForm, setShowInviteForm] = useState(false)
-  const [inviteSuccess, setInviteSuccess] = useState<{ email: string; url?: string } | null>(null)
+  const [inviteSuccess, setInviteSuccess] = useState<{ identifier: string; url?: string } | null>(null)
   const [copiedInviteEmail, setCopiedInviteEmail] = useState(false)
 
   const [editMember, setEditMember] = useState<{ userId: string; email: string; role: string } | null>(null)
@@ -829,10 +842,10 @@ function PeopleSection() {
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault()
     setInviteSuccess(null)
-    const result = await sendInvite(selectedOrg.id, inviteEmail, inviteRole)
+    const result = await sendInvite(selectedOrg.id, inviteIdentifier, inviteRole, undefined, inviteKind)
     if (result) {
-      setInviteSuccess({ email: inviteEmail, url: result.url })
-      setInviteEmail('')
+      setInviteSuccess({ identifier: inviteIdentifier, url: result.url })
+      setInviteIdentifier('')
       setInviteRole('member')
       setShowInviteForm(false)
       refreshInvites(selectedOrg.id)
@@ -875,7 +888,7 @@ function PeopleSection() {
         <div className="ss-auth-info-box" style={{ marginBottom: '16px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined">{ICONS.check}</span>
-            <span>{t('people.inviteCreatedFor')} <strong>{inviteSuccess.email}</strong></span>
+            <span>{t('people.inviteCreatedFor')} <strong>{inviteSuccess.identifier}</strong></span>
           </div>
           {inviteSuccess.url && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -911,7 +924,7 @@ function PeopleSection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h4 style={{ margin: 0 }}>
             <span className="material-symbols-outlined">{ICONS.group}</span>
-            Members
+            {t('people.members')}
           </h4>
           <button
             type="button"
@@ -920,7 +933,7 @@ function PeopleSection() {
             onClick={() => setShowInviteForm(!showInviteForm)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{ICONS.add}</span>
-            Invite
+            {t('people.invite')}
           </button>
         </div>
 
@@ -929,13 +942,37 @@ function PeopleSection() {
           <form onSubmit={handleInvite} style={{ marginBottom: '16px', padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label className="ss-auth-label">{t('common.email')}</label>
+                <div className="ss-auth-field-row">
+                  <label className="ss-auth-label" style={{ marginBottom: 0 }}>
+                    {inviteKind === 'phone' ? t('identifier.phone') : t('common.email')}
+                  </label>
+                  {/* Only offered when the project accepts both identifiers. */}
+                  {canInviteByPhone && canInviteByEmail && (
+                    <div className="ss-auth-identifier-toggle">
+                      <button
+                        type="button"
+                        className={`ss-auth-identifier-option${inviteKind === 'email' ? ' ss-auth-identifier-option-active' : ''}`}
+                        onClick={() => { setInviteKind('email'); setInviteIdentifier('') }}
+                      >
+                        {t('identifier.toggleEmail')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`ss-auth-identifier-option${inviteKind === 'phone' ? ' ss-auth-identifier-option-active' : ''}`}
+                        onClick={() => { setInviteKind('phone'); setInviteIdentifier('') }}
+                      >
+                        {t('identifier.togglePhone')}
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <input
                   className="ss-auth-input"
-                  type="email"
-                  placeholder={t('people.emailPlaceholder')}
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
+                  type={inviteKind === 'phone' ? 'tel' : 'email'}
+                  inputMode={inviteKind === 'phone' ? 'tel' : 'email'}
+                  placeholder={inviteKind === 'phone' ? t('people.phonePlaceholder') : t('people.emailPlaceholder')}
+                  value={inviteIdentifier}
+                  onChange={(e) => setInviteIdentifier(e.target.value)}
                   required
                 />
               </div>
@@ -944,7 +981,7 @@ function PeopleSection() {
                 <RoleSelect value={inviteRole} onChange={setInviteRole} roles={assignableRoles} />
               </div>
               <button type="submit" className="ss-auth-btn-primary ss-auth-btn-sm" disabled={isLoading} style={{ width: 'auto', marginBottom: '0' }}>
-                Send
+                {t('common.send')}
               </button>
             </div>
           </form>
@@ -966,7 +1003,7 @@ function PeopleSection() {
             <tbody>
               {members.map((member) => (
                 <tr key={member.userId}>
-                  <td>{member.email}</td>
+                  <td>{member.email || member.phone}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       {member.roles && member.roles.length > 0
@@ -1013,7 +1050,7 @@ function PeopleSection() {
         <div className="ss-auth-settings-card">
           <h4>
             <span className="material-symbols-outlined">{ICONS.send}</span>
-            Pending Invites
+            {t('people.pendingInvites')}
           </h4>
 
           <table className="ss-auth-settings-table">
@@ -1027,7 +1064,7 @@ function PeopleSection() {
             <tbody>
               {invites.map((invite) => (
                 <tr key={invite.id}>
-                  <td>{invite.email}</td>
+                  <td>{invite.email || invite.phone}</td>
                   <td><span className={roleBadgeClass(invite.role)}>{invite.role}</span></td>
                   <td>
                     <button
@@ -1051,7 +1088,7 @@ function PeopleSection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h4 style={{ margin: 0 }}>
             <span className="material-symbols-outlined">{ICONS.link}</span>
-            Invite Links
+            {t('people.inviteLinks')}
           </h4>
           <button
             type="button"
@@ -1060,7 +1097,7 @@ function PeopleSection() {
             onClick={() => setShowLinkForm(!showLinkForm)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{ICONS.add}</span>
-            Create Link
+            {t('people.createLink')}
           </button>
         </div>
 
@@ -1084,7 +1121,7 @@ function PeopleSection() {
                   }
                 }}
               >
-                Create
+                {t('common.create')}
               </button>
             </div>
           </div>
@@ -1197,7 +1234,7 @@ function PeopleSection() {
                   onClick={handleEditConfirm}
                   disabled={editRoles.length === 0}
                 >
-                  Save
+                  {t('common.saveShort')}
                 </button>
               </div>
             </div>
@@ -1227,7 +1264,7 @@ function PeopleSection() {
                   style={{ width: 'auto', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
                   onClick={handleRemoveConfirm}
                 >
-                  Remove
+                  {t('common.remove')}
                 </button>
               </div>
             </div>
@@ -1374,7 +1411,7 @@ function ApiKeysSection() {
               className="ss-auth-btn-ghost ss-auth-btn-sm"
               onClick={() => setCreatedKey(null)}
             >
-              Dismiss
+              {t('common.dismiss')}
             </button>
           </div>
         </div>
@@ -1384,7 +1421,7 @@ function ApiKeysSection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h4 style={{ margin: 0 }}>
             <span className="material-symbols-outlined">{ICONS.vpnKey}</span>
-            Your API Keys
+            {t('apiKeys.yours')}
           </h4>
           <button
             type="button"
@@ -1518,7 +1555,7 @@ function ApiKeysSection() {
 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
                   <button type="button" className="ss-auth-btn-ghost" onClick={() => setShowCreateModal(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -1526,7 +1563,7 @@ function ApiKeysSection() {
                     style={{ width: 'auto' }}
                     disabled={isLoading || !newKeyName.trim()}
                   >
-                    Create
+                    {t('common.create')}
                   </button>
                 </div>
               </div>
@@ -1554,7 +1591,7 @@ function ApiKeysSection() {
               </p>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" className="ss-auth-btn-ghost" onClick={() => setRevokingKey(null)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -1562,7 +1599,7 @@ function ApiKeysSection() {
                   style={{ width: 'auto', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
                   onClick={handleRevokeConfirm}
                 >
-                  Revoke
+                  {t('apiKeys.revoke')}
                 </button>
               </div>
             </div>
@@ -1647,7 +1684,7 @@ function InvitesSection() {
                     onClick={() => handleDecline(invite.id)}
                     disabled={actionLoading === invite.id}
                   >
-                    Decline
+                    {t('common.decline')}
                   </button>
                   <button
                     type="button"
@@ -1657,7 +1694,7 @@ function InvitesSection() {
                     disabled={actionLoading === invite.id}
                   >
                     {actionLoading === invite.id && <span className="ss-auth-spinner" />}
-                    Accept
+                    {t('common.accept')}
                   </button>
                 </div>
               </div>

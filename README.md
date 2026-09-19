@@ -79,6 +79,30 @@ worded by the server and are not translated by the SDK.
 
 ---
 
+## Invitations
+
+`sendInvite` addresses an invite to an e-mail or a phone number, whichever the
+project accepts, and returns a ready-made link. Nothing is delivered — pass the
+link on however you like.
+
+```tsx
+const invite = await client.auth.sendInvite(orgId, '+992901112233', 'admin', undefined, 'phone')
+// invite.url — send this to the person
+```
+
+Somebody who opens the link registers and joins the organization in the same
+step, with the role they were invited with. This works even on a project that
+has self-service registration switched off.
+
+A shared invite link (`createInviteLink`) can be handed to a group. If a person
+was also invited individually, their personal role wins; everybody else gets the
+link's own role.
+
+Re-inviting the same person replaces their pending invite with a fresh link —
+the previous token cannot be recovered.
+
+---
+
 ## Components
 
 ### `<SignIn />`
@@ -362,7 +386,8 @@ saas.destroy()
 | `signIn(identifier, password, kind?)` | `Promise<AuthResult>` |
 | `signUp(identifier, password, inviteCode?, kind?)` | `Promise<SignUpResult>` |
 | `signOut()` | `Promise<void>` |
-| `signInWithOAuth(provider, inviteCode?)` | `Promise<SignInResult>` |
+| `signInWithOAuth(provider, inviteCode?)` | `Promise<AuthResult>` |
+| `sendInvite(orgId, identifier, role?, roleId?, kind?)` | `Promise<Invite>` |
 | `submitMfaCode(mfaToken, code)` | `Promise<AuthResult>` |
 | `sendPhoneOtp(phone, purpose?)` | `Promise<PhoneOtpSendResult>` |
 | `verifyPhoneOtp(phone, code, purpose?)` | `Promise<PhoneOtpVerifyResult>` |
