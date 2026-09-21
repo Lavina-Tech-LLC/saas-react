@@ -101,6 +101,25 @@ link's own role.
 Re-inviting the same person replaces their pending invite with a fresh link —
 the previous token cannot be recovered.
 
+### Where invite links point
+
+Invite links are built from the project's **Invite Link Base URL**, which should
+name the page that renders `<SignIn />`. Write it as a path:
+
+```
+/login
+```
+
+A path is resolved against the host the app is running on, so the same setting
+yields `https://app.example.com/login?invite_code=…` in production and
+`http://localhost:5173/login?invite_code=…` on a developer machine. An absolute
+URL works too, but pins every invite to that one environment.
+
+Left empty, the API can only return a bare `?invite_code=…` and the link is
+resolved against the page the inviter happens to be on — usually a dashboard
+rather than the sign-in route, which means the invitee lands somewhere that
+never reads the code.
+
 ---
 
 ## Components

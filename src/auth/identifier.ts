@@ -34,21 +34,26 @@ export function identifierPayload(
 /**
  * Turns whatever the API returned for an invite into a link somebody can open.
  *
- * The backend builds the URL from the project's "Invite Link Base URL". When
- * that setting is empty it can only return a relative `?invite_code=...`, which
- * is useless on its own — so it is resolved against the current page. That
- * fallback is a guess: the page an administrator happens to be on is rarely the
- * page an invitee should land on, which is why the base URL is worth setting.
+ * The API builds it from the project's "Invite Link Base URL", which may be
+ * written three ways:
+ *
+ *   - absolute ("https://app.example.com/login") — used as-is, and therefore
+ *     pinned to one environment;
+ *   - a path ("/login") — resolved against the current origin, so the same
+ *     setting produces a production link in production and a localhost link on
+ *     a developer machine. This is usually what you want;
+ *   - empty — the API can only return a bare `?invite_code=...`, which is
+ *     resolved against the current page. That is a guess, and normally a wrong
+ *     one: an inviter sits on a dashboard, not on the sign-in route, so the
+ *     invitee lands somewhere that never renders the sign-in component.
  */
 export function resolveInviteUrl(invite: { code?: string; url?: string }): string {
-  if (invite.url) {
-    if (invite.url.startsWith('http://') || invite.url.startsWith('https://')) {
-      return invite.url
-    }
-    if (typeof window !== 'undefined') {
-      return window.location.origin + window.location.pathname + invite.url
-    }
-    return invite.url
+  const url = invite.url
+  if (url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url
+    if (typeof window === 'undefined') return url
+    if (url.startsWith('/')) return window.location.origin + url
+    return window.location.origin + window.location.pathname + url
   }
   if (typeof window === 'undefined' || !invite.code) return ''
   return `${window.location.origin}/?invite_code=${invite.code}`
