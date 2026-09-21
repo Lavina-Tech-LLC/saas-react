@@ -268,10 +268,31 @@ function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: str
           </div>
 
           <div className="ss-auth-profile-grid" style={{ marginBottom: '16px' }}>
+            {/* Both identifiers are shown: an account may hold either or both,
+                and a phone-only account used to see nothing but an empty box. */}
             <div>
               <label className="ss-auth-label">{t('identifier.email')}</label>
               <div style={{ position: 'relative' }}>
-                <input className="ss-auth-input ss-auth-input-readonly" type="email" value={user?.email ?? ''} readOnly />
+                <input
+                  className="ss-auth-input ss-auth-input-readonly"
+                  type="text"
+                  value={user?.email || '—'}
+                  readOnly
+                />
+                <span className="ss-auth-visibility-toggle" style={{ cursor: 'default' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{ICONS.lock}</span>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="ss-auth-label">{t('identifier.phone')}</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="ss-auth-input ss-auth-input-readonly"
+                  type="text"
+                  value={user?.phone || '—'}
+                  readOnly
+                />
                 <span className="ss-auth-visibility-toggle" style={{ cursor: 'default' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{ICONS.lock}</span>
                 </span>

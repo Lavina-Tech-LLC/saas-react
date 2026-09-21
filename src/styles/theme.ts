@@ -1569,10 +1569,31 @@ export function generateCSS(theme: ResolvedTheme): string {
 
     .ss-auth-user-trigger:active { transform: scale(0.98); }
 
+    /* Two stacked labels in the trigger: the organisation, then who you are
+       signed in as, one step down in size and weight. */
+    .ss-auth-trigger-labels {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+      line-height: 1.25;
+    }
+
     .ss-auth-trigger-org-name {
       font-size: 13px;
       font-weight: 600;
       color: ${theme.authOnSurface};
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .ss-auth-trigger-user-name {
+      font-size: 11px;
+      font-weight: 500;
+      color: ${theme.authOnSurfaceVariant};
       max-width: 140px;
       overflow: hidden;
       text-overflow: ellipsis;

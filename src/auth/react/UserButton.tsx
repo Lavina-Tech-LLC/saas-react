@@ -106,16 +106,23 @@ export function UserButton({
                 fontSize: '16px',
                 fontWeight: 700,
               }}>
-                {(user.name || user.email).charAt(0).toUpperCase()}
+                {(user.name || user.email || user.phone || '?').charAt(0).toUpperCase()}
               </div>
             )}
             {pendingInvites.length > 0 && (
               <span className="ss-auth-invite-badge">{pendingInvites.length}</span>
             )}
           </span>
-          {selectedOrg && (
-            <span className="ss-auth-trigger-org-name">{selectedOrg.name}</span>
-          )}
+          <span className="ss-auth-trigger-labels">
+            {selectedOrg && (
+              <span className="ss-auth-trigger-org-name">{selectedOrg.name}</span>
+            )}
+            {/* A phone-only account has no e-mail and may have no name either,
+                so fall back through whatever it actually has. */}
+            <span className="ss-auth-trigger-user-name">
+              {user.name || user.email || user.phone}
+            </span>
+          </span>
         </button>
 
         {/* Dropdown */}
@@ -136,13 +143,13 @@ export function UserButton({
                     fontSize: '20px',
                     fontWeight: 800,
                   }}>
-                    {(user.name || user.email).charAt(0).toUpperCase()}
+                    {(user.name || user.email || user.phone || '?').charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               <div>
                 {user.name && <div className="ss-auth-dropdown-name">{user.name}</div>}
-                <div className="ss-auth-dropdown-email">{user.email}</div>
+                <div className="ss-auth-dropdown-email">{user.email || user.phone}</div>
               </div>
             </div>
 
