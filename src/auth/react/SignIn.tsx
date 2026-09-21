@@ -508,18 +508,9 @@ export function SignIn({
       <ShadowHost appearance={appearance}>
         <div className="ss-auth-card">
           <div className="ss-auth-card-body">
+            {/* No organisation avatar here: the fallback is a single letter that
+                carries no information, and the heading already names the org. */}
             <div className="ss-auth-header">
-              {inviteInfo.orgAvatarUrl ? (
-                <img
-                  src={inviteInfo.orgAvatarUrl}
-                  alt={inviteInfo.orgName}
-                  className="ss-auth-org-avatar"
-                />
-              ) : (
-                <div className="ss-auth-org-avatar ss-auth-org-avatar-fallback">
-                  {inviteInfo.orgName.charAt(0).toUpperCase()}
-                </div>
-              )}
               <h1 className="ss-auth-title">
                 {t('invite.invitesYou', {
                   inviter: formatInviterName(inviteInfo, t),
@@ -693,17 +684,6 @@ export function SignIn({
           <div className="ss-auth-header">
             {showSignUpForInvite && inviteInfo ? (
               <>
-                {inviteInfo.orgAvatarUrl ? (
-                  <img
-                    src={inviteInfo.orgAvatarUrl}
-                    alt={inviteInfo.orgName}
-                    className="ss-auth-org-avatar"
-                  />
-                ) : (
-                  <div className="ss-auth-org-avatar ss-auth-org-avatar-fallback">
-                    {inviteInfo.orgName.charAt(0).toUpperCase()}
-                  </div>
-                )}
                 <h1 className="ss-auth-title">
                   {t('invite.joinOrg', { org: inviteInfo.orgName })}
                 </h1>
