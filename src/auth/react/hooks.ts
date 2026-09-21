@@ -3,6 +3,7 @@ import { useSaaSContext } from '../../react/context'
 import { SaaSError } from '../../core/error'
 import type { PhoneOtpPurpose, SignUpOptions, FaceSample, FaceStatus } from '../types'
 import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput } from '../types'
+import { resolveInviteUrl } from '../identifier'
 import type { IdentifierKind } from '../identifier'
 
 export function useAuth() {
@@ -516,22 +517,12 @@ export function useOrg() {
     }
   }, [client])
 
-  const getInviteLinkUrl = useCallback((link: { code: string; url?: string }) => {
-    // Prefer the backend-built URL. Absolute values are returned as-is; a
-    // relative value (starts with `?`) is resolved against the current
-    // origin+pathname so the copied string is usable.
-    if (link.url) {
-      if (link.url.startsWith('http://') || link.url.startsWith('https://')) {
-        return link.url
-      }
-      if (typeof window !== 'undefined') {
-        return window.location.origin + window.location.pathname + link.url
-      }
-      return link.url
-    }
-    if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/login?invite_code=${link.code}`
-  }, [])
+  // Shared with the personal-invite banner so both kinds of invite produce the
+  // same absolute link.
+  const getInviteLinkUrl = useCallback(
+    (link: { code?: string; url?: string }) => resolveInviteUrl(link),
+    [],
+  )
 
   return {
     orgs, selectedOrg, members, invites, inviteLinks, roles, isLoading, error, setError,

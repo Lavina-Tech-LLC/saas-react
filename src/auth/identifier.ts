@@ -30,3 +30,26 @@ export function identifierPayload(
   const resolved = kind ?? (looksLikePhone(value) ? 'phone' : 'email')
   return resolved === 'phone' ? { phone: value } : { email: value }
 }
+
+/**
+ * Turns whatever the API returned for an invite into a link somebody can open.
+ *
+ * The backend builds the URL from the project's "Invite Link Base URL". When
+ * that setting is empty it can only return a relative `?invite_code=...`, which
+ * is useless on its own — so it is resolved against the current page. That
+ * fallback is a guess: the page an administrator happens to be on is rarely the
+ * page an invitee should land on, which is why the base URL is worth setting.
+ */
+export function resolveInviteUrl(invite: { code?: string; url?: string }): string {
+  if (invite.url) {
+    if (invite.url.startsWith('http://') || invite.url.startsWith('https://')) {
+      return invite.url
+    }
+    if (typeof window !== 'undefined') {
+      return window.location.origin + window.location.pathname + invite.url
+    }
+    return invite.url
+  }
+  if (typeof window === 'undefined' || !invite.code) return ''
+  return `${window.location.origin}/?invite_code=${invite.code}`
+}

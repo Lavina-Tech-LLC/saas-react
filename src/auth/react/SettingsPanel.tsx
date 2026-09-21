@@ -844,7 +844,9 @@ function PeopleSection() {
     setInviteSuccess(null)
     const result = await sendInvite(selectedOrg.id, inviteIdentifier, inviteRole, undefined, inviteKind)
     if (result) {
-      setInviteSuccess({ identifier: inviteIdentifier, url: result.url })
+      // Goes through the same resolver as invite links, so a personal invite is
+      // never shown as a bare `?invite_code=...` with no host.
+      setInviteSuccess({ identifier: inviteIdentifier, url: getInviteLinkUrl(result) })
       setInviteIdentifier('')
       setInviteRole('member')
       setShowInviteForm(false)
