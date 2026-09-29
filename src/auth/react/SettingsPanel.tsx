@@ -24,6 +24,9 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
   const { appearance } = useSaaSContext()
   const t = useT()
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab)
+  // Narrow screens collapse the sidebar behind this toggle; on a wide one the
+  // CSS keeps the nav visible and the button hidden, so the flag is inert.
+  const [navOpen, setNavOpen] = useState(false)
   const { invites: pendingInvites } = useInvites()
   const { user } = useAuth()
   const { selectedOrg, members } = useOrg()
@@ -71,6 +74,17 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
           <button type="button" className="ss-auth-settings-back" onClick={onClose}>
             <span className="material-symbols-outlined">{ICONS.arrowBack}</span>
           </button>
+          <button
+            type="button"
+            className="ss-auth-settings-nav-toggle"
+            aria-label={t('settings.menu')}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            <span className="material-symbols-outlined">
+              {navOpen ? ICONS.close : ICONS.menu}
+            </span>
+          </button>
           <h2>{t('settings.title')}</h2>
         </div>
         <button type="button" className="ss-auth-modal-close" onClick={onClose}>
@@ -80,13 +94,13 @@ export function SettingsPanel({ onClose, afterDeleteAccountUrl, defaultTab = 'pr
 
       <div className="ss-auth-settings-layout">
         {/* Nav */}
-        <nav className="ss-auth-settings-nav">
+        <nav className={`ss-auth-settings-nav${navOpen ? ' ss-auth-settings-nav-open' : ''}`}>
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               className={`ss-auth-settings-nav-item${activeTab === tab.key ? ' ss-auth-settings-nav-item-active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setNavOpen(false) }}
             >
               <span className="material-symbols-outlined">{tab.icon}</span>
               {tab.label}

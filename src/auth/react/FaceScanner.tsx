@@ -47,6 +47,8 @@ type Phase = 'intro' | 'loading' | 'scanning' | 'done' | 'failed'
 const REQUIRED_STABLE_FRAMES = 3
 /** Gap between frame reads; the model needs ~100ms per frame on a laptop. */
 const FRAME_INTERVAL_MS = 350
+/** Roughly 12 seconds of failing one angle before the skip link appears. */
+const STUCK_TICKS_BEFORE_SKIP = 34
 
 /**
  * Guided camera capture used for both face enrollment and face verification.
@@ -72,9 +74,15 @@ export function FaceScanner({
   const samplesRef = useRef<FaceSample[]>([])
   const stableRef = useRef(0)
   const cancelledRef = useRef(false)
+  // How many poses have been dealt with, captured or skipped. Kept apart from
+  // the sample count so a skipped angle still advances the wizard.
+  const attemptedRef = useRef(0)
+  const stuckTicksRef = useRef(0)
+  const skipRequestedRef = useRef(false)
 
   const [phase, setPhase] = useState<Phase>('intro')
   const [stepIndex, setStepIndex] = useState(0)
+  const [canSkipPose, setCanSkipPose] = useState(false)
   const [hint, setHint] = useState<string>('')
   const [engineError, setEngineError] = useState<string | null>(null)
 
@@ -95,6 +103,10 @@ export function FaceScanner({
     cancelledRef.current = false
     samplesRef.current = []
     stableRef.current = 0
+    attemptedRef.current = 0
+    stuckTicksRef.current = 0
+    skipRequestedRef.current = false
+    setCanSkipPose(false)
     setStepIndex(0)
     setEngineError(null)
     setPhase('loading')
@@ -142,8 +154,32 @@ export function FaceScanner({
         const outcome = await readFace(api, current)
         if (cancelledRef.current) return
 
-        const index = samplesRef.current.length
-        const wanted = poses[index]
+        const wanted = poses[attemptedRef.current]
+
+        // Moves to the next pose, or finishes. Returns true when done.
+        const advance = async (): Promise<boolean> => {
+          attemptedRef.current += 1
+          stableRef.current = 0
+          stuckTicksRef.current = 0
+          skipRequestedRef.current = false
+          setCanSkipPose(false)
+
+          if (attemptedRef.current >= poses.length) {
+            stopCamera()
+            setPhase('done')
+            await onComplete(samplesRef.current)
+            return true
+          }
+          setStepIndex(attemptedRef.current)
+          setHint(t(`face.pose.${poses[attemptedRef.current]}`))
+          return false
+        }
+
+        if (skipRequestedRef.current) {
+          if (await advance()) return
+          setTimeout(tick, FRAME_INTERVAL_MS)
+          return
+        }
 
         if ('issue' in outcome) {
           stableRef.current = 0
@@ -167,17 +203,18 @@ export function FaceScanner({
                 quality: outcome.reading.quality,
               },
             ]
-            stableRef.current = 0
-
-            if (samplesRef.current.length >= poses.length) {
-              stopCamera()
-              setPhase('done')
-              await onComplete(samplesRef.current)
-              return
-            }
-            setStepIndex(samplesRef.current.length)
-            setHint(t(`face.pose.${poses[samplesRef.current.length]}`))
+            if (await advance()) return
+            setTimeout(tick, FRAME_INTERVAL_MS)
+            return
           }
+        }
+
+        // An angle the camera cannot agree on must not trap the wizard: offer to
+        // move past it once something has already been captured, since a
+        // template built from fewer angles still works.
+        stuckTicksRef.current += 1
+        if (stuckTicksRef.current >= STUCK_TICKS_BEFORE_SKIP && samplesRef.current.length > 0) {
+          setCanSkipPose(true)
         }
 
         setTimeout(tick, FRAME_INTERVAL_MS)
@@ -253,6 +290,17 @@ export function FaceScanner({
             {phase === 'done' && (isSubmitting ? t('face.status.saving') : t('face.status.done'))}
             {phase === 'failed' && t('face.status.stopped')}
           </p>
+
+          {phase === 'scanning' && canSkipPose && (
+            <div className="ss-auth-footer" style={{ marginTop: 0 }}>
+              <span
+                className="ss-auth-link"
+                onClick={() => { skipRequestedRef.current = true }}
+              >
+                {t('face.skipPose')}
+              </span>
+            </div>
+          )}
 
           {phase === 'failed' && (
             <button type="button" className="ss-auth-btn-primary" onClick={() => void start()}>

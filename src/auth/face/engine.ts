@@ -136,27 +136,37 @@ export async function loadFaceEngine(options?: {
  * is compared against the eye corners horizontally and against the eye/chin line
  * vertically. Tolerances are generous on purpose — the poses exist to make the
  * enrollment cover several angles, not to measure anything.
+ *
+ * The poses are named from the *user's* point of view, which is the opposite of
+ * the image's. Landmarks come from the raw camera frame, where the person faces
+ * the lens: their left side sits on the right of the image, so turning their
+ * head left carries the nose towards a larger x. Naming that "right" would
+ * contradict both the prompt and the mirrored preview they are watching.
  */
 function classifyPose(points: FaceApiPoint[]): FacePose {
-  const leftEyeOuter = points[36]
-  const rightEyeOuter = points[45]
+  const imageLeftEyeOuter = points[36]
+  const imageRightEyeOuter = points[45]
   const noseTip = points[30]
   const chin = points[8]
-  if (!leftEyeOuter || !rightEyeOuter || !noseTip || !chin) return 'center'
+  if (!imageLeftEyeOuter || !imageRightEyeOuter || !noseTip || !chin) return 'center'
 
-  const span = rightEyeOuter.x - leftEyeOuter.x
+  const span = imageRightEyeOuter.x - imageLeftEyeOuter.x
   if (span !== 0) {
-    const yawRatio = (noseTip.x - leftEyeOuter.x) / span
-    if (yawRatio < 0.38) return 'left'
-    if (yawRatio > 0.62) return 'right'
+    const yawRatio = (noseTip.x - imageLeftEyeOuter.x) / span
+    if (yawRatio < 0.38) return 'right'
+    if (yawRatio > 0.62) return 'left'
   }
 
-  const eyeLineY = (leftEyeOuter.y + rightEyeOuter.y) / 2
+  const eyeLineY = (imageLeftEyeOuter.y + imageRightEyeOuter.y) / 2
   const height = chin.y - eyeLineY
   if (height !== 0) {
+    // Looking down foreshortens the lower face, so the nose sits proportionally
+    // further from the eye line. The threshold is looser than its upward twin
+    // because a chin tucked towards the chest also leaves the camera, and
+    // holding a deeper angle steady is awkward.
     const pitchRatio = (noseTip.y - eyeLineY) / height
     if (pitchRatio < 0.32) return 'up'
-    if (pitchRatio > 0.6) return 'down'
+    if (pitchRatio > 0.52) return 'down'
   }
 
   return 'center'

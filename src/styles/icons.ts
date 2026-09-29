@@ -7,6 +7,7 @@ export const EmailIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000
 export const ICONS = {
   fingerprint: 'fingerprint',
   close: 'close',
+  menu: 'menu',
   person: 'person',
   logout: 'logout',
   checkCircle: 'check_circle',

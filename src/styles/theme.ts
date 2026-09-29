@@ -2517,6 +2517,25 @@ export function generateCSS(theme: ResolvedTheme): string {
     }
     .ss-auth-settings-back .material-symbols-outlined { font-size: 22px; }
 
+    /* Only meaningful once the layout collapses; hidden at desktop widths. */
+    .ss-auth-settings-nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid ${theme.authOutlineVariant}33;
+      background: ${theme.authSurfaceContainerLow};
+      color: ${theme.authOnSurfaceVariant};
+      cursor: pointer;
+    }
+
+    .ss-auth-settings-nav-toggle:hover {
+      background: ${theme.authSurfaceContainer};
+      color: ${theme.authOnSurface};
+    }
+
     .ss-auth-settings-layout {
       display: flex;
       flex: 1;
@@ -2735,6 +2754,25 @@ export function generateCSS(theme: ResolvedTheme): string {
     }
 
     /* Responsive overrides */
+    /* Settings layout collapses earlier than the rest: a 220px rail plus the
+       form is already cramped on a tablet in portrait, not only on a phone. */
+    @media (max-width: 900px) {
+      .ss-auth-settings-nav-toggle { display: inline-flex; }
+
+      .ss-auth-settings-layout { flex-direction: column; }
+
+      .ss-auth-settings-nav {
+        display: none;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid ${theme.authOutlineVariant}1a;
+      }
+
+      .ss-auth-settings-nav-open { display: flex; }
+
+      .ss-auth-settings-content { padding: 16px; }
+    }
+
     @media (max-width: 640px) {
       .ss-auth-profile-header {
         flex-direction: column;

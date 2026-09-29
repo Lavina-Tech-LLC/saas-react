@@ -43,6 +43,12 @@ function clearInviteFromUrl() {
   )
 }
 
+/**
+ * Dial code used until the project sets one of its own. It seeds the phone
+ * field, so it is a real default rather than placeholder decoration.
+ */
+const DEFAULT_DIAL_CODE = '+998'
+
 /** Capture sequence used when the server does not send one. */
 const DEFAULT_FACE_POSES: FacePose[] = ['center', 'left', 'right', 'up', 'down']
 
@@ -130,11 +136,20 @@ export function SignIn({
   const showIdentifierToggle = emailAuthEnabled && phoneAuthEnabled
   const [identifierKind, setIdentifierKind] = useState<IdentifierKind>('email')
 
+  const dialCode = settings?.defaultPhoneCountryCode || DEFAULT_DIAL_CODE
+
   // Settings arrive asynchronously; snap to the only supported kind once known.
+  // A phone-only project also gets the dial code seeded, so the user types just
+  // the subscriber part. Seeding happens here and on an explicit switch rather
+  // than whenever the field is empty — otherwise clearing it would be
+  // impossible, the code reappearing on every keystroke.
   useEffect(() => {
-    if (!emailAuthEnabled && phoneAuthEnabled) setIdentifierKind('phone')
+    if (!emailAuthEnabled && phoneAuthEnabled) {
+      setIdentifierKind('phone')
+      setIdentifier((current) => (current === '' ? dialCode : current))
+    }
     if (emailAuthEnabled && !phoneAuthEnabled) setIdentifierKind('email')
-  }, [emailAuthEnabled, phoneAuthEnabled])
+  }, [emailAuthEnabled, phoneAuthEnabled, dialCode])
 
   const isPhoneMode = identifierKind === 'phone'
   const identifierLabel = isPhoneMode ? t('identifier.phone') : t('identifier.email')
@@ -146,7 +161,7 @@ export function SignIn({
       ? t('method.phone')
       : t('method.email')
   const identifierPlaceholder = isPhoneMode
-    ? `${settings?.defaultPhoneCountryCode || '+992'} 90 111 22 33`
+    ? `${dialCode} 90 111 22 33`
     : t('identifier.emailPlaceholder')
 
   // Sign-up fields
@@ -407,11 +422,11 @@ export function SignIn({
 
   const switchIdentifierKind = useCallback((kind: IdentifierKind) => {
     setIdentifierKind(kind)
-    setIdentifier('')
+    setIdentifier(kind === 'phone' ? dialCode : '')
     setSignInError(null)
     setSignUpError(null)
     setValidationError(null)
-  }, [setSignInError, setSignUpError])
+  }, [setSignInError, setSignUpError, dialCode])
 
   // Rendered in both the sign-in and the sign-up form, which need distinct
   // input ids so their labels stay correctly associated.

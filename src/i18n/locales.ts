@@ -92,6 +92,7 @@ export const en = {
   'face.status.done': 'Done',
   'face.status.stopped': 'Scanning stopped',
   'face.retry': 'Try again',
+  'face.skipPose': 'Skip this angle',
   'face.hold': 'Hold still… {done}/{total}',
   'face.error.insecure': 'Camera access needs a secure (https) connection',
   'face.error.denied': 'Camera access was denied. Allow it in your browser to continue.',
@@ -121,6 +122,7 @@ export const en = {
 
   // --- Settings panel ---
   'settings.title': 'Settings',
+  'settings.menu': 'Settings menu',
   'settings.tab.profile': 'Profile',
   'settings.tab.organization': 'Organization',
   'settings.tab.people': 'People',
@@ -184,7 +186,7 @@ export const en = {
   'people.inviteCreatedFor': 'Invitation created for',
   'people.copyInviteLink': 'Copy invite link',
   'people.inviteBy': 'Invite by',
-  'people.phonePlaceholder': '+992 90 111 22 33',
+  'people.phonePlaceholder': '+998 90 111 22 33',
   'people.identifier': 'Email or phone',
 
   'people.emailPlaceholder': 'member@example.com',
@@ -321,6 +323,7 @@ export const ru: Dictionary = {
   'face.status.done': 'Готово',
   'face.status.stopped': 'Сканирование остановлено',
   'face.retry': 'Попробовать снова',
+  'face.skipPose': 'Пропустить этот ракурс',
   'face.hold': 'Не двигайтесь… {done}/{total}',
   'face.error.insecure': 'Для доступа к камере нужно защищённое соединение (https)',
   'face.error.denied': 'Доступ к камере запрещён. Разрешите его в браузере, чтобы продолжить.',
@@ -348,6 +351,7 @@ export const ru: Dictionary = {
   'org.createFailed': 'Не удалось создать организацию',
 
   'settings.title': 'Настройки',
+  'settings.menu': 'Меню настроек',
   'settings.tab.profile': 'Профиль',
   'settings.tab.organization': 'Организация',
   'settings.tab.people': 'Участники',
@@ -408,7 +412,7 @@ export const ru: Dictionary = {
   'people.inviteCreatedFor': 'Приглашение создано для',
   'people.copyInviteLink': 'Скопировать ссылку-приглашение',
   'people.inviteBy': 'Пригласить по',
-  'people.phonePlaceholder': '+992 90 111 22 33',
+  'people.phonePlaceholder': '+998 90 111 22 33',
   'people.identifier': 'Почта или телефон',
 
   'people.emailPlaceholder': 'member@example.com',
@@ -540,6 +544,7 @@ export const uz: Dictionary = {
   'face.status.done': 'Tayyor',
   'face.status.stopped': 'Skanerlash to‘xtatildi',
   'face.retry': 'Qayta urinish',
+  'face.skipPose': 'Bu rakursni o‘tkazib yuborish',
   'face.hold': 'Qimirlamang… {done}/{total}',
   'face.error.insecure': 'Kameraga kirish uchun xavfsiz (https) ulanish kerak',
   'face.error.denied': 'Kameraga ruxsat berilmadi. Davom etish uchun brauzerda ruxsat bering.',
@@ -567,6 +572,7 @@ export const uz: Dictionary = {
   'org.createFailed': 'Tashkilot yaratib bo‘lmadi',
 
   'settings.title': 'Sozlamalar',
+  'settings.menu': 'Sozlamalar menyusi',
   'settings.tab.profile': 'Profil',
   'settings.tab.organization': 'Tashkilot',
   'settings.tab.people': 'A‘zolar',
@@ -627,7 +633,7 @@ export const uz: Dictionary = {
   'people.inviteCreatedFor': 'Taklif yaratildi:',
   'people.copyInviteLink': 'Taklif havolasidan nusxa olish',
   'people.inviteBy': 'Taklif qilish usuli',
-  'people.phonePlaceholder': '+992 90 111 22 33',
+  'people.phonePlaceholder': '+998 90 111 22 33',
   'people.identifier': 'Pochta yoki telefon',
 
   'people.emailPlaceholder': 'member@example.com',
