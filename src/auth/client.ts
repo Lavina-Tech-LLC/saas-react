@@ -4,7 +4,7 @@ import type { TokenManager } from '../core/tokenManager'
 import type { EventEmitter } from '../core/eventEmitter'
 import type { SaaSEvents } from '../core/client'
 import type {
-  User, ProjectSettings, AuthResult, SignInResult, SignUpResult, SignUpOptions,
+  User, ProjectSettings, AuthResult, SignInResult, SignUpResult, SignUpOptions, FaceRequiredResult,
   OAuthProvider, Org, Member, Invite, PendingInvite, MyPendingInvite, MfaSetupResult, MfaVerifyResult,
   AuthStateCallback, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult,
   InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput,
@@ -105,28 +105,45 @@ export class AuthClient {
    * `otpToken` proves ownership of a phone number and is only needed when
    * `settings.phoneOtpRequired` is true.
    *
+   * `faceChallenge` makes a project that requires face control answer with a
+   * face challenge instead of a session — check with `isFaceRequired`.
+   *
    * The third argument also accepts a bare invite code for backwards
    * compatibility with releases before phone sign-up.
    */
   async signUp(
     identifier: string,
     password: string,
+    options: SignUpOptions & { faceChallenge: true },
+  ): Promise<SignUpResult | FaceRequiredResult>
+  async signUp(
+    identifier: string,
+    password: string,
     optionsOrInviteCode?: SignUpOptions | string,
     kind?: IdentifierKind,
-  ): Promise<SignUpResult> {
+  ): Promise<SignUpResult>
+  async signUp(
+    identifier: string,
+    password: string,
+    optionsOrInviteCode?: SignUpOptions | string,
+    kind?: IdentifierKind,
+  ): Promise<SignUpResult | FaceRequiredResult> {
     const options: SignUpOptions =
       typeof optionsOrInviteCode === 'string'
         ? { inviteCode: optionsOrInviteCode, kind }
         : { kind, ...optionsOrInviteCode }
 
-    const body: Record<string, string> = {
+    const body: Record<string, string | boolean> = {
       ...identifierPayload(identifier, options.kind),
       password,
     }
     if (options.inviteCode) body.inviteCode = options.inviteCode
     if (options.otpToken) body.otpToken = options.otpToken
+    if (options.faceChallenge) body.faceChallenge = true
 
-    const result = await this.transport.post<SignUpResult>('/auth/register', body)
+    const result = await this.transport.post<SignUpResult | FaceRequiredResult>('/auth/register', body)
+    // A face challenge carries no session yet: it comes with the enrollment.
+    if ('faceRequired' in result) return result
     this.setSession(result)
     return result
   }

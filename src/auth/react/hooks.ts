@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSaaSContext } from '../../react/context'
 import { SaaSError } from '../../core/error'
-import type { PhoneOtpPurpose, SignUpOptions, FaceSample, FaceStatus } from '../types'
+import type { PhoneOtpPurpose, SignUpOptions, SignUpResult, FaceRequiredResult, FaceSample, FaceStatus } from '../types'
 import type { AuthResult, OAuthProvider, Org, Member, PendingInvite, MyPendingInvite, Role, InviteLink, InviteLinkInfo, UseInviteLinkResult, InviteInfo, AcceptInviteByCodeResult, ApiKey, CreatedApiKey, CreateApiKeyInput } from '../types'
 import { resolveInviteUrl } from '../identifier'
 import type { IdentifierKind } from '../identifier'
@@ -80,12 +80,27 @@ export function useSignIn() {
   return { signIn, signInWithOAuth, submitMfaCode, isLoading, error, setError }
 }
 
+/** `signUp` as `useSignUp` returns it: the client's overloads, failing to null. */
+type SignUpFn = {
+  (
+    identifier: string,
+    password: string,
+    options: SignUpOptions & { faceChallenge: true },
+  ): Promise<SignUpResult | FaceRequiredResult | null>
+  (
+    identifier: string,
+    password: string,
+    optionsOrInviteCode?: SignUpOptions | string,
+    kind?: IdentifierKind,
+  ): Promise<SignUpResult | null>
+}
+
 export function useSignUp() {
   const { client } = useSaaSContext()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const signUp = useCallback(
+  const signUp: SignUpFn = useCallback(
     async (
       identifier: string,
       password: string,

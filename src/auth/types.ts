@@ -82,6 +82,14 @@ export interface SignUpOptions {
   kind?: IdentifierKind
   /** Proof of phone ownership from `verifyPhoneOtp`. */
   otpToken?: string
+  /**
+   * Take a face challenge instead of a session when the project requires face
+   * control. The account is created either way; the session then comes with
+   * the enrollment (`enrollFace` with the challenge's `faceToken`), exactly as
+   * on sign-in. Without it, registration returns a session flagged
+   * `faceEnrollmentRequired` and the user is signed in before the scan.
+   */
+  faceChallenge?: boolean
 }
 
 /** What a one-time code is issued for. */

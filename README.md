@@ -314,6 +314,15 @@ await signUp(email, password, inviteCode)
 
 // Register with a phone number.
 await signUp('+992901112233', password, undefined, 'phone')
+
+// On a project that requires face verification, ask for the face challenge:
+// the session then comes with the enrollment, so nobody is signed in before
+// the scan. Without `faceChallenge` a session is returned right away, flagged
+// `faceEnrollmentRequired`. `<SignIn />` does this for you.
+const result = await signUp(email, password, { faceChallenge: true })
+if (result && isFaceRequired(result)) {
+  await client.auth.enrollFace(samples, { faceToken: result.faceToken })
+}
 ```
 
 ### `useOrg()`
@@ -404,6 +413,7 @@ saas.destroy()
 |--------|---------|
 | `signIn(identifier, password, kind?)` | `Promise<AuthResult>` |
 | `signUp(identifier, password, inviteCode?, kind?)` | `Promise<SignUpResult>` |
+| `signUp(identifier, password, { faceChallenge: true, ... })` | `Promise<SignUpResult \| FaceRequiredResult>` |
 | `signOut()` | `Promise<void>` |
 | `signInWithOAuth(provider, inviteCode?)` | `Promise<AuthResult>` |
 | `sendInvite(orgId, identifier, role?, roleId?, kind?)` | `Promise<Invite>` |

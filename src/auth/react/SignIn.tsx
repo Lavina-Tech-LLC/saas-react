@@ -4,7 +4,7 @@ import { useSaaSContext, useT } from '../../react/context'
 import { useSignIn as useSignInHook, useSignUp as useSignUpHook, useInvite, useAuth, usePhoneOtp, useFace } from './hooks'
 import { FaceScanner } from './FaceScanner'
 import { isMfaRequired, isFaceRequired } from '../types'
-import type { InviteInfo, FaceRequiredResult, FaceSample } from '../types'
+import type { InviteInfo, FaceRequiredResult, FaceSample, SignUpResult } from '../types'
 import type { Translate } from '../../i18n'
 import type { FacePose } from '../face/engine'
 import type { IdentifierKind } from '../identifier'
@@ -229,6 +229,36 @@ export function SignIn({
     [identifier, identifierKind, password, mfaMode, mfaToken, mfaDigits, signIn, submitMfaCode, setSignInError],
   )
 
+  // Wraps up a registration. The server has already attached the invite's
+  // membership, so the invite is retired here either way. When the project
+  // requires face control the answer is a challenge with no session: the user
+  // only counts as signed in after the scan, so the host app cannot redirect
+  // away before the wizard has run.
+  const finishSignUp = useCallback(
+    async (result: SignUpResult | FaceRequiredResult) => {
+      const viaInvite = showSignUpForInvite
+      if (viaInvite) {
+        clearInviteFromUrl()
+        setCode(null)
+        setShowSignUpForInvite(false)
+      }
+      if (isFaceRequired(result)) {
+        setFaceChallenge(result)
+        return
+      }
+      // A server without the challenge hands out a session and only flags the
+      // missing scan.
+      if (result.faceEnrollmentRequired) {
+        setFaceEnrollAfterSignUp(true)
+        return
+      }
+      // Rewriting the URL does not re-render the host app, so refresh the user
+      // to make its "redirect once signed in" effect run against a clean URL.
+      if (viaInvite) await refreshUser()
+    },
+    [showSignUpForInvite, refreshUser],
+  )
+
   const handleSignUpSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault()
@@ -261,24 +291,15 @@ export function SignIn({
         inviteCode: showSignUpForInvite && code ? code : undefined,
         kind: identifierKind,
         otpToken: phoneOtp.otpToken ?? undefined,
+        faceChallenge: true,
       })
       // Only retire the invite once it has actually been used. Dropping it on a
       // failed attempt left the retry without any invite context, so the user
       // ended up outside the inviting organisation — or blocked outright on a
       // project where self-service registration is closed.
-      if (result && showSignUpForInvite) {
-        clearInviteFromUrl()
-        setCode(null)
-        setShowSignUpForInvite(false)
-        // Rewriting the URL does not re-render the host app, so refresh the user
-        // to make its "redirect once signed in" effect run against a clean URL.
-        await refreshUser()
-      }
-      if (result?.faceEnrollmentRequired) {
-        setFaceEnrollAfterSignUp(true)
-      }
+      if (result) await finishSignUp(result)
     },
-    [identifier, identifierKind, isPhoneMode, password, confirmPassword, settings, signUp, showSignUpForInvite, code, phoneOtp, refreshUser, t],
+    [identifier, identifierKind, isPhoneMode, password, confirmPassword, settings, signUp, showSignUpForInvite, code, phoneOtp, finishSignUp, t],
   )
 
   // Confirms the SMS code, then replays the sign-up with the proof token.
@@ -292,22 +313,15 @@ export function SignIn({
         inviteCode: showSignUpForInvite && code ? code : undefined,
         kind: 'phone',
         otpToken: verified.otpToken,
+        faceChallenge: true,
       })
       if (!result) return
 
       setOtpStep(false)
       setOtpDigits(['', '', '', '', '', ''])
-      if (showSignUpForInvite) {
-        clearInviteFromUrl()
-        setCode(null)
-        setShowSignUpForInvite(false)
-        await refreshUser()
-      }
-      if (result.faceEnrollmentRequired) {
-        setFaceEnrollAfterSignUp(true)
-      }
+      await finishSignUp(result)
     },
-    [phoneOtp, identifier, otpDigits, password, signUp, showSignUpForInvite, code, refreshUser],
+    [phoneOtp, identifier, otpDigits, password, signUp, showSignUpForInvite, code, finishSignUp],
   )
 
   const handleFaceEnroll = useCallback(
@@ -598,6 +612,9 @@ export function SignIn({
             onCancel={() => {
               // Cancelling a sign-in challenge drops back to the form; cancelling
               // the post-registration wizard just postpones it to the next login.
+              // A challenge that came from sign-up leaves the account created, so
+              // the form comes back in sign-in mode.
+              if (faceChallenge && mode === 'signUp') setMode('signIn')
               setFaceChallenge(null)
               setFaceEnrollAfterSignUp(false)
               face.setError(null)
