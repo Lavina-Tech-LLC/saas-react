@@ -8,107 +8,100 @@
  * verification on.
  */
 
-export type FacePose = 'center' | 'left' | 'right' | 'up' | 'down'
+export type FacePose = 'center' | 'left' | 'right' | 'up' | 'down';
 
 export interface FaceReading {
   /** 128-number embedding of the detected face. */
-  descriptor: number[]
+  descriptor: number[];
   /** Detector confidence, 0..1. */
-  quality: number
+  quality: number;
   /** Which way the head is turned, derived from the landmark geometry. */
-  pose: FacePose
+  pose: FacePose;
   /** Share of the frame width taken up by the face, 0..1. */
-  coverage: number
+  coverage: number;
 }
 
-export type FaceCaptureIssue =
-  | 'no-face'
-  | 'multiple-faces'
-  | 'too-far'
-  | 'low-quality'
-  | 'wrong-pose'
+export type FaceCaptureIssue = 'no-face' | 'multiple-faces' | 'too-far' | 'low-quality' | 'wrong-pose';
 
 export class FaceEngineError extends Error {
   constructor(message: string) {
-    super(message)
-    this.name = 'FaceEngineError'
+    super(message);
+    this.name = 'FaceEngineError';
   }
 }
 
-const DEFAULT_SCRIPT_URL =
-  'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js'
-const DEFAULT_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model'
+const DEFAULT_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js';
+const DEFAULT_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
 
 /** Minimum detector confidence for a reading to be accepted. */
-const MIN_CONFIDENCE = 0.5
+const MIN_CONFIDENCE = 0.5;
 /** The face must fill at least this share of the frame width. */
-const MIN_COVERAGE = 0.18
+const MIN_COVERAGE = 0.18;
 
 // Minimal shape of the parts of face-api this module touches.
-interface FaceApiPoint { x: number; y: number }
+interface FaceApiPoint {
+  x: number;
+  y: number;
+}
 interface FaceApiDetection {
-  detection: { score: number; box: { width: number } }
-  landmarks: { positions: FaceApiPoint[] }
-  descriptor: Float32Array
+  detection: { score: number; box: { width: number } };
+  landmarks: { positions: FaceApiPoint[] };
+  descriptor: Float32Array;
 }
 interface FaceApi {
-  nets: Record<string, { loadFromUri(url: string): Promise<void> }>
-  TinyFaceDetectorOptions: new (options?: { inputSize?: number; scoreThreshold?: number }) => unknown
+  nets: Record<string, { loadFromUri(url: string): Promise<void> }>;
+  TinyFaceDetectorOptions: new (options?: { inputSize?: number; scoreThreshold?: number }) => unknown;
   detectAllFaces(
     input: HTMLVideoElement,
     options: unknown,
   ): {
-    withFaceLandmarks(): { withFaceDescriptors(): Promise<FaceApiDetection[]> }
-  }
+    withFaceLandmarks(): { withFaceDescriptors(): Promise<FaceApiDetection[]> };
+  };
 }
 
-let scriptPromise: Promise<FaceApi> | null = null
-let modelsPromise: Promise<void> | null = null
+let scriptPromise: Promise<FaceApi> | null = null;
+let modelsPromise: Promise<void> | null = null;
 
 function loadScript(url: string): Promise<FaceApi> {
-  if (scriptPromise) return scriptPromise
+  if (scriptPromise) return scriptPromise;
 
   scriptPromise = new Promise<FaceApi>((resolve, reject) => {
-    const existing = (window as unknown as { faceapi?: FaceApi }).faceapi
+    const existing = (window as unknown as { faceapi?: FaceApi }).faceapi;
     if (existing) {
-      resolve(existing)
-      return
+      resolve(existing);
+      return;
     }
 
-    const script = document.createElement('script')
-    script.src = url
-    script.async = true
-    script.crossOrigin = 'anonymous'
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
-      const api = (window as unknown as { faceapi?: FaceApi }).faceapi
+      const api = (window as unknown as { faceapi?: FaceApi }).faceapi;
       if (!api) {
-        reject(new FaceEngineError('Face model script loaded but exposed no API'))
-        return
+        reject(new FaceEngineError('Face model script loaded but exposed no API'));
+        return;
       }
-      resolve(api)
-    }
-    script.onerror = () =>
-      reject(new FaceEngineError('Could not load the face recognition model'))
-    document.head.appendChild(script)
+      resolve(api);
+    };
+    script.onerror = () => reject(new FaceEngineError('Could not load the face recognition model'));
+    document.head.appendChild(script);
   }).catch((err) => {
     // Let a later attempt retry instead of caching the failure forever.
-    scriptPromise = null
-    throw err
-  })
+    scriptPromise = null;
+    throw err;
+  });
 
-  return scriptPromise
+  return scriptPromise;
 }
 
 /**
  * Downloads the script and model weights. Safe to call repeatedly — the work
  * happens once per page.
  */
-export async function loadFaceEngine(options?: {
-  scriptUrl?: string
-  modelUrl?: string
-}): Promise<FaceApi> {
-  const api = await loadScript(options?.scriptUrl || DEFAULT_SCRIPT_URL)
-  const modelUrl = options?.modelUrl || DEFAULT_MODEL_URL
+export async function loadFaceEngine(options?: { scriptUrl?: string; modelUrl?: string }): Promise<FaceApi> {
+  const api = await loadScript(options?.scriptUrl || DEFAULT_SCRIPT_URL);
+  const modelUrl = options?.modelUrl || DEFAULT_MODEL_URL;
 
   if (!modelsPromise) {
     modelsPromise = Promise.all([
@@ -118,15 +111,13 @@ export async function loadFaceEngine(options?: {
     ])
       .then(() => undefined)
       .catch((err) => {
-        modelsPromise = null
-        throw new FaceEngineError(
-          `Could not load the face model weights: ${err instanceof Error ? err.message : err}`,
-        )
-      })
+        modelsPromise = null;
+        throw new FaceEngineError(`Could not load the face model weights: ${err instanceof Error ? err.message : err}`);
+      });
   }
-  await modelsPromise
+  await modelsPromise;
 
-  return api
+  return api;
 }
 
 /**
@@ -144,32 +135,32 @@ export async function loadFaceEngine(options?: {
  * contradict both the prompt and the mirrored preview they are watching.
  */
 function classifyPose(points: FaceApiPoint[]): FacePose {
-  const imageLeftEyeOuter = points[36]
-  const imageRightEyeOuter = points[45]
-  const noseTip = points[30]
-  const chin = points[8]
-  if (!imageLeftEyeOuter || !imageRightEyeOuter || !noseTip || !chin) return 'center'
+  const imageLeftEyeOuter = points[36];
+  const imageRightEyeOuter = points[45];
+  const noseTip = points[30];
+  const chin = points[8];
+  if (!imageLeftEyeOuter || !imageRightEyeOuter || !noseTip || !chin) return 'center';
 
-  const span = imageRightEyeOuter.x - imageLeftEyeOuter.x
+  const span = imageRightEyeOuter.x - imageLeftEyeOuter.x;
   if (span !== 0) {
-    const yawRatio = (noseTip.x - imageLeftEyeOuter.x) / span
-    if (yawRatio < 0.38) return 'right'
-    if (yawRatio > 0.62) return 'left'
+    const yawRatio = (noseTip.x - imageLeftEyeOuter.x) / span;
+    if (yawRatio < 0.38) return 'right';
+    if (yawRatio > 0.62) return 'left';
   }
 
-  const eyeLineY = (imageLeftEyeOuter.y + imageRightEyeOuter.y) / 2
-  const height = chin.y - eyeLineY
+  const eyeLineY = (imageLeftEyeOuter.y + imageRightEyeOuter.y) / 2;
+  const height = chin.y - eyeLineY;
   if (height !== 0) {
     // Looking down foreshortens the lower face, so the nose sits proportionally
     // further from the eye line. The threshold is looser than its upward twin
     // because a chin tucked towards the chest also leaves the camera, and
     // holding a deeper angle steady is awkward.
-    const pitchRatio = (noseTip.y - eyeLineY) / height
-    if (pitchRatio < 0.32) return 'up'
-    if (pitchRatio > 0.52) return 'down'
+    const pitchRatio = (noseTip.y - eyeLineY) / height;
+    if (pitchRatio < 0.32) return 'up';
+    if (pitchRatio > 0.52) return 'down';
   }
 
-  return 'center'
+  return 'center';
 }
 
 /**
@@ -185,17 +176,17 @@ export async function readFace(
   const results = await api
     .detectAllFaces(video, new api.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
     .withFaceLandmarks()
-    .withFaceDescriptors()
+    .withFaceDescriptors();
 
-  if (results.length === 0) return { issue: 'no-face' }
+  if (results.length === 0) return { issue: 'no-face' };
   // More than one face in frame makes it ambiguous whose descriptor is stored.
-  if (results.length > 1) return { issue: 'multiple-faces' }
+  if (results.length > 1) return { issue: 'multiple-faces' };
 
-  const result = results[0]
-  if (result.detection.score < MIN_CONFIDENCE) return { issue: 'low-quality' }
+  const result = results[0];
+  if (result.detection.score < MIN_CONFIDENCE) return { issue: 'low-quality' };
 
-  const coverage = video.videoWidth > 0 ? result.detection.box.width / video.videoWidth : 0
-  if (coverage < MIN_COVERAGE) return { issue: 'too-far' }
+  const coverage = video.videoWidth > 0 ? result.detection.box.width / video.videoWidth : 0;
+  if (coverage < MIN_COVERAGE) return { issue: 'too-far' };
 
   return {
     reading: {
@@ -204,7 +195,7 @@ export async function readFace(
       pose: classifyPose(result.landmarks.positions),
       coverage,
     },
-  }
+  };
 }
 
 /** Human-readable instruction for each capture step. */
@@ -214,7 +205,7 @@ export const POSE_PROMPTS: Record<FacePose, string> = {
   right: 'Slowly turn your head to the right',
   up: 'Tilt your head slightly up',
   down: 'Tilt your head slightly down',
-}
+};
 
 /** What the user should do about a frame that could not be used. */
 export const ISSUE_PROMPTS: Record<FaceCaptureIssue, string> = {
@@ -223,4 +214,4 @@ export const ISSUE_PROMPTS: Record<FaceCaptureIssue, string> = {
   'too-far': 'Move a little closer to the camera',
   'low-quality': 'Too dark or too blurry — find better lighting and hold still',
   'wrong-pose': 'Hold the requested position',
-}
+};

@@ -1,21 +1,28 @@
 # @saas-support/react
 
-Embeddable auth SDK for [SaaS Support](https://saas-support.com) — drop-in sign-in, user menu, and settings components. Shadow DOM style isolation. Full theming support.
+Auth SDK for [SaaS Support](https://saas-support.com) — drop-in sign-in, user menu, and settings components for Lavina apps. Built on **Mantine 9**: every component takes its look from your app's Mantine theme, so it matches the rest of your interface automatically (LM3 design system).
 
 ```bash
-npm install @saas-support/react
+yarn add @saas-support/react
 ```
+
+**Requires** React ≥ 19.2, `@mantine/core` + `@mantine/hooks` 9, and `lucide-react` — all provided by your app (peer dependencies).
 
 ## Quick Start
 
+Render `<SaaSProvider>` **inside** your `<MantineProvider>`:
+
 ```tsx
+import { MantineProvider } from '@mantine/core'
 import { SaaSProvider, SignIn, UserButton } from '@saas-support/react/react'
 
 function App() {
   return (
-    <SaaSProvider publishableKey="pub_live_..." baseUrl="https://api.example.com/v1">
-      <UserButton />
-    </SaaSProvider>
+    <MantineProvider theme={theme}>
+      <SaaSProvider publishableKey="pub_live_..." baseUrl="https://api.example.com/v1">
+        <UserButton />
+      </SaaSProvider>
+    </MantineProvider>
   )
 }
 ```
@@ -31,16 +38,8 @@ function App() {
 
 ## Provider
 
-Wrap your app in `<SaaSProvider>` to initialize the SDK:
-
 ```tsx
-import { SaaSProvider } from '@saas-support/react/react'
-
-<SaaSProvider
-  publishableKey="pub_live_..."
-  baseUrl="https://api.saas-support.com/v1"
-  appearance={{ baseTheme: 'dark' }}
->
+<SaaSProvider publishableKey="pub_live_..." baseUrl="https://api.saas-support.com/v1" locale={i18n.language}>
   <App />
 </SaaSProvider>
 ```
@@ -50,10 +49,12 @@ import { SaaSProvider } from '@saas-support/react/react'
 | `publishableKey` | `string` | No* | Publishable key for auth operations |
 | `apiKey` | `string` | No* | API key for server-side operations |
 | `baseUrl` | `string` | No | API base URL override |
-| `appearance` | `Appearance` | No | Global theme configuration |
 | `locale` | `string` | No | UI language: `en`, `ru` or `uz` (regional tags like `ru-RU` are accepted) |
+| `onLocaleChange` | `(locale: 'en' \| 'ru' \| 'uz') => void` | No | Adds a **Language** picker to `UserButton`'s menu. Change your app's language here; the SDK follows through `locale`, so both switch together |
 
 \* At least one of `publishableKey` or `apiKey` is required.
+
+The provider also holds the organization and invitation state, so every `useOrg()` / `useInvites()` call — and every component — sees the same data.
 
 ### Language
 
@@ -69,7 +70,11 @@ The language is resolved in this order, most explicit first:
 ```tsx
 const { i18n } = useTranslation()
 
-<SaaSProvider publishableKey="pub_live_..." locale={i18n.language}>
+<SaaSProvider
+  publishableKey="pub_live_..."
+  locale={i18n.language}
+  onLocaleChange={(locale) => i18n.changeLanguage(locale)}
+>
   <App />
 </SaaSProvider>
 ```
@@ -126,47 +131,43 @@ never reads the code.
 
 ### `<SignIn />`
 
-Combined sign-in and sign-up form with OAuth support, MFA, and a built-in mode toggle.
+Sign-in and sign-up with OAuth, MFA, SMS confirmation, face verification, invites, and password reset.
 
 ```tsx
 import { SignIn } from '@saas-support/react/react'
 
-<SignIn
-  initialMode="signIn"
-  afterSignInUrl="/dashboard"
-  afterSignUpUrl="/onboarding"
-/>
+// Router apps: navigate client-side after sign-in
+<SignIn onSignIn={() => navigate({ to: search.redirect ?? '/' })} />
 ```
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `initialMode` | `'signIn' \| 'signUp'` | `'signIn'` | Starting mode |
-| `afterSignInUrl` | `string` | — | Redirect URL after sign-in |
-| `afterSignUpUrl` | `string` | — | Redirect URL after sign-up |
-| `appearance` | `Appearance` | — | Theme overrides |
+| `onSignIn` | `(user: User) => void` | — | Called when a session starts after sign-in — use it to navigate with your router |
+| `onSignUp` | `(user: User) => void` | — | Called after sign-up (falls back to `onSignIn`) |
+| `afterSignInUrl` | `string` | — | Full-page redirect after sign-in, used only when `onSignIn` is not given |
+| `afterSignUpUrl` | `string` | — | Full-page redirect after sign-up (falls back to `afterSignInUrl`) |
+| `inviteCode` | `string` | — | Invite code; read from `?invite_code=` when omitted |
+| `resetToken` | `string` | — | Token from an emailed password-reset link — shows the new-password form |
+| `onPasswordReset` | `() => void` | — | Called when the user leaves the reset-link flow, so you can drop the token from your URL |
 
 Features:
-- Email/password sign-in and sign-up
-- Phone/password sign-in and sign-up, with an email/phone switch when the project enables both
+- Email or phone + password, with an Email/Phone switch when the project enables both
 - OAuth (Google, GitHub) when enabled in project settings
-- MFA verification (6-digit code)
-- Built-in toggle between sign-in and sign-up modes
-- Password validation against project settings
+- MFA and SMS codes with one-time-code autofill
+- **Forgot password:** email accounts get a reset link (pointing back to the current page); phone accounts confirm an SMS code and set a new password in place
 - Invite landing card for `?invite_code=` links, including sign-up into the inviting organization
+- Face verification when the project enables it
 
-The component follows the project's auth settings: when self-service registration
-is switched off it hides the sign-up toggle, and it keeps accepting sign-ups that
-carry an invite code.
+When self-service registration is off, the sign-up toggle is hidden; sign-ups carrying an invite code are still accepted.
+
+**Password-reset links:** the reset email links to the page that requested it, with the token in the URL. Read that parameter in your route and pass it as `resetToken`.
 
 ### `<FaceScanner />`
 
-Guided camera capture for face verification. `<SignIn />` renders it on its own
-when a project enables face control, so you only need it directly if you build a
-custom flow.
+Guided camera capture for face verification. `<SignIn />` and the settings panel render it themselves, so you only need it for a custom flow.
 
 ```tsx
-import { FaceScanner } from '@saas-support/react/react'
-
 <FaceScanner
   poses={['center', 'left', 'right']}
   title="Set up face verification"
@@ -175,72 +176,49 @@ import { FaceScanner } from '@saas-support/react/react'
 />
 ```
 
-Notes:
-- The camera image never leaves the browser. Each pose is reduced to a
-  128-number descriptor, and only that is sent to the API.
-- `getUserMedia` requires a secure context, so face verification only works over
-  HTTPS (or on `localhost`).
-- The recognition model (a few MB) is fetched from a CDN the first time the
-  scanner runs — nothing is added to your bundle, and nothing is downloaded for
-  projects that leave face verification off. Point `faceModelUrl` in the project
-  settings at your own host to avoid the public CDN.
-- Face matching happens server-side against the stored descriptor. It stops a
-  user from handing their password to a colleague; it is not a defence against
-  someone calling the API directly with a stolen descriptor.
+- The camera image never leaves the browser: each pose is reduced to a 128-number descriptor, and only that is sent to the API.
+- `getUserMedia` requires a secure context — HTTPS or `localhost`.
+- The recognition model (a few MB) is fetched from a CDN the first time the scanner runs; nothing is added to your bundle. Point `faceModelUrl` in the project settings at your own host to avoid the public CDN.
+- Matching happens server-side. It stops a user from handing their password to a colleague; it is not a defence against someone calling the API with a stolen descriptor.
 
 ### `<UserButton />`
 
-Avatar button that opens a dropdown with org switcher, settings, and sign-out.
+A sidebar row — avatar, name and organization, ⇅ — opening a menu with your account, the org switcher, account settings, preferences and sign-out. **Preferences** switches the app between light and dark (through your `MantineProvider`) and — when `SaaSProvider` has `onLocaleChange` — the language.
 
 ```tsx
-import { UserButton } from '@saas-support/react/react'
-
 <UserButton
-  showOrgSwitcher={true}
-  afterSignOutUrl="/login"
+  onSignOut={() => navigate({ to: '/login' })}
   onOrgChange={(org) => console.log('Switched to', org.name)}
-  onOrgSettingsClick={(org) => navigate(`/org/${org.slug}/settings`)}
+  onOrgSettingsClick={(org) => navigate({ to: '/org/$slug/settings', params: { slug: org.slug } })}
 />
 ```
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `afterSignOutUrl` | `string` | — | Redirect URL after sign-out |
-| `afterDeleteAccountUrl` | `string` | — | Redirect URL after account deletion |
-| `showOrgSwitcher` | `boolean` | `true` | Show org list in dropdown |
-| `onOrgChange` | `(org: Org) => void` | — | Called when user switches org |
-| `onOrgSettingsClick` | `(org: Org) => void` | — | Called when "Org settings" is clicked |
-| `appearance` | `Appearance` | — | Theme overrides |
-
-Features:
-- Avatar with initials fallback
-- Invite notification badge
-- Inline org creation
-- Full settings panel (profile, organization, people, invites, billing)
+| `onSignOut` | `() => void` | — | Called after sign-out — navigate with your router here |
+| `afterSignOutUrl` | `string` | — | Full-page redirect after sign-out |
+| `afterDeleteAccountUrl` | `string` | — | Full-page redirect after account deletion |
+| `showOrgSwitcher` | `boolean` | `true` | Show the organization list and a "Manage organizations" item (opens Settings → Organization, where organizations are created) |
+| `onOrgChange` | `(org: Org) => void` | — | Called when the user switches or creates an org |
+| `onOrgSettingsClick` | `(org: Org) => void` | — | Adds an "Organization settings" item |
+| `compact` | `boolean` | `false` | Just the avatar (with the invite count) — for a navigation rail or a tight header; the menu is the same |
 
 ### `<SettingsPanel />`
 
-Full-page settings overlay with tabs for profile, organization, people, invites, and billing. Typically opened by `<UserButton>` but can be used standalone.
+Settings as a full-screen page (a full-screen Modal: header with back, title and ✕; a sidebar of sections on the left, the section in a centered column that scrolls on its own; below 992px the sidebar folds behind a menu toggle in the header): profile, organization, people, API keys, invites, billing. Each tab is a column of settings rows; tabs follow the user's role in the selected organization. Opened by `<UserButton>`, or standalone:
 
 ```tsx
-import { SettingsPanel } from '@saas-support/react/react'
-
-<SettingsPanel
-  onClose={() => setShowSettings(false)}
-  defaultTab="profile"
-  afterDeleteAccountUrl="/login"
-  onOrgDeleted={refreshOrgs}
-  onOrgUpdated={refreshOrgs}
-/>
+<SettingsPanel opened={opened} onClose={close} defaultTab="people" />
 ```
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
+| `opened` | `boolean` | **required** | Whether the settings page is open |
 | `onClose` | `() => void` | **required** | Close callback |
-| `defaultTab` | `SettingsTab` | `'profile'` | Initial active tab |
-| `afterDeleteAccountUrl` | `string` | — | Redirect after account deletion |
-| `onOrgDeleted` | `() => void` | — | Callback when org is deleted |
-| `onOrgUpdated` | `() => void` | — | Callback when org is updated |
+| `defaultTab` | `SettingsTab` | `'profile'` | Tab to open on; role-gated tabs open once the user's role is known |
+| `afterDeleteAccountUrl` | `string` | — | Full-page redirect after account deletion |
+| `onOrgDeleted` | `() => void` | — | Called after an org is deleted |
+| `onOrgUpdated` | `() => void` | — | Called after an org is renamed or gets a new avatar |
 
 ---
 
@@ -381,12 +359,26 @@ const { deleteAccount, isLoading, error } = useDeleteAccount()
 await deleteAccount()
 ```
 
+### `usePasswordReset()`
+
+The forgotten-password flows behind `<SignIn>`'s "Forgot password?" — use it to build your own reset screen.
+
+```tsx
+const { sendEmailLink, resetWithToken, resetByPhone, isLoading, error } = usePasswordReset()
+
+await sendEmailLink('ali@example.com', `${window.location.origin}/reset`) // emails a link back to /reset
+await resetWithToken(tokenFromUrl, newPassword)                           // on the /reset page
+await resetByPhone(phone, verifiedOtpToken, newPassword)                  // after verifyPhoneOtp(phone, code, 'reset')
+```
+
+Each returns `true` on success; failures set `error`.
+
 ### `useSaaSContext()`
 
 Low-level context access.
 
 ```tsx
-const { client, user, isLoaded, appearance, settings } = useSaaSContext()
+const { client, user, isLoaded, settings, locale, t, onLocaleChange } = useSaaSContext()
 ```
 
 ---
@@ -450,46 +442,28 @@ saas.destroy()
 
 ---
 
-## Theming
+## Styling
 
-All components render inside Shadow DOM for style isolation. Customize via the `appearance` prop:
+Components are plain Mantine components rendered in your app's tree — no Shadow DOM, no SDK stylesheet, no fonts loaded by the SDK. They follow your `MantineProvider` theme (colors, radius, fonts, light/dark), so the LM3 reference theme in the conventions repo styles them like the rest of the app.
 
-```tsx
-<SaaSProvider
-  publishableKey="pub_live_..."
-  appearance={{
-    baseTheme: 'dark',
-    variables: {
-      colorPrimary: '#8b5cf6',
-      colorBackground: '#0f172a',
-      colorText: '#f1f5f9',
-      fontFamily: '"Inter", sans-serif',
-      borderRadius: '12px',
-    },
-    elements: {
-      card: { boxShadow: '0 4px 24px rgba(0,0,0,0.3)' },
-      submitButton: { fontWeight: 700 },
-    },
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap',
-  }}
->
-```
+---
 
-Set `fontUrl: null` to disable CDN font loading.
+## Migrating from 0.x
 
-### Theme Variables
+1.0 rebuilds the UI on Mantine. Breaking changes:
 
-| Variable | Light Default | Dark Default |
-|----------|--------------|--------------|
-| `colorPrimary` | `#6366f1` | `#818cf8` |
-| `colorBackground` | `#ffffff` | `#1e1e2e` |
-| `colorText` | `#1a1a2e` | `#e2e8f0` |
-| `colorInputBackground` | `#f8f9fa` | `#2a2a3e` |
-| `colorInputBorder` | `#e2e8f0` | `#3a3a4e` |
-| `colorError` | `#ef4444` | `#f87171` |
-| `colorSuccess` | `#22c55e` | `#4ade80` |
-| `fontFamily` | `-apple-system, ...` | `-apple-system, ...` |
-| `borderRadius` | `8px` | `8px` |
+| 0.x | 1.0 |
+|---|---|
+| Self-contained, Shadow DOM, own CSS | Mantine components styled by the host theme |
+| `appearance` prop on the provider and components | Removed — style through your Mantine theme |
+| Works without Mantine; React ≥ 17 | Peer deps: `@mantine/core` + `@mantine/hooks` 9, `lucide-react`, React ≥ 19.2 |
+| `<SaaSProvider>` anywhere | `<SaaSProvider>` must be inside `<MantineProvider>` |
+| `<SettingsPanel onClose>` full-page overlay, mounted to open | `<SettingsPanel opened onClose>` full-page settings, controlled by `opened` |
+| `afterSignInUrl` accepted but ignored | Works (full-page redirect); prefer `onSignIn` for router navigation |
+| "Forgot?" did nothing | Email reset link + SMS reset; pass `resetToken` on your reset route |
+| `Appearance`, `ThemeVariables`, `ElementOverrides` types | Removed |
+
+Behavior fixes in 1.0: org and invite state is shared across components (badges and tabs update immediately), `defaultTab` is respected for role-gated tabs, every action shows its loading state, errors that were hidden are shown, and every string is translated (en/ru/uz).
 
 ---
 

@@ -3,7 +3,7 @@
  * identifier. The API takes them in separate fields, so a single "email or
  * phone" input has to be classified before the request is sent.
  */
-export type IdentifierKind = 'email' | 'phone'
+export type IdentifierKind = 'email' | 'phone';
 
 /**
  * Classifies what the user typed. Only the shape is inspected — a leading plus,
@@ -11,10 +11,10 @@ export type IdentifierKind = 'email' | 'phone'
  * Anything containing "@" is an e-mail.
  */
 export function looksLikePhone(value: string): boolean {
-  const trimmed = value.trim()
-  if (trimmed === '' || trimmed.includes('@')) return false
-  if (trimmed.startsWith('+')) return true
-  return /^[\d\s\-().]+$/.test(trimmed)
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed.includes('@')) return false;
+  if (trimmed.startsWith('+')) return true;
+  return /^[\d\s\-().]+$/.test(trimmed);
 }
 
 /**
@@ -22,13 +22,10 @@ export function looksLikePhone(value: string): boolean {
  * when the UI already knows which field the user filled in; otherwise the value
  * is classified by shape.
  */
-export function identifierPayload(
-  identifier: string,
-  kind?: IdentifierKind,
-): { email: string } | { phone: string } {
-  const value = identifier.trim()
-  const resolved = kind ?? (looksLikePhone(value) ? 'phone' : 'email')
-  return resolved === 'phone' ? { phone: value } : { email: value }
+export function identifierPayload(identifier: string, kind?: IdentifierKind): { email: string } | { phone: string } {
+  const value = identifier.trim();
+  const resolved = kind ?? (looksLikePhone(value) ? 'phone' : 'email');
+  return resolved === 'phone' ? { phone: value } : { email: value };
 }
 
 /**
@@ -48,13 +45,13 @@ export function identifierPayload(
  *     invitee lands somewhere that never renders the sign-in component.
  */
 export function resolveInviteUrl(invite: { code?: string; url?: string }): string {
-  const url = invite.url
+  const url = invite.url;
   if (url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) return url
-    if (typeof window === 'undefined') return url
-    if (url.startsWith('/')) return window.location.origin + url
-    return window.location.origin + window.location.pathname + url
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (typeof window === 'undefined') return url;
+    if (url.startsWith('/')) return window.location.origin + url;
+    return window.location.origin + window.location.pathname + url;
   }
-  if (typeof window === 'undefined' || !invite.code) return ''
-  return `${window.location.origin}/?invite_code=${invite.code}`
+  if (typeof window === 'undefined' || !invite.code) return '';
+  return `${window.location.origin}/?invite_code=${invite.code}`;
 }

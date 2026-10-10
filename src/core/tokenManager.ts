@@ -1,57 +1,57 @@
 export class TokenManager {
-  private accessToken: string | null = null
-  private refreshToken: string | null = null
-  private refreshTimer: ReturnType<typeof setTimeout> | null = null
-  private refreshInFlight: Promise<void> | null = null
-  private storageKey: string
-  private onRefreshNeeded: (() => Promise<void>) | null = null
-  private onTokensChanged: (() => void) | null = null
-  private boundHandleStorage: ((e: StorageEvent) => void) | null = null
+  private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private refreshInFlight: Promise<void> | null = null;
+  private storageKey: string;
+  private onRefreshNeeded: (() => Promise<void>) | null = null;
+  private onTokensChanged: (() => void) | null = null;
+  private boundHandleStorage: ((e: StorageEvent) => void) | null = null;
 
   constructor(keyPrefix: string) {
-    this.storageKey = `ss_rt_${keyPrefix.slice(0, 12)}`
-    this.refreshToken = this.loadRefreshToken()
+    this.storageKey = `ss_rt_${keyPrefix.slice(0, 12)}`;
+    this.refreshToken = this.loadRefreshToken();
 
     if (typeof window !== 'undefined') {
-      this.boundHandleStorage = this.handleStorageEvent.bind(this)
-      window.addEventListener('storage', this.boundHandleStorage)
+      this.boundHandleStorage = this.handleStorageEvent.bind(this);
+      window.addEventListener('storage', this.boundHandleStorage);
     }
   }
 
   setRefreshCallback(cb: () => Promise<void>): void {
-    this.onRefreshNeeded = cb
+    this.onRefreshNeeded = cb;
   }
 
   setTokensChangedCallback(cb: () => void): void {
-    this.onTokensChanged = cb
+    this.onTokensChanged = cb;
   }
 
   getAccessToken(): string | null {
-    return this.accessToken
+    return this.accessToken;
   }
 
   getRefreshToken(): string | null {
-    return this.refreshToken
+    return this.refreshToken;
   }
 
   hasRefreshToken(): boolean {
-    return this.refreshToken !== null
+    return this.refreshToken !== null;
   }
 
   setTokens(accessToken: string, refreshToken: string): void {
-    this.accessToken = accessToken
-    this.refreshToken = refreshToken
-    this.saveRefreshToken(refreshToken)
-    this.scheduleRefresh(accessToken)
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.saveRefreshToken(refreshToken);
+    this.scheduleRefresh(accessToken);
   }
 
   clearTokens(): void {
-    this.accessToken = null
-    this.refreshToken = null
-    this.removeRefreshToken()
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.removeRefreshToken();
     if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer)
-      this.refreshTimer = null
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
     }
   }
 
@@ -61,116 +61,113 @@ export class TokenManager {
    */
   async refreshOnce(): Promise<void> {
     if (this.refreshInFlight) {
-      return this.refreshInFlight
+      return this.refreshInFlight;
     }
 
     this.refreshInFlight = this.executeRefresh().finally(() => {
-      this.refreshInFlight = null
-    })
+      this.refreshInFlight = null;
+    });
 
-    return this.refreshInFlight
+    return this.refreshInFlight;
   }
 
   destroy(): void {
     if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer)
-      this.refreshTimer = null
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
     }
     if (typeof window !== 'undefined' && this.boundHandleStorage) {
-      window.removeEventListener('storage', this.boundHandleStorage)
-      this.boundHandleStorage = null
+      window.removeEventListener('storage', this.boundHandleStorage);
+      this.boundHandleStorage = null;
     }
   }
 
   private async executeRefresh(): Promise<void> {
     if (!this.onRefreshNeeded) {
-      throw new Error('No refresh callback configured')
+      throw new Error('No refresh callback configured');
     }
 
     if (typeof navigator !== 'undefined' && 'locks' in navigator) {
-      await navigator.locks.request(
-        `ss_refresh_lock_${this.storageKey}`,
-        async () => {
-          // Another tab may have refreshed while we waited for the lock.
-          // Adopt the latest RT from localStorage if it changed.
-          const storedRT = this.loadRefreshToken()
-          if (storedRT && storedRT !== this.refreshToken) {
-            this.refreshToken = storedRT
-          }
-          await this.onRefreshNeeded!()
-        },
-      )
+      await navigator.locks.request(`ss_refresh_lock_${this.storageKey}`, async () => {
+        // Another tab may have refreshed while we waited for the lock.
+        // Adopt the latest RT from localStorage if it changed.
+        const storedRT = this.loadRefreshToken();
+        if (storedRT && storedRT !== this.refreshToken) {
+          this.refreshToken = storedRT;
+        }
+        await this.onRefreshNeeded!();
+      });
     } else {
-      await this.onRefreshNeeded()
+      await this.onRefreshNeeded();
     }
   }
 
   private scheduleRefresh(accessToken: string): void {
     if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer)
+      clearTimeout(this.refreshTimer);
     }
 
-    const exp = this.getTokenExpiry(accessToken)
-    if (!exp) return
+    const exp = this.getTokenExpiry(accessToken);
+    if (!exp) return;
 
-    const msUntilRefresh = exp * 1000 - Date.now() - 60_000
+    const msUntilRefresh = exp * 1000 - Date.now() - 60_000;
     if (msUntilRefresh <= 0) {
-      this.refreshOnce().catch(() => {})
-      return
+      this.refreshOnce().catch(() => {});
+      return;
     }
 
     this.refreshTimer = setTimeout(() => {
-      this.refreshOnce().catch(() => {})
-    }, msUntilRefresh)
+      this.refreshOnce().catch(() => {});
+    }, msUntilRefresh);
   }
 
   private handleStorageEvent(event: StorageEvent): void {
-    if (event.key !== this.storageKey) return
+    if (event.key !== this.storageKey) return;
 
     if (event.newValue === null) {
       // Another tab logged out.
-      this.accessToken = null
-      this.refreshToken = null
+      this.accessToken = null;
+      this.refreshToken = null;
       if (this.refreshTimer) {
-        clearTimeout(this.refreshTimer)
-        this.refreshTimer = null
+        clearTimeout(this.refreshTimer);
+        this.refreshTimer = null;
       }
-      this.onTokensChanged?.()
-      return
+      this.onTokensChanged?.();
+      return;
     }
 
     if (event.newValue !== this.refreshToken) {
       // Another tab refreshed. Adopt the new RT, clear stale AT.
-      this.refreshToken = event.newValue
-      this.accessToken = null
+      this.refreshToken = event.newValue;
+      this.accessToken = null;
       if (this.refreshTimer) {
-        clearTimeout(this.refreshTimer)
-        this.refreshTimer = null
+        clearTimeout(this.refreshTimer);
+        this.refreshTimer = null;
       }
     }
   }
 
   private getTokenExpiry(token: string): number | null {
     try {
-      const payload = token.split('.')[1]
-      const decoded = JSON.parse(atob(payload))
-      return decoded.exp ?? null
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return decoded.exp ?? null;
     } catch {
-      return null
+      return null;
     }
   }
 
   private loadRefreshToken(): string | null {
     try {
-      return localStorage.getItem(this.storageKey)
+      return localStorage.getItem(this.storageKey);
     } catch {
-      return null
+      return null;
     }
   }
 
   private saveRefreshToken(token: string): void {
     try {
-      localStorage.setItem(this.storageKey, token)
+      localStorage.setItem(this.storageKey, token);
     } catch {
       // localStorage might not be available (SSR, privacy mode).
     }
@@ -178,7 +175,7 @@ export class TokenManager {
 
   private removeRefreshToken(): void {
     try {
-      localStorage.removeItem(this.storageKey)
+      localStorage.removeItem(this.storageKey);
     } catch {
       // Ignore.
     }

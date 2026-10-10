@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import dts from 'vite-plugin-dts'
-import { resolve } from 'path'
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import dts from 'vite-plugin-dts';
+import { defineConfig } from 'vitest/config';
+
+// Peer dependencies are provided by the host app — never bundled into the SDK
+const EXTERNAL = [/^react($|\/)/, /^react-dom($|\/)/, /^@mantine\//, /^lucide-react($|\/)/];
 
 export default defineConfig({
-  plugins: [
-    react(),
-    dts({ rollupTypes: true }),
-  ],
+  plugins: [react(), dts({ rollupTypes: true, exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'] })],
   build: {
     lib: {
       entry: {
@@ -15,20 +15,14 @@ export default defineConfig({
         react: resolve(__dirname, 'src/react.ts'),
       },
       formats: ['es', 'cjs'],
-      fileName: (format, entryName) => {
-        const ext = format === 'es' ? 'js' : 'cjs'
-        return `${entryName}.${ext}`
-      },
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
     },
-    rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
-      output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'jsxRuntime',
-        },
-      },
-    },
+    rollupOptions: { external: EXTERNAL },
   },
-})
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    include: ['src/**/*.test.{ts,tsx}'],
+  },
+});
