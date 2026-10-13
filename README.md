@@ -1,9 +1,9 @@
-# @saas-support/react
+# @lavina/auth-sdk
 
-Auth SDK for [SaaS Support](https://saas-support.com) — drop-in sign-in, user menu, and settings components for Lavina apps. Built on **Mantine 9**: every component takes its look from your app's Mantine theme, so it matches the rest of your interface automatically (LM3 design system).
+Auth SDK for [SaaS Support](https://saas-support.com) — drop-in sign-in, user menu, and settings components for Lavina apps. Built on **Mantine 9**: every component takes its look from your app's Mantine theme, so it matches the rest of your interface automatically.
 
 ```bash
-yarn add @saas-support/react
+yarn add @lavina/auth-sdk
 ```
 
 **Requires** React ≥ 19.2, `@mantine/core` + `@mantine/hooks` 9, and `lucide-react` — all provided by your app (peer dependencies).
@@ -14,7 +14,7 @@ Render `<SaaSProvider>` **inside** your `<MantineProvider>`:
 
 ```tsx
 import { MantineProvider } from '@mantine/core'
-import { SaaSProvider, SignIn, UserButton } from '@saas-support/react/react'
+import { SaaSProvider, SignIn, UserButton } from '@lavina/auth-sdk/react'
 
 function App() {
   return (
@@ -31,8 +31,8 @@ function App() {
 
 | Import | Use |
 |--------|-----|
-| `@saas-support/react` | Vanilla JS client and types, no React dependency |
-| `@saas-support/react/react` | React components, hooks, provider |
+| `@lavina/auth-sdk` | Vanilla JS client and types, no React dependency |
+| `@lavina/auth-sdk/react` | React components, hooks, provider |
 
 ---
 
@@ -134,7 +134,7 @@ never reads the code.
 Sign-in and sign-up with OAuth, MFA, SMS confirmation, face verification, invites, and password reset.
 
 ```tsx
-import { SignIn } from '@saas-support/react/react'
+import { SignIn } from '@lavina/auth-sdk/react'
 
 // Router apps: navigate client-side after sign-in
 <SignIn onSignIn={() => navigate({ to: search.redirect ?? '/' })} />
@@ -388,7 +388,7 @@ const { client, user, isLoaded, settings, locale, t, onLocaleChange } = useSaaSC
 Use the client directly without React:
 
 ```ts
-import { SaaSSupport } from '@saas-support/react'
+import { SaaSSupport } from '@lavina/auth-sdk'
 
 const saas = new SaaSSupport({ publishableKey: 'pub_live_...' })
 
@@ -444,7 +444,7 @@ saas.destroy()
 
 ## Styling
 
-Components are plain Mantine components rendered in your app's tree — no Shadow DOM, no SDK stylesheet, no fonts loaded by the SDK. They follow your `MantineProvider` theme (colors, radius, fonts, light/dark), so the LM3 reference theme in the conventions repo styles them like the rest of the app.
+Components are plain Mantine components rendered in your app's tree — no Shadow DOM, no SDK stylesheet, no fonts loaded by the SDK. They follow your `MantineProvider` theme (colors, radius, fonts, light/dark), so they look like the rest of the app.
 
 ---
 
@@ -472,7 +472,7 @@ Behavior fixes in 1.0: org and invite state is shared across components (badges 
 All errors are thrown as `SaaSError` instances:
 
 ```ts
-import { SaaSError } from '@saas-support/react'
+import { SaaSError } from '@lavina/auth-sdk'
 
 try {
   await saas.auth.signIn(email, password)
@@ -490,6 +490,22 @@ try {
 - **Access token**: stored in memory (XSS-safe)
 - **Refresh token**: stored in localStorage as `ss_rt_<first12chars>`
 - Token refresh is automatic and transparent
+
+## Developing the SDK
+
+For people changing the SDK itself. Apps install it from npm.
+
+```bash
+yarn dev                  # rebuilds dist/ on every save
+yarn lint && yarn test && yarn build
+```
+
+**Try it in an app before publishing** — either:
+
+- **Link it** while you work: in the app's `frontend/package.json` set `"@lavina/auth-sdk": "link:<path-to>/Lavina Auth SDK"` and keep `yarn dev` running. The app's Vite config must dedupe `react`, `react-dom`, `@mantine/core`, `@mantine/hooks` and `lucide-react`, or the app loads two copies of them. Switch back to `"^x.y.z"` before committing the app.
+- **Pack it** for a final check: `yarn build && yarn pack --filename lavina-auth-sdk-<version>.tgz`, then `"@lavina/auth-sdk": "file:<path>/lavina-auth-sdk-<version>.tgz"` and `yarn install --force` in the app.
+
+**Release:** bump `version`, commit `chore: release vX.Y.Z`, tag `vX.Y.Z` and push the tag — CI publishes to npm. Details in `CLAUDE.md` → *Versioning & Releases*.
 
 ## License
 

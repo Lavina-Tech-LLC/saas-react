@@ -1,5 +1,5 @@
 // Vanilla entry point (no React dependency).
-// Usage: import { SaaSSupport, AuthClient } from '@saas-support/react'
+// Usage: import { SaaSSupport, AuthClient } from '@lavina/auth-sdk'
 //
 // The auth modules are re-exported wholesale rather than name by name: each of
 // those files is already a curated public surface, and listing their exports
