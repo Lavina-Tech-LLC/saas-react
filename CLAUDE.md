@@ -2,6 +2,19 @@
 
 Guidance for working with code in this repository.
 
+## Start of a chat — pull the latest changes first
+
+Once per chat, before the first task, bring this repo and `../Convensions/` up to date with their remotes:
+
+```bash
+git pull --ff-only                     # this repo
+git -C ../Convensions pull --ff-only   # the rule book
+```
+
+- Only once, at the start of the chat — not before every task.
+- If a pull fails (diverged local commits, uncommitted changes in the way, no access), stop and tell the user what git said. Never stash, reset, rebase or force to make it pass.
+- Tell the user in one line what came in (e.g. "Pulled 3 new commits in Convensions") or that both were already up to date.
+
 ## Conventions — Check First
 
 **Before any work on this repo, verify that `../Convensions/` exists** (one level up from `Lavina Auth SDK/`).
