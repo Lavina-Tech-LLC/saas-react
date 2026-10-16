@@ -1,5 +1,5 @@
 {
-  "name": "@lavina/auth-sdk",
+  "name": "@saas-support/react",
   "version": "1.0.1",
   "type": "module",
   "description": "Embeddable auth SDK for SaaS Support",

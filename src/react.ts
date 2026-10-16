@@ -1,5 +1,5 @@
 // React components and hooks entry point.
-// Usage: import { SaaSProvider, SignIn, useAuth, UserButton } from '@lavina/auth-sdk/react'
+// Usage: import { SaaSProvider, SignIn, useAuth, UserButton } from '@saas-support/react/react'
 //
 // Components are built on Mantine and take their look from the host app's theme:
 // render <SaaSProvider> inside your <MantineProvider>.

@@ -17,7 +17,7 @@ git -C ../Convensions pull --ff-only   # the rule book
 
 ## Conventions — Check First
 
-**Before any work on this repo, verify that `../Convensions/` exists** (one level up from `Lavina Auth SDK/`).
+**Before any work on this repo, verify that `../Convensions/` exists** (one level up from `SaaS react/`).
 
 - If it exists: all frontend rules live there. Read the relevant docs before writing any code.
 - **If it does not exist: stop immediately. Tell the user the Convensions folder is missing and do not continue.**
@@ -35,7 +35,7 @@ Key docs to load per task type:
 
 ## Overview
 
-`@lavina/auth-sdk` is the auth SDK every Lavina Tech app uses to talk to the **SaaS Support** service: a framework-free client (`AuthClient`, `SaaSSupport`) plus React components and hooks — `SaaSProvider`, `SignIn` (password, phone + SMS code, OAuth, MFA, face control, invites, password reset), `UserButton` (org switcher + settings modal), and the settings sections (profile, organization, people, API keys, invites, billing).
+`@saas-support/react` is the auth SDK every Lavina Tech app uses to talk to the **SaaS Support** service: a framework-free client (`AuthClient`, `SaaSSupport`) plus React components and hooks — `SaaSProvider`, `SignIn` (password, phone + SMS code, OAuth, MFA, face control, invites, password reset), `UserButton` (org switcher + settings modal), and the settings sections (profile, organization, people, API keys, invites, billing).
 
 It is consumed **only by Lavina apps**, which all run Mantine with the LM3 theme. The SDK therefore renders plain Mantine components and inherits the host's theme — it ships no styles of its own.
 
@@ -73,8 +73,8 @@ yarn format                     # Prettier write
 yarn format:check               # Prettier check
 
 # Try a local build in an app before publishing (avoids duplicate React / Mantine from yarn link)
-yarn build && yarn pack --filename lavina-auth-sdk-<version>.tgz
-# then in the app: "@lavina/auth-sdk": "file:<path>/lavina-auth-sdk-<version>.tgz", yarn install --force
+yarn build && yarn pack --filename saas-support-react-<version>.tgz
+# then in the app: "@saas-support/react": "file:<path>/saas-support-react-<version>.tgz", yarn install --force
 ```
 
 ## Structure
@@ -82,7 +82,7 @@ yarn build && yarn pack --filename lavina-auth-sdk-<version>.tgz
 ```
 src/
   index.ts                      # Framework-free entry: SaaSSupport, AuthClient, types
-  react.ts                      # React entry ("@lavina/auth-sdk/react")
+  react.ts                      # React entry ("@saas-support/react/react")
   core/                         # SaaSSupport client, transport (fetch), tokenManager, eventEmitter, errors
   auth/
     client/                     # AuthClient, one layer per domain (base, session, signIn, account, orgs)
