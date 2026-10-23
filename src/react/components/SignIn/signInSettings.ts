@@ -7,6 +7,8 @@ export const DEFAULT_FACE_POSES = ['center', 'left', 'right', 'up', 'down'];
 export function deriveSignInSettings(settings: ProjectSettings | null) {
   const emailAuthEnabled = settings?.emailAuthEnabled ?? settings?.emailEnabled ?? true;
   const phoneAuthEnabled = settings?.phoneAuthEnabled ?? false;
+  // null: a server from before messenger delivery — it picks the channel itself, so none is ever sent to it
+  const phoneOtpChannels = settings?.phoneOtpChannels ?? null;
   return {
     registrationEnabled: settings?.registrationEnabled ?? true,
     emailAuthEnabled,
@@ -17,6 +19,9 @@ export function deriveSignInSettings(settings: ProjectSettings | null) {
     githubEnabled: !!settings?.githubEnabled,
     hasOAuth: !!(settings?.googleEnabled || settings?.githubEnabled),
     phoneOtpRequired: !!settings?.phoneOtpRequired,
+    phoneOtpChannels,
+    /** Sign-in with a phone number and a code alone, no password. */
+    phoneOtpLoginEnabled: !!settings?.phoneOtpLoginEnabled && (phoneOtpChannels?.length ?? 0) > 0,
     passwordMinLength: settings?.passwordMinLength ?? 8,
     privacyPolicyUrl: settings?.privacyPolicyUrl,
     termsOfServiceUrl: settings?.termsOfServiceUrl,

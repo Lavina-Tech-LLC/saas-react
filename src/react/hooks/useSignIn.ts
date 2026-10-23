@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import type { IdentifierKind } from '../../auth/identifier';
-import type { AuthResult, OAuthProvider } from '../../auth/types';
+import type { AuthResult, OAuthProvider, PhoneSignInOptions, PhoneSignInResult } from '../../auth/types';
 import { useSaaSContext } from '../context';
 
 export function useSignIn() {
@@ -41,6 +41,23 @@ export function useSignIn() {
     [client],
   );
 
+  /** Passwordless sign-in with a `login` code from `usePhoneOtp().send(phone, 'login', ...)`. */
+  const signInWithPhoneCode = useCallback(
+    async (phone: string, code: string, options?: PhoneSignInOptions): Promise<PhoneSignInResult | null> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        return await client.auth.signInWithPhoneCode(phone, code, options);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Sign in failed');
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [client],
+  );
+
   const submitMfaCode = useCallback(
     async (mfaToken: string, code: string) => {
       setIsLoading(true);
@@ -57,7 +74,7 @@ export function useSignIn() {
     [client],
   );
 
-  return { signIn, signInWithOAuth, submitMfaCode, isLoading, error, setError };
+  return { signIn, signInWithOAuth, signInWithPhoneCode, submitMfaCode, isLoading, error, setError };
 }
 
 /** `signUp` as `useSignUp` returns it: the client's overloads, failing to null. */

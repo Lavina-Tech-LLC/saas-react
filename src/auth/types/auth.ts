@@ -32,8 +32,26 @@ export interface SignUpOptions {
   faceChallenge?: boolean;
 }
 
-/** What a one-time code is issued for. */
-export type PhoneOtpPurpose = 'register' | 'reset';
+/**
+ * What a one-time code is issued for. `login` codes sign in without a password
+ * through `signInWithPhoneCode`; the others are exchanged by `verifyPhoneOtp`.
+ */
+export type PhoneOtpPurpose = 'register' | 'reset' | 'login';
+
+/** Where a one-time code is delivered. */
+export type PhoneOtpChannel = 'sms' | 'telegram' | 'whatsapp';
+
+export interface PhoneOtpSendOptions {
+  /**
+   * One of `settings.phoneOtpChannels`. When omitted the server picks SMS if
+   * the project has it, else its first channel.
+   */
+  channel?: PhoneOtpChannel;
+  /** Language of the messenger message ("en", "ru", "uz"; regional tags are accepted). */
+  locale?: string;
+  /** Lets a `login` code reach a new number while self-service registration is closed. */
+  inviteCode?: string;
+}
 
 export interface PhoneOtpSendResult {
   sent: boolean;
@@ -41,6 +59,8 @@ export interface PhoneOtpSendResult {
   resendAfterSeconds: number;
   /** Seconds until the delivered code stops working. */
   expiresInSeconds: number;
+  /** The channel the code went through. Missing from servers without messenger delivery. */
+  channel?: PhoneOtpChannel;
 }
 
 export interface PhoneOtpVerifyResult {
@@ -70,6 +90,24 @@ export interface FaceRequiredResult {
 }
 
 export type AuthResult = SignInResult | MfaRequiredResult | FaceRequiredResult;
+
+export interface PhoneSignInOptions {
+  /** Attaches a new account to the inviting organization; also lets it register while registration is closed. */
+  inviteCode?: string;
+  /** See `SignUpOptions.faceChallenge` — applies when the code creates the account. */
+  faceChallenge?: boolean;
+}
+
+/**
+ * The answer to `signInWithPhoneCode`: whatever a password sign-in returns for
+ * an existing account, or a sign-up result for a number that had none.
+ */
+export type PhoneSignInResult = AuthResult & {
+  /** The code created the account — treat it as a sign-up. */
+  isNewUser?: boolean;
+  /** As on `SignUpResult`: the new user still has to scan their face. */
+  faceEnrollmentRequired?: boolean;
+};
 
 export function isMfaRequired(result: AuthResult): result is MfaRequiredResult {
   return 'mfaRequired' in result && result.mfaRequired === true;

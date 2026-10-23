@@ -1,18 +1,9 @@
 import { identifierPayload, type IdentifierKind } from '../identifier';
-import type {
-  AuthResult,
-  FaceRequiredResult,
-  OAuthProvider,
-  PhoneOtpPurpose,
-  PhoneOtpSendResult,
-  PhoneOtpVerifyResult,
-  SignUpOptions,
-  SignUpResult,
-} from '../types';
+import type { AuthResult, FaceRequiredResult, OAuthProvider, SignUpOptions, SignUpResult } from '../types';
 import { openOAuthPopup } from './oauthPopup';
 import { SessionClient } from './session';
 
-/** Every way of starting a session: password, sign-up, OAuth, magic link — plus password recovery. */
+/** Every way of starting a session: password, sign-up, OAuth, magic link — plus e-mail password recovery. Phone codes are the next layer. */
 export class SignInClient extends SessionClient {
   /**
    * Signs in with an e-mail address or a phone number, depending on what the
@@ -110,33 +101,6 @@ export class SignInClient extends SessionClient {
     // A project with face control answers with a challenge rather than a
     // session, so the result goes through the same gate as password login.
     return this.completeAuthStep(result);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Phone verification (SMS one-time codes)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Sends a one-time code to a phone number. Rejects with a 409 when the
-   * project has no SMS provider configured — callers should treat that as
-   * "verification unavailable", not as a failure to sign up.
-   */
-  async sendPhoneOtp(phone: string, purpose: PhoneOtpPurpose = 'register'): Promise<PhoneOtpSendResult> {
-    return this.transport.post<PhoneOtpSendResult>('/auth/phone/otp/send', { phone, purpose });
-  }
-
-  /** Exchanges a delivered code for a short-lived proof-of-ownership token. */
-  async verifyPhoneOtp(
-    phone: string,
-    code: string,
-    purpose: PhoneOtpPurpose = 'register',
-  ): Promise<PhoneOtpVerifyResult> {
-    return this.transport.post<PhoneOtpVerifyResult>('/auth/phone/otp/verify', { phone, code, purpose });
-  }
-
-  /** Sets a new password for a phone account, authorized by a "reset" OTP token. */
-  async resetPasswordByPhone(phone: string, otpToken: string, newPassword: string): Promise<void> {
-    await this.transport.post('/auth/password-reset/phone', { phone, otpToken, newPassword });
   }
 
   // ---------------------------------------------------------------------------

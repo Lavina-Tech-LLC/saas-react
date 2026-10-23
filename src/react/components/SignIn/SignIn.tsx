@@ -13,7 +13,7 @@ import { InviteScreens } from './InviteScreens';
 import { formatInviterName } from './inviteUrl';
 import { LegalLinks } from './LegalLinks';
 import { OAuthButtons } from './OAuthButtons';
-import { OtpScreen } from './OtpScreen';
+import { PhoneCodeScreens } from './PhoneCodeScreens';
 import { ResetPassword } from './ResetPassword';
 import { DEFAULT_FACE_POSES } from './signInSettings';
 import { useAfterAuth, type AfterAuthOptions } from './useAfterAuth';
@@ -37,7 +37,8 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
   const [forgot, setForgot] = useState(false);
   const [step, setStep] = useState<CredentialStep>('identifier');
   const { cfg, isSignIn } = flow;
-  useAfterAuth(user, isSignIn ? 'signIn' : 'signUp', afterAuth);
+  // A phone code signs in or registers whatever the mode — the server says which
+  useAfterAuth(user, flow.phoneCode.authAction ?? (isSignIn ? 'signIn' : 'signUp'), afterAuth);
 
   if (resetToken) return <ResetPassword token={resetToken} onDone={onPasswordReset} />;
 
@@ -72,7 +73,9 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
     );
   }
 
-  if (flow.otpStep) return <OtpScreen flow={flow} />;
+  if (flow.verification.step || flow.phoneCode.codeSent) {
+    return <PhoneCodeScreens flow={flow} onChangeNumber={() => setStep('identifier')} />;
+  }
 
   if (forgot) {
     return (
@@ -86,19 +89,21 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
   }
 
   const inviteHeader = invite.showSignUp && invite.info;
-  const onSecondStep = step === 'password' || flow.mfaMode;
+  const onSecondStep = step !== 'identifier' || flow.mfaMode;
   // Step one asks who you are; step two leads with the identity chip, so it needs no subtitle
   const title = inviteHeader
     ? t('invite.joinOrg', { org: invite.info!.orgName })
     : flow.mfaMode
       ? t('mfa.title')
-      : onSecondStep
-        ? isSignIn
-          ? t('signIn.passwordTitle')
-          : t('signUp.passwordTitle')
-        : isSignIn
-          ? t('signIn.title')
-          : t('signUp.title');
+      : step === 'channel'
+        ? t('phoneCode.title')
+        : onSecondStep
+          ? isSignIn
+            ? t('signIn.passwordTitle')
+            : t('signUp.passwordTitle')
+          : isSignIn
+            ? t('signIn.title')
+            : t('signUp.title');
   const subtitle = inviteHeader
     ? t('invite.invitedBy', {
         inviter: formatInviterName(invite.info!, t),

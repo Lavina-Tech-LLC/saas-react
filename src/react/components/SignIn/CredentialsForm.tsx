@@ -4,11 +4,12 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { useT } from '../../context';
 import { CodeInput } from '../ui/CodeInput';
 import { TextLink } from '../ui/TextLink';
+import { ChannelStep } from './ChannelStep';
 import { IdentifierField, identifierProblem } from './IdentifierField';
 import { IdentityChip } from './IdentityChip';
 import type { SignInFlow } from './useSignInFlow';
 
-export type CredentialStep = 'identifier' | 'password';
+export type CredentialStep = 'identifier' | 'channel' | 'password';
 
 interface CredentialsFormProps {
   flow: SignInFlow;
@@ -19,27 +20,35 @@ interface CredentialsFormProps {
   social?: ReactNode;
 }
 
-// Two steps, one decision each: who you are, then your password (or the MFA code)
+// Two steps, one decision each: who you are, then your password, where to send a code (phone) or the MFA code
 export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: CredentialsFormProps) {
   const t = useT();
   const { isSignIn, mfaMode, cfg } = flow;
   const [identifierError, setIdentifierError] = useState<string | null>(null);
   const idPrefix = isSignIn ? 'ss-signin' : 'ss-signup';
   const submitLabel = mfaMode ? t('signIn.verify') : isSignIn ? t('signIn.submit') : t('signUp.submit');
+  const codeAvailable = flow.isPhone && cfg.phoneOtpLoginEnabled;
 
   const next = (e: FormEvent) => {
     e.preventDefault();
     const problem = identifierProblem(flow.identifier, flow.identifierKind);
     if (problem) return setIdentifierError(t(problem));
     setIdentifierError(null);
-    onStepChange('password');
+    onStepChange(codeAvailable ? 'channel' : 'password');
   };
 
   const back = () => {
     flow.setPassword('');
     flow.setConfirmPassword('');
     flow.backFromMfa();
+    flow.phoneCode.reset();
     onStepChange('identifier');
+  };
+
+  const switchTo = (next: CredentialStep) => {
+    flow.clearErrors();
+    flow.phoneCode.reset();
+    onStepChange(next);
   };
 
   if (step === 'identifier' && !mfaMode) {
@@ -70,8 +79,12 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
     );
   }
 
+  if (step === 'channel' && !mfaMode) {
+    return <ChannelStep flow={flow} onBack={back} onPassword={() => switchTo('password')} />;
+  }
+
   return (
-    <form onSubmit={isSignIn ? flow.submitSignIn : flow.submitSignUp}>
+    <form onSubmit={mfaMode || isSignIn ? flow.submitSignIn : flow.submitSignUp}>
       <Stack gap="md">
         <IdentityChip identifier={flow.identifier} kind={flow.identifierKind} onChange={back} />
         {mfaMode ? (
@@ -114,6 +127,11 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
         <Button type="submit" fullWidth loading={flow.isLoading} disabled={mfaMode && flow.mfaCode.length < 6}>
           {submitLabel}
         </Button>
+        {codeAvailable && !mfaMode && (
+          <Group justify="center">
+            <TextLink onClick={() => switchTo('channel')}>{t('phoneCode.useCode')}</TextLink>
+          </Group>
+        )}
       </Stack>
     </form>
   );

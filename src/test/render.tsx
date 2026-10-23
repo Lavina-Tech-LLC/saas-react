@@ -68,6 +68,15 @@ export function renderWithSaaS(ui: ReactNode, options: SaaSTestOptions = {}) {
     get: (target, key) => (target as Record<string, unknown>)[key as string] ?? asyncNoop,
   });
   const client = { auth } as unknown as SaaSSupport;
+  const result = rtlRender(saasTree(ui, options, client));
+  return {
+    ...result,
+    /** Re-renders the same tree with changed options — e.g. `{ user }` once a session starts — keeping the client. */
+    rerenderWithSaaS: (next: SaaSTestOptions) => result.rerender(saasTree(ui, { ...options, ...next }, client)),
+  };
+}
+
+function saasTree(ui: ReactNode, options: SaaSTestOptions, client: SaaSSupport) {
   const value = {
     client,
     user: options.user === undefined ? null : options.user,
@@ -79,13 +88,13 @@ export function renderWithSaaS(ui: ReactNode, options: SaaSTestOptions = {}) {
   };
   const org = stubOrg({ selectedOrg: (options.selectedOrg as Org) ?? null, ...options.org });
 
-  return rtlRender(
+  return (
     <MantineProvider env="test">
       <SaaSContext.Provider value={value}>
         <OrgContext.Provider value={org}>
           <InvitesContext.Provider value={stubInvites(options.invites ?? {})}>{ui}</InvitesContext.Provider>
         </OrgContext.Provider>
       </SaaSContext.Provider>
-    </MantineProvider>,
+    </MantineProvider>
   );
 }

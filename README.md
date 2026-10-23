@@ -131,7 +131,7 @@ never reads the code.
 
 ### `<SignIn />`
 
-Sign-in and sign-up with OAuth, MFA, SMS confirmation, face verification, invites, and password reset.
+Sign-in and sign-up with OAuth, MFA, phone codes (SMS, Telegram, WhatsApp), face verification, invites, and password reset.
 
 ```tsx
 import { SignIn } from '@saas-support/react/react'
@@ -153,15 +153,31 @@ import { SignIn } from '@saas-support/react/react'
 
 Features:
 - Email or phone + password, with an Email/Phone switch when the project enables both
+- **Sign-in with a phone code** (no password) when the project turns it on — see [Phone codes](#phone-codes)
 - OAuth (Google, GitHub) when enabled in project settings
-- MFA and SMS codes with one-time-code autofill
-- **Forgot password:** email accounts get a reset link (pointing back to the current page); phone accounts confirm an SMS code and set a new password in place
+- MFA and phone codes with one-time-code autofill
+- **Forgot password:** email accounts get a reset link (pointing back to the current page); phone accounts confirm a code (SMS, Telegram or WhatsApp) and set a new password in place
 - Invite landing card for `?invite_code=` links, including sign-up into the inviting organization
 - Face verification when the project enables it
 
 When self-service registration is off, the sign-up toggle is hidden; sign-ups carrying an invite code are still accepted.
 
 **Password-reset links:** the reset email links to the page that requested it, with the token in the URL. Read that parameter in your route and pass it as `resetToken`.
+
+#### Phone codes
+
+A project can deliver one-time codes by SMS, Telegram and WhatsApp. `<SignIn />` reads which ones from the project settings and needs no extra props:
+
+| Setting | Type | Meaning |
+|---------|------|---------|
+| `phoneOtpChannels` | `('sms' \| 'telegram' \| 'whatsapp')[]` | Channels a code can be sent through right now, in the order to offer them. Missing from older servers |
+| `phoneOtpLoginEnabled` | `boolean` | A phone number and a code alone sign the user in. Missing from older servers |
+| `phoneOtpRequired` | `boolean` | A phone sign-up must confirm the number with a code (now also true when only a messenger channel exists) |
+
+- **Passwordless sign-in.** With `phoneOtpLoginEnabled`, a phone number leads to one button per channel — "Get code via Telegram", "Get code via WhatsApp", "Get code via SMS". The code signs the user in; a number without an account gets one when registration is open (or an invite is attached), and then `onSignUp` fires instead of `onSignIn`, whichever tab the user was on. MFA and face verification follow as after a password sign-in. "Use password instead" (on the sign-up tab: "Set a password instead") keeps the password route one click away.
+- **Sign-up confirmation and password reset by phone.** With several channels the user picks where the code goes; with one it is used directly.
+- **Another way.** When the number is not on the chosen messenger, or the channel is down for now, the screen says so and the other channels stay on offer.
+- Messenger messages are written in the SDK's current language. An older server (no `phoneOtpChannels`) keeps the SMS-only behaviour of 1.0.
 
 ### `<FaceScanner />`
 
@@ -275,8 +291,43 @@ if (result && isFaceRequired(result)) {
 // classified by shape — but pass it when your form already knows.
 await signIn('+992901112233', password, 'phone')
 
+// Passwordless: a "login" code from usePhoneOtp().send(phone, 'login', { channel }).
+// `isNewUser` is set when the code created the account.
+const phoneResult = await signInWithPhoneCode('+992901112233', code, { faceChallenge: true })
+if (phoneResult && isMfaRequired(phoneResult)) await submitMfaCode(phoneResult.mfaToken, mfaCode)
+
 await signInWithOAuth('google') // or 'github'
 ```
+
+### `usePhoneOtp()`
+
+One-time codes sent to a phone number — the step behind phone sign-up confirmation, password reset by phone and passwordless sign-in.
+
+```tsx
+const { send, resend, verify, reset, otpToken, channel, resendAfterSeconds, unavailable, isLoading, error } = usePhoneOtp()
+
+// `channel` is one of settings.phoneOtpChannels; omit it on a server that does not list them.
+// `locale` sets the language of the messenger message.
+const outcome = await send('+992901112233', 'login', { channel: 'telegram', locale: 'ru' })
+
+if (outcome.status === 'error' && outcome.reason === 'notReachable') {
+  // The number is not on Telegram — offer another channel
+} else if (outcome.status === 'error' && outcome.reason === 'channelUnavailable') {
+  // Telegram cannot send right now — offer another channel
+} else if (outcome.status === 'unavailable') {
+  // The project has no channel at all: go on without a code
+}
+
+await resend() // the same number, purpose and channel as the last send
+```
+
+| Purpose | Then |
+|---------|------|
+| `'register'` | `verify(phone, code)` → pass `otpToken` to `signUp` |
+| `'reset'` | `verify(phone, code, 'reset')` → `usePasswordReset().resetByPhone` |
+| `'login'` | `useSignIn().signInWithPhoneCode(phone, code)` |
+
+`send` also takes `inviteCode` in its options: it lets a `'login'` code reach a new number while self-service registration is closed.
 
 ### `useSignUp()`
 
@@ -410,7 +461,8 @@ saas.destroy()
 | `signInWithOAuth(provider, inviteCode?)` | `Promise<AuthResult>` |
 | `sendInvite(orgId, identifier, role?, roleId?, kind?)` | `Promise<Invite>` |
 | `submitMfaCode(mfaToken, code)` | `Promise<AuthResult>` |
-| `sendPhoneOtp(phone, purpose?)` | `Promise<PhoneOtpSendResult>` |
+| `sendPhoneOtp(phone, purpose?, options?)` | `Promise<PhoneOtpSendResult>` |
+| `signInWithPhoneCode(phone, code, options?)` | `Promise<PhoneSignInResult>` |
 | `verifyPhoneOtp(phone, code, purpose?)` | `Promise<PhoneOtpVerifyResult>` |
 | `resetPasswordByPhone(phone, otpToken, newPassword)` | `Promise<void>` |
 | `enrollFace(samples, options?)` | `Promise<FaceEnrollResult>` |

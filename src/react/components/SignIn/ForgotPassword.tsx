@@ -2,7 +2,8 @@ import { Button, Group, Stack } from '@mantine/core';
 import { useState, type FormEvent } from 'react';
 
 import type { IdentifierKind } from '../../../auth/identifier';
-import { useT } from '../../context';
+import type { PhoneOtpChannel } from '../../../auth/types';
+import { useSaaSContext } from '../../context';
 import { usePasswordReset } from '../../hooks/usePasswordReset';
 import { usePhoneOtp } from '../../hooks/usePhoneOtp';
 import { AuthCard } from '../ui/AuthCard';
@@ -10,8 +11,10 @@ import { CodeInput } from '../ui/CodeInput';
 import { ErrorAlert } from '../ui/ErrorAlert';
 import { SuccessAlert } from '../ui/SuccessAlert';
 import { TextLink } from '../ui/TextLink';
+import { ChannelButtons } from './ChannelButtons';
 import { IdentifierField } from './IdentifierField';
 import { checkNewPassword, NewPasswordFields } from './NewPasswordFields';
+import { channelProblem, needsChannelChoice, onlyChannel } from './otpChannels';
 import type { SignInSettings } from './signInSettings';
 
 type Step = 'request' | 'phoneCode' | 'emailSent' | 'done';
@@ -23,9 +26,9 @@ interface ForgotPasswordProps {
   onBack: () => void;
 }
 
-// Email accounts get a reset link; phone accounts confirm an SMS code and choose a new password here
+// Email accounts get a reset link; phone accounts confirm a code (SMS or messenger) and choose a new password here
 export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: ForgotPasswordProps) {
-  const t = useT();
+  const { t, locale } = useSaaSContext();
   const reset = usePasswordReset();
   const phoneOtp = usePhoneOtp();
   const [kind, setKind] = useState<IdentifierKind>(initialKind);
@@ -36,7 +39,18 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
   const [confirm, setConfirm] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const isPhone = kind === 'phone';
+  // Several channels: their buttons take the place of "Send code"
+  const pickChannel = isPhone && needsChannelChoice(cfg.phoneOtpChannels);
   const error = localError || reset.error || phoneOtp.error;
+
+  const sendCode = async (channel?: PhoneOtpChannel) => {
+    setLocalError(null);
+    const outcome = await phoneOtp.send(identifier, 'reset', { channel, locale });
+    const problem = channelProblem(outcome, channel);
+    if (problem) setLocalError(t(problem));
+    if (outcome.status === 'sent') setStep('phoneCode');
+    if (outcome.status === 'unavailable') setLocalError(t('forgot.smsUnavailable'));
+  };
 
   const request = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,9 +59,8 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
       if (await reset.sendEmailLink(identifier, window.location.href)) setStep('emailSent');
       return;
     }
-    const outcome = await phoneOtp.send(identifier, 'reset');
-    if (outcome.status === 'sent') setStep('phoneCode');
-    if (outcome.status === 'unavailable') setLocalError(t('forgot.smsUnavailable'));
+    // With channel buttons on screen, Enter in the field waits for a pick
+    if (!pickChannel) await sendCode(onlyChannel(cfg.phoneOtpChannels));
   };
 
   const confirmPhone = async (e: FormEvent) => {
@@ -111,9 +124,17 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
             acceptsBoth={cfg.showIdentifierToggle}
             dialCode={cfg.dialCode}
           />
-          <Button type="submit" fullWidth loading={reset.isLoading || phoneOtp.isLoading}>
-            {isPhone ? t('forgot.sendCode') : t('forgot.sendLink')}
-          </Button>
+          {pickChannel ? (
+            <ChannelButtons
+              channels={cfg.phoneOtpChannels ?? []}
+              loading={phoneOtp.isLoading}
+              onSelect={(channel) => void sendCode(channel)}
+            />
+          ) : (
+            <Button type="submit" fullWidth loading={reset.isLoading || phoneOtp.isLoading}>
+              {isPhone ? t('forgot.sendCode') : t('forgot.sendLink')}
+            </Button>
+          )}
         </Stack>
       </form>
       {back}

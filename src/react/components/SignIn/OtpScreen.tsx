@@ -1,39 +1,66 @@
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Stack, Text } from '@mantine/core';
+import type { FormEvent } from 'react';
 
+import type { PhoneOtpChannel } from '../../../auth/types';
+import type { TranslationKey } from '../../../i18n';
 import { useT } from '../../context';
 import { AuthCard } from '../ui/AuthCard';
 import { CodeInput } from '../ui/CodeInput';
 import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
-import type { SignInFlow } from './useSignInFlow';
 
-// SMS confirmation of a phone number during sign-up
-export function OtpScreen({ flow }: { flow: SignInFlow }) {
+const SENT_VIA: Record<PhoneOtpChannel, TranslationKey> = {
+  sms: 'otp.sentVia.sms',
+  telegram: 'otp.sentVia.telegram',
+  whatsapp: 'otp.sentVia.whatsapp',
+};
+
+interface OtpScreenProps {
+  title: string;
+  submitLabel: string;
+  identifier: string;
+  /** Where the code went; null on a server that does not say. */
+  channel: PhoneOtpChannel | null;
+  code: string;
+  onCodeChange: (code: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  error?: string | null;
+  loading: boolean;
+  resendAfterSeconds: number;
+  /** Sends a new code the same way as the last one. */
+  onResend: () => void;
+  /** "Get the code another way" — back to the channel choice; omit when there is only one channel. */
+  onOtherWay?: () => void;
+  onChangeNumber: () => void;
+}
+
+// A one-time code sent to a phone number: confirming it for a sign-up, or signing in with it
+export function OtpScreen(props: OtpScreenProps) {
   const t = useT();
-  const { phoneOtp } = flow;
+  const { identifier, channel, code, resendAfterSeconds } = props;
+  const subtitle = channel ? t(SENT_VIA[channel], { identifier }) : t('otp.subtitle', { identifier });
 
   return (
-    <AuthCard title={t('otp.title')} subtitle={t('otp.subtitle', { identifier: flow.identifier })}>
-      <ErrorAlert message={flow.otpError} />
-      <form onSubmit={flow.submitOtp}>
+    <AuthCard title={props.title} subtitle={subtitle}>
+      <ErrorAlert message={props.error} />
+      <form onSubmit={props.onSubmit}>
         <Stack gap="md">
-          <CodeInput label={t('otp.label')} value={flow.otpCode} onChange={flow.setOtpCode} />
-          <Button type="submit" fullWidth loading={flow.isLoading} disabled={flow.otpCode.length < 6}>
-            {t('otp.submit')}
+          <CodeInput label={t('otp.label')} value={code} onChange={props.onCodeChange} />
+          <Button type="submit" fullWidth loading={props.loading} disabled={code.length < 6}>
+            {props.submitLabel}
           </Button>
         </Stack>
       </form>
       <Stack gap={4} align="center">
-        {phoneOtp.resendAfterSeconds > 0 ? (
+        {resendAfterSeconds > 0 ? (
           <Text fz="sm" c="dimmed">
-            {t('otp.resendIn', { seconds: phoneOtp.resendAfterSeconds })}
+            {t('otp.resendIn', { seconds: resendAfterSeconds })}
           </Text>
         ) : (
-          <TextLink onClick={() => void phoneOtp.send(flow.identifier, 'register')}>{t('otp.resend')}</TextLink>
+          <TextLink onClick={props.onResend}>{t('otp.resend')}</TextLink>
         )}
-        <Group>
-          <TextLink onClick={flow.leaveOtp}>{t('otp.changeNumber')}</TextLink>
-        </Group>
+        {props.onOtherWay && <TextLink onClick={props.onOtherWay}>{t('phoneCode.otherWay')}</TextLink>}
+        <TextLink onClick={props.onChangeNumber}>{t('otp.changeNumber')}</TextLink>
       </Stack>
     </AuthCard>
   );

@@ -1,3 +1,5 @@
+import type { PhoneOtpChannel } from './auth';
+
 export interface User {
   id: string;
   /** Empty for accounts registered with a phone number only. */
@@ -26,11 +28,21 @@ export interface ProjectSettings {
   /** Dial code ("+992") used for numbers typed without one. */
   defaultPhoneCountryCode?: string;
   /**
-   * Whether a phone sign-up must carry an SMS-verified code. Already resolved
-   * against the project's SMS provider status — a project that asks for
-   * verification without a working provider reports `false` here.
+   * Whether a phone sign-up must carry a verified code. Already resolved
+   * against the project's delivery channels — a project that asks for
+   * verification without a working channel reports `false` here.
    */
   phoneOtpRequired: boolean;
+  /**
+   * Channels a one-time code can be sent through right now, in the order to
+   * offer them. May be empty; missing from servers without messenger delivery.
+   */
+  phoneOtpChannels?: PhoneOtpChannel[];
+  /**
+   * Whether a phone number and a code alone sign a user in — creating the
+   * account when registration is open. Missing from older servers.
+   */
+  phoneOtpLoginEnabled?: boolean;
   /**
    * Face control: "off", "optional" (users opt in, then it is enforced for
    * them) or "required" (everyone enrolls and verifies).

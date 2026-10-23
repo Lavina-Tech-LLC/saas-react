@@ -7,10 +7,10 @@ import type {
   SignInResult,
   User,
 } from '../types';
-import { SignInClient } from './signIn';
+import { PhoneClient } from './phone';
 
 /** The signed-in user's own account: face control, MFA and profile. */
-export class AccountClient extends SignInClient {
+export class AccountClient extends PhoneClient {
   // ---------------------------------------------------------------------------
   // Face control
   // ---------------------------------------------------------------------------

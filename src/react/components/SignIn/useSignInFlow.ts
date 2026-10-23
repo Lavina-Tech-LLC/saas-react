@@ -6,16 +6,18 @@ import {
   isMfaRequired,
   type FaceRequiredResult,
   type OAuthProvider,
+  type PhoneOtpChannel,
   type SignUpResult,
 } from '../../../auth/types';
 import { useSaaSContext } from '../../context';
 import { useAuth } from '../../hooks/useAuth';
-import { usePhoneOtp } from '../../hooks/usePhoneOtp';
 import { useSignIn } from '../../hooks/useSignIn';
 import { useSignUp } from '../../hooks/useSignUp';
 import { deriveSignInSettings } from './signInSettings';
 import { useFaceStep } from './useFaceStep';
 import type { InviteFlow } from './useInviteFlow';
+import { usePhoneCodeFlow } from './usePhoneCodeFlow';
+import { useSignUpVerification } from './useSignUpVerification';
 
 export type SignInMode = 'signIn' | 'signUp';
 
@@ -25,7 +27,6 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
   const { refreshUser } = useAuth();
   const signInApi = useSignIn();
   const signUpApi = useSignUp();
-  const phoneOtp = usePhoneOtp();
   const cfg = deriveSignInSettings(settings);
 
   const [mode, setMode] = useState<SignInMode>(initialMode);
@@ -39,8 +40,7 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const verification = useSignUpVerification(identifier, cfg.phoneOtpChannels);
 
   const canSignUp = cfg.registrationEnabled || invite.showSignUp;
   const isSignIn = canSignUp ? mode === 'signIn' : true;
@@ -69,6 +69,7 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
   const switchMode = (next: SignInMode) => {
     setMode(next);
     clearErrors();
+    phoneCode.reset();
     setMfaToken(null);
     setMfaCode('');
   };
@@ -103,11 +104,19 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
     if (viaInvite) await refreshUser();
   };
 
+  const phoneCode = usePhoneCodeFlow({
+    identifier,
+    inviteCode: invite.activeCode,
+    onMfa: setMfaToken,
+    onFace: setFaceChallenge,
+    onSignUp: finishSignUp,
+  });
+
   const register = async (otpToken?: string) => {
     const result = await signUpApi.signUp(identifier, password, {
       inviteCode: invite.activeCode,
       kind: identifierKind,
-      otpToken: otpToken ?? phoneOtp.otpToken ?? undefined,
+      otpToken: otpToken ?? verification.otpToken ?? undefined,
       faceChallenge: true,
     });
     if (result) await finishSignUp(result);
@@ -121,28 +130,20 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
     if (password.length < cfg.passwordMinLength) {
       return setValidationError(t('error.passwordTooShort', { min: cfg.passwordMinLength }));
     }
-    if (isPhone && cfg.phoneOtpRequired && !phoneOtp.otpToken) {
-      const outcome = await phoneOtp.send(identifier, 'register');
-      if (outcome.status === 'sent') return setOtpStep(true);
-      if (outcome.status === 'error') return; // shown through phoneOtp.error
-    }
+    // Stops at the code (or channel) step; errors show through verification.error
+    if (isPhone && cfg.phoneOtpRequired && !verification.otpToken && (await verification.start())) return;
     await register();
+  };
+
+  // Picked on the channel screen; a project left with no channel signs the number up unverified, as the server does
+  const pickVerifyChannel = async (channel: PhoneOtpChannel) => {
+    if (!(await verification.send(channel))) await register();
   };
 
   const submitOtp = async (e?: FormEvent) => {
     e?.preventDefault();
-    const verified = await phoneOtp.verify(identifier, otpCode, 'register');
-    if (!verified) return;
-    if (await register(verified.otpToken)) {
-      setOtpStep(false);
-      setOtpCode('');
-    }
-  };
-
-  const leaveOtp = () => {
-    setOtpStep(false);
-    setOtpCode('');
-    phoneOtp.reset();
+    const otpToken = await verification.verify();
+    if (otpToken && (await register(otpToken))) verification.finish();
   };
 
   const oauth = async (provider: OAuthProvider) => {
@@ -174,24 +175,26 @@ export function useSignInFlow(initialMode: SignInMode, invite: InviteFlow) {
     confirmPassword,
     setConfirmPassword,
     setValidationError,
+    clearErrors,
     mfaMode: !!mfaToken,
     mfaCode,
     setMfaCode,
     backFromMfa,
     ...faceStep,
-    otpStep,
-    otpCode,
-    setOtpCode,
+    verification,
+    pickVerifyChannel,
     submitOtp,
-    leaveOtp,
-    phoneOtp,
+    phoneCode,
     submitSignIn,
     submitSignUp,
     oauth,
     // Every error is visible in the mode it belongs to — including OAuth errors while signing up
-    error: isSignIn ? signInApi.error : validationError || phoneOtp.error || signUpApi.error || signInApi.error,
-    otpError: phoneOtp.error || signUpApi.error,
-    isLoading: isSignIn ? signInApi.isLoading : signUpApi.isLoading || phoneOtp.isLoading,
+    error:
+      phoneCode.error ||
+      (isSignIn ? signInApi.error : validationError || verification.error || signUpApi.error || signInApi.error),
+    otpError: verification.error || signUpApi.error,
+    // MFA can follow a phone code in either mode
+    isLoading: isSignIn || mfaToken ? signInApi.isLoading : signUpApi.isLoading || verification.isLoading,
   };
 }
 
