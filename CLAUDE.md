@@ -35,7 +35,7 @@ Key docs to load per task type:
 
 ## Overview
 
-`@saas-support/react` is the auth SDK every Lavina Tech app uses to talk to the **SaaS Support** service: a framework-free client (`AuthClient`, `SaaSSupport`) plus React components and hooks — `SaaSProvider`, `SignIn` (password, phone + SMS code, OAuth, MFA, face control, invites, password reset), `UserButton` (org switcher + settings modal), and the settings sections (profile, organization, people, API keys, invites, billing).
+`@saas-support/react` is the auth SDK every Lavina Tech app uses to talk to the **SaaS Support** service: a framework-free client (`AuthClient`, `SaaSSupport`) plus React components and hooks — `SaaSProvider`, `SignIn` (password, passwordless phone code via SMS / Telegram / WhatsApp, OAuth, MFA, face control, invites, password reset), `UserButton` (org switcher + settings modal), and the settings sections (profile, organization, people, API keys, invites, billing).
 
 It is consumed **only by Lavina apps**, which all run Mantine with the LM3 theme. The SDK therefore renders plain Mantine components and inherits the host's theme — it ships no styles of its own.
 
@@ -57,7 +57,7 @@ SDK-only rules that extend or override shared conventions:
 - **Own i18n.** All user-facing text goes through `useT()` / `t('key')` from `src/i18n` — flat dot keys, `{var}` interpolation. `en.ts` is the source of truth; `ru.ts` and `uz.ts` are typed `Dictionary` and must have every key.
 - **Shared state lives in `SaaSProvider`.** Org and invite state are created once (`useOrgState`, `useMyInvitesState`) and read through `OrgContext` / `InvitesContext`. Public hooks (`useOrg`, `useInvites`) only read context — never create a second copy of server state in a component.
 - **Public API is a contract.** Everything exported from `src/index.ts` and `src/react.ts` is public. Changing or removing an export, a prop, or a hook return field is a **major** version bump (SemVer).
-- **`AuthClient` is layered** (`auth/client/`): base → session → signIn → account → orgs → `AuthClient`. Add a method to the layer that owns its domain; keep each file under 200 lines.
+- **`AuthClient` is layered** (`auth/client/`): base → session → signIn → phone → account → orgs → `AuthClient`. Add a method to the layer that owns its domain; keep each file under 200 lines.
 - **Tokens:** handled by `core/tokenManager.ts` only. Never log tokens, never put them in URLs.
 
 ## Commands
@@ -85,7 +85,7 @@ src/
   react.ts                      # React entry ("@saas-support/react/react")
   core/                         # SaaSSupport client, transport (fetch), tokenManager, eventEmitter, errors
   auth/
-    client/                     # AuthClient, one layer per domain (base, session, signIn, account, orgs)
+    client/                     # AuthClient, one layer per domain (base, session, signIn, phone, account, orgs)
     types/                      # Public types by domain (user, auth, org, invite) + index re-export
     identifier.ts               # e-mail / phone detection and payloads
     face/                       # Face capture engine (model loading, pose checks)
