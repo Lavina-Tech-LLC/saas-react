@@ -218,6 +218,20 @@ A sidebar row — avatar, name and organization, ⇅ — opening a menu with you
 | `onOrgChange` | `(org: Org) => void` | — | Called when the user switches or creates an org |
 | `onOrgSettingsClick` | `(org: Org) => void` | — | Adds an "Organization settings" item |
 | `compact` | `boolean` | `false` | Just the avatar (with the invite count) — for a navigation rail or a tight header; the menu is the same |
+| `navLinkProps` | `UserButtonNavLinkProps` | — | Restyles the sidebar row to fit your design: Mantine style props, `className`, `classNames`, `styles` (NavLink Styles API: `root`, `label`, `description`, `section`, …). Each replaces the SDK's default for it (`h="100%"`, `px="md"`, square corners). Not used when `compact` |
+| `avatarSize` | `MantineSize \| number` | `'md'` | The avatar's size, in the row and when `compact` |
+
+Without these two props the button keeps the SDK's own look. A sidebar in another design passes them instead of overriding the SDK's styles in CSS:
+
+```tsx
+<UserButton
+  avatarSize={36}
+  navLinkProps={{
+    px: 'xs',
+    styles: { root: { borderRadius: 'var(--mantine-radius-md)' }, label: { fontWeight: 600 } },
+  }}
+/>
+```
 
 ### `<SettingsPanel />`
 

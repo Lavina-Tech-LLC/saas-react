@@ -72,6 +72,36 @@ describe('UserButton', () => {
     expect(screen.getByRole('button', { name: 'User menu' })).not.toHaveTextContent('Acme Corp');
   });
 
+  it('keeps its own look by default and takes row styling and an avatar size from the host', () => {
+    const { unmount } = renderWithSaaS(<UserButton />, { user: testUser });
+    const plain = screen.getByRole('button', { name: 'User menu' });
+    // Square corners, the SDK's own row
+    expect(plain.style.borderRadius).toMatch(/^0(px)?$/);
+    expect(plain.querySelector('.mantine-Avatar-root')).toHaveAttribute('data-size', 'md');
+    unmount();
+
+    renderWithSaaS(
+      <UserButton
+        navLinkProps={{ className: 'host-row', styles: { root: { borderRadius: 12 }, label: { fontWeight: 600 } } }}
+        avatarSize="sm"
+      />,
+      { user: testUser },
+    );
+    const row = screen.getByRole('button', { name: 'User menu' });
+    expect(row).toHaveClass('host-row');
+    expect(row).toHaveStyle({ borderRadius: '12px' });
+    expect(row.querySelector('.mantine-NavLink-label')).toHaveStyle({ fontWeight: '600' });
+    expect(row.querySelector('.mantine-Avatar-root')).toHaveAttribute('data-size', 'sm');
+  });
+
+  it('sizes the compact avatar too', () => {
+    renderWithSaaS(<UserButton compact avatarSize="lg" />, { user: testUser });
+    expect(screen.getByRole('button', { name: 'User menu' }).querySelector('.mantine-Avatar-root')).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
+  });
+
   it('sends organization management to Settings instead of creating inline', async () => {
     const acme = { id: 'o1', name: 'Acme Corp', slug: 'acme', role: 'owner' };
     renderWithSaaS(<UserButton />, { user: testUser, selectedOrg: acme, org: { orgs: [acme] as never } });

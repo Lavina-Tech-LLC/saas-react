@@ -1,4 +1,16 @@
-import { Avatar, Badge, Group, Indicator, Menu, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
+import {
+  Avatar,
+  Badge,
+  Group,
+  Indicator,
+  Menu,
+  NavLink,
+  Stack,
+  Text,
+  UnstyledButton,
+  type MantineSize,
+  type NavLinkProps,
+} from '@mantine/core';
 import { ChevronsUpDown, LogOut, Settings } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,7 +36,21 @@ export interface UserButtonProps {
   onSignOut?: () => void;
   /** Just the avatar — for a navigation rail or a tight header. The menu is the same. */
   compact?: boolean;
+  /**
+   * Restyles the sidebar row to fit the host's design: Mantine style props, `className`, `classNames`, `styles`. Each
+   * one replaces the SDK's default for it (`h="100%"`, `px="md"`, `styles={{ root: { borderRadius: 0 } }}`). Not used
+   * when `compact`.
+   */
+  navLinkProps?: UserButtonNavLinkProps;
+  /** The avatar's size, in the row and when `compact`: a Mantine size or px. */
+  avatarSize?: MantineSize | number;
 }
+
+/** The row's own content (avatar, name, organization, ⇅) stays the SDK's; everything else about the NavLink is open. */
+export type UserButtonNavLinkProps = Omit<
+  NavLinkProps,
+  'label' | 'description' | 'leftSection' | 'rightSection' | 'children'
+>;
 
 export function UserButton({
   afterSignOutUrl,
@@ -34,6 +60,8 @@ export function UserButton({
   onOrgSettingsClick,
   onSignOut,
   compact = false,
+  navLinkProps,
+  avatarSize = 'md',
 }: UserButtonProps) {
   const t = useT();
   const { user, signOut } = useAuth();
@@ -47,7 +75,7 @@ export function UserButton({
 
   const name = user.name || user.email || user.phone;
   const avatar = (
-    <Avatar src={user.avatarUrl} size="md" radius="xl" color="initials" name={name}>
+    <Avatar src={user.avatarUrl} size={avatarSize} radius="xl" color="initials" name={name}>
       {userInitial(user)}
     </Avatar>
   );
@@ -81,7 +109,7 @@ export function UserButton({
           ) : (
             // The sidebar footer row (LM3 §12): the host theme's NavLink hover, focus and type, stretched over the whole
             // footer it sits in (the 60px row) with square corners. Avatar and name on the left, the chevron pushed
-            // to the right edge; name and org truncate to the space it is given.
+            // to the right edge; name and org truncate to the space it is given. navLinkProps restyle it for the host.
             <NavLink
               component="button"
               aria-label={t('user.menu')}
@@ -94,6 +122,7 @@ export function UserButton({
               h="100%"
               px="md"
               styles={{ root: { borderRadius: 0 } }}
+              {...navLinkProps}
             />
           )}
         </Menu.Target>
