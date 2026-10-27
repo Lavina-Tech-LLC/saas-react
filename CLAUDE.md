@@ -42,7 +42,7 @@ It is consumed **only by Lavina apps**, which all run Mantine with the LM3 theme
 ## Tech Stack
 
 - **Runtime peers:** React 19.2, `@mantine/core` + `@mantine/hooks` 9, `lucide-react` — peer dependencies, never bundled
-- **Build:** Vite+ `vp pack` (tsdown) — the `pack` block in `vite.config.ts`: `index` + `react` entries, ESM (`.js`) + CJS (`.cjs`) with their `.d.ts` / `.d.cts`, shared chunks between the entries; `platform: 'browser'`. Same toolchain as the boilerplate (Mantine's `vite-min-template`)
+- **Build:** Vite+ `vp pack` (tsdown) — the `pack` block in `vite.config.ts`: `index` + `react` entries, ESM (`.js`) + CJS (`.cjs`) with their `.d.ts` / `.d.cts`, `unbundle: true` (one file per source module) and `"sideEffects": false`, so an app's bundler drops what it doesn't use and splits what loads lazily; `platform: 'browser'`. Same toolchain as the boilerplate (Mantine's `vite-min-template`)
 - **Tests:** Vitest 5 through Vite+ (`vp test`) + jsdom + React Testing Library
 - **Language:** TypeScript 6.0 (typescript-eslint does not support 7 yet)
 - **Lint / format:** ESLint 10 flat config (typescript-eslint, react-hooks v7, i18next) + Prettier 3 (`.prettierrc.json`, import sorting)
@@ -55,10 +55,11 @@ SDK-only rules that extend or override shared conventions:
 - **It is a library, not an app.** No TanStack Router / Query, Axios, Zustand, or i18next: transport is `core/transport.ts` (fetch), state is React context, routing is the host's job (components take callbacks such as `onSignIn`, `onOrgChange`).
 - **Never bundle a peer.** Anything imported from `react`, `react-dom`, `@mantine/*` or `lucide-react` must stay a peer dependency in `package.json` — tsdown never bundles a package listed in `peerDependencies`; check `dist/` imports them after a build. Adding a runtime dependency is a breaking decision — ask first.
 - **No styles of its own.** No CSS files, no Shadow DOM, no hex colors: LM3 tokens and theme defaults only, so the host theme applies. Components must work in light and dark.
-- **Own i18n.** All user-facing text goes through `useT()` / `t('key')` from `src/i18n` — flat dot keys, `{var}` interpolation. `en.ts` is the source of truth; `ru.ts` and `uz.ts` are typed `Dictionary` and must have every key.
+- **Own i18n.** All user-facing text goes through `useT()` / `t('key')` from `src/i18n` — flat dot keys, `{var}` interpolation. `en.ts` is the source of truth; `ru.ts` and `uz.ts` are typed `Dictionary` and must have every key. The components load only the active language (`i18n/loadDictionary.ts`, `react/useDictionary.ts`): English is built in, Russian and Uzbek are dynamic imports — never import `locales/ru` or `locales/uz` statically outside `locales/index.ts` (the public `dictionaries`), or every app downloads all three again.
 - **Shared state lives in `SaaSProvider`.** Org and invite state are created once (`useOrgState`, `useMyInvitesState`) and read through `OrgContext` / `InvitesContext`. Public hooks (`useOrg`, `useInvites`) only read context — never create a second copy of server state in a component.
 - **Public API is a contract.** Everything exported from `src/index.ts` and `src/react.ts` is public. Changing or removing an export, a prop, or a hook return field is a **major** version bump (SemVer).
 - **`AuthClient` is layered** (`auth/client/`): base → session → signIn → phone → account → orgs → `AuthClient`. Add a method to the layer that owns its domain; keep each file under 200 lines.
+- **Keep the first download small.** Code that only some visits need loads on demand: the settings panel (`UserButton/LazySettingsPanel.tsx`) and the non-English languages. No module may do work on import (`sideEffects: false`). After a size-relevant change, check the result in an app (`yarn pack`, then the app's build).
 - **Tokens:** handled by `core/tokenManager.ts` only. Never log tokens, never put them in URLs.
 
 ## Commands

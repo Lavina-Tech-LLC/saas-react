@@ -79,6 +79,12 @@ const { i18n } = useTranslation()
 </SaaSProvider>
 ```
 
+Only the language on screen is downloaded: English is built in, Russian and
+Uzbek load when they are needed. `isLoaded` (`useAuth()`) turns true once the
+language is ready too, so an app that shows a loader until then never flashes
+English first. If a language fails to load, the components fall back to
+English.
+
 Messages returned by the API (for example "Invalid email or password") are
 worded by the server and are not translated by the SDK.
 
@@ -235,7 +241,7 @@ Without these two props the button keeps the SDK's own look. A sidebar in anothe
 
 ### `<SettingsPanel />`
 
-Settings as a full-screen page (a full-screen Modal: header with back, title and ✕; a sidebar of sections on the left, the section in a centered column that scrolls on its own; below 992px the sidebar folds behind a menu toggle in the header): profile, organization, people, API keys, invites, billing. Each tab is a column of settings rows; tabs follow the user's role in the selected organization. Opened by `<UserButton>`, or standalone:
+Settings as a full-screen page (a full-screen Modal: header with back, title and ✕; a sidebar of sections on the left, the section in a centered column that scrolls on its own; below 992px the sidebar folds behind a menu toggle in the header): profile, organization, people, API keys, invites, billing. Each tab is a column of settings rows; tabs follow the user's role in the selected organization. Opened by `<UserButton>` — which downloads the panel only when it is first opened (it starts as soon as the menu opens), so an app's first download leaves it out — or standalone:
 
 ```tsx
 <SettingsPanel opened={opened} onClose={close} defaultTab="people" />
@@ -264,7 +270,7 @@ const { isLoaded, isSignedIn, user, signOut, getToken, refreshUser } = useAuth()
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `isLoaded` | `boolean` | SDK has finished loading |
+| `isLoaded` | `boolean` | SDK has finished loading: the user, the project settings and the UI language |
 | `isSignedIn` | `boolean` | User is authenticated |
 | `user` | `User \| null` | Current user object |
 | `signOut` | `() => Promise<void>` | Sign out |

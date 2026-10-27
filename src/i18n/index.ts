@@ -1,4 +1,5 @@
 import { dictionaries, en, type Dictionary, type TranslationKey } from './locales';
+import { translateWith } from './translate';
 
 export type { Dictionary, TranslationKey };
 // `en` is not re-exported under that name: it is far too generic for a package
@@ -47,11 +48,5 @@ export function resolveLocale(explicit?: string | null, projectDefault?: string 
  * falls back to English rather than rendering the raw key.
  */
 export function createTranslate(locale: Locale): Translate {
-  const dictionary: Dictionary = dictionaries[locale] ?? en;
-
-  return (key, vars) => {
-    const template = dictionary[key] ?? en[key] ?? key;
-    if (!vars) return template;
-    return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
-  };
+  return translateWith(dictionaries[locale] ?? en);
 }

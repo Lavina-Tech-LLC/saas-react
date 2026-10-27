@@ -12,6 +12,7 @@ export default defineConfig({
     // Browser code (fetch, window); ESM keeps the .js names package.json points at, CJS is .cjs
     platform: 'browser',
     fixedExtension: false,
+    unbundle: true,
   },
   test: {
     globals: true,

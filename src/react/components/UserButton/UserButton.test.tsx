@@ -102,6 +102,16 @@ describe('UserButton', () => {
     );
   });
 
+  it('loads Settings only when they are opened', async () => {
+    renderWithSaaS(<UserButton />, { user: testUser });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'User menu' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Account settings' }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
   it('sends organization management to Settings instead of creating inline', async () => {
     const acme = { id: 'o1', name: 'Acme Corp', slug: 'acme', role: 'owner' };
     renderWithSaaS(<UserButton />, { user: testUser, selectedOrg: acme, org: { orgs: [acme] as never } });

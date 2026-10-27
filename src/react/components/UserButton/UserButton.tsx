@@ -19,8 +19,9 @@ import { useT } from '../../context';
 import { useAuth } from '../../hooks/useAuth';
 import { useInvites } from '../../hooks/useInvites';
 import { useOrg } from '../../hooks/useOrg';
-import { SettingsPanel, type SettingsTab } from '../SettingsPanel/SettingsPanel';
+import type { SettingsTab } from '../SettingsPanel/SettingsPanel';
 import { userInitial } from '../ui/initials';
+import { LazySettingsPanel, preloadSettingsPanel } from './LazySettingsPanel';
 import { OrgMenuSection } from './OrgMenuSection';
 import { PreferencesMenuSection } from './PreferencesMenuSection';
 
@@ -70,7 +71,16 @@ export function UserButton({
   const [opened, setOpened] = useState(false);
   // The tab Settings opens on; null while it is closed
   const [settingsTab, setSettingsTab] = useState<SettingsTab | null>(null);
-  const openSettings = (tab: SettingsTab) => setSettingsTab(tab);
+  // The panel mounts on its first open and then stays, so closing it keeps its transition
+  const [settingsMounted, setSettingsMounted] = useState(false);
+  const openSettings = (tab: SettingsTab) => {
+    setSettingsMounted(true);
+    setSettingsTab(tab);
+  };
+  const toggleMenu = (next: boolean) => {
+    if (next) preloadSettingsPanel();
+    setOpened(next);
+  };
   if (!user) return null;
 
   const name = user.name || user.email || user.phone;
@@ -100,7 +110,7 @@ export function UserButton({
 
   return (
     <>
-      <Menu opened={opened} onChange={setOpened} position="bottom-end" width={300} withinPortal>
+      <Menu opened={opened} onChange={toggleMenu} position="bottom-end" width={300} withinPortal>
         <Menu.Target>
           {compact ? (
             <UnstyledButton aria-label={t('user.menu')} bdrs="xl" display="flex">
@@ -172,14 +182,16 @@ export function UserButton({
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <SettingsPanel
-        opened={settingsTab !== null}
-        onClose={() => setSettingsTab(null)}
-        defaultTab={settingsTab ?? 'profile'}
-        afterDeleteAccountUrl={afterDeleteAccountUrl}
-        onOrgDeleted={refreshOrgs}
-        onOrgUpdated={refreshOrgs}
-      />
+      {settingsMounted && (
+        <LazySettingsPanel
+          opened={settingsTab !== null}
+          onClose={() => setSettingsTab(null)}
+          defaultTab={settingsTab ?? 'profile'}
+          afterDeleteAccountUrl={afterDeleteAccountUrl}
+          onOrgDeleted={refreshOrgs}
+          onOrgUpdated={refreshOrgs}
+        />
+      )}
     </>
   );
 }

@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { ProjectSettings, User } from '../auth/types';
 import { SaaSSupport } from '../core/client';
-import { createTranslate, resolveLocale, type Locale } from '../i18n';
+import { resolveLocale, type Locale } from '../i18n';
+import { translateWith } from '../i18n/translate';
 import { SaaSContext } from './context';
 import { useMyInvitesState } from './hooks/useMyInvitesState';
 import { useOrgState } from './hooks/useOrgState';
 import { InvitesContext, OrgContext } from './sharedState';
+import { useDictionary } from './useDictionary';
 
 export interface SaaSProviderProps {
   publishableKey?: string;
@@ -60,10 +62,13 @@ export function SaaSProvider({ publishableKey, apiKey, baseUrl, locale, onLocale
 
   // Settings arrive asynchronously, so the language can shift from the browser default to the project's
   const resolvedLocale = resolveLocale(locale, settings?.defaultLocale);
-  const t = useMemo(() => createTranslate(resolvedLocale), [resolvedLocale]);
+  const dictionary = useDictionary(resolvedLocale);
+  const t = useMemo(() => translateWith(dictionary.words), [dictionary.words]);
+  // Loaded once the language is ready too, so a host that waits for isLoaded never shows English first
+  const ready = isLoaded && dictionary.ready;
   const value = useMemo(
-    () => ({ client, user, isLoaded, settings, locale: resolvedLocale, t, onLocaleChange }),
-    [client, user, isLoaded, settings, resolvedLocale, t, onLocaleChange],
+    () => ({ client, user, isLoaded: ready, settings, locale: resolvedLocale, t, onLocaleChange }),
+    [client, user, ready, settings, resolvedLocale, t, onLocaleChange],
   );
 
   return (
