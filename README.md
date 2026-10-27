@@ -569,7 +569,7 @@ yarn lint && yarn test && yarn build
 **Try it in an app before publishing** — either:
 
 - **Link it** while you work: in the app's `frontend/package.json` set `"@saas-support/react": "link:<path-to>/SaaS react"` and keep `yarn dev` running. The app's Vite config must dedupe `react`, `react-dom`, `@mantine/core`, `@mantine/hooks` and `lucide-react`, or the app loads two copies of them. Switch back to `"^x.y.z"` before committing the app.
-- **Pack it** for a final check: `yarn build && yarn pack --filename saas-support-react-<version>.tgz`, then `"@saas-support/react": "file:<path>/saas-support-react-<version>.tgz"` and `yarn install --force` in the app.
+- **Pack it** for a final check: `yarn build && yarn pack -o saas-support-react-<version>.tgz`, then `yarn add @saas-support/react@file:<path>/saas-support-react-<version>.tgz` in the app.
 
 **Release:** bump `version`, commit `chore: release vX.Y.Z`, tag `vX.Y.Z` and push the tag — CI publishes to npm. Details in `CLAUDE.md` → *Versioning & Releases*.
 

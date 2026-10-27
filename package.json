@@ -5,15 +5,26 @@
   "description": "Embeddable auth SDK for SaaS Support",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./react": {
-      "import": "./dist/react.js",
-      "require": "./dist/react.cjs",
-      "types": "./dist/react.d.ts"
-    }
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -22,14 +33,14 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "tsc && vite build",
+    "dev": "vp pack --watch",
+    "build": "tsc && vp pack",
     "typecheck": "tsc",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json}\"",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vp test run",
+    "test:watch": "vp test"
   },
   "peerDependencies": {
     "@mantine/core": "^9.0.0",
@@ -55,37 +66,38 @@
       "optional": true
     }
   },
+  "license": "MIT",
+  "packageManager": "yarn@4.18.1+sha512.b2e1e7524f654f2749d32b4ebcb4622473cb5bcbc485df2007e12a154e50162a4d795526768bc5f5b8f81717bfd79deb2472813d86fb5ae2eb551fa9c872b08f",
+  "resolutions": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
+  },
   "devDependencies": {
-    "@eslint/js": "^9",
+    "@eslint/js": "^10.0.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
-    "@mantine/core": "^9.6",
-    "@mantine/hooks": "^9.6",
+    "@mantine/core": "9.7.4",
+    "@mantine/hooks": "9.7.4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.7",
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^4.3.0",
-    "eslint": "^9",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-i18next": "^6.1.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "jsdom": "^25",
-    "lucide-react": "^1.54.0",
-    "prettier": "^3.9.9",
-    "react": "^19.2",
-    "react-dom": "^19.2",
-    "typescript": "^5.5.0",
-    "typescript-eslint": "^8.71.1",
-    "vite": "^6.4",
-    "vite-plugin-dts": "^4.0.0",
-    "vitest": "^3"
-  },
-  "license": "MIT",
-  "resolutions": {
-    "**/vite": "^6.4.2"
+    "jsdom": "^30.1.3",
+    "lucide-react": "^1.61.0",
+    "prettier": "^3.9.10",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "5.0.5"
   }
 }

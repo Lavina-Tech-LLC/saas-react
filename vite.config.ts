@@ -1,23 +1,17 @@
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
-import dts from 'vite-plugin-dts';
-import { defineConfig } from 'vitest/config';
-
-// Peer dependencies are provided by the host app — never bundled into the SDK
-const EXTERNAL = [/^react($|\/)/, /^react-dom($|\/)/, /^@mantine\//, /^lucide-react($|\/)/];
+import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
-  plugins: [react(), dts({ rollupTypes: true, exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'] })],
-  build: {
-    lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-        react: resolve(__dirname, 'src/react.ts'),
-      },
-      formats: ['es', 'cjs'],
-      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
-    },
-    rollupOptions: { external: EXTERNAL },
+  plugins: [react()],
+  // The library build (vp pack, tsdown): both entries in ESM and CJS with their types. Peer dependencies (react,
+  // react-dom, @mantine/*, lucide-react) stay external — tsdown never bundles a package listed in peerDependencies.
+  pack: {
+    entry: { index: 'src/index.ts', react: 'src/react.ts' },
+    format: ['esm', 'cjs'],
+    dts: true,
+    // Browser code (fetch, window); ESM keeps the .js names package.json points at, CJS is .cjs
+    platform: 'browser',
+    fixedExtension: false,
   },
   test: {
     globals: true,

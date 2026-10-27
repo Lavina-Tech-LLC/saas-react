@@ -42,17 +42,18 @@ It is consumed **only by Lavina apps**, which all run Mantine with the LM3 theme
 ## Tech Stack
 
 - **Runtime peers:** React 19.2, `@mantine/core` + `@mantine/hooks` 9, `lucide-react` — peer dependencies, never bundled
-- **Build:** Vite 6 library mode + `vite-plugin-dts` (rolled-up `.d.ts`), outputs ESM + CJS
-- **Tests:** Vitest 3 + jsdom + React Testing Library
-- **Lint / format:** ESLint 9 flat config (typescript-eslint, react-hooks v7, i18next) + Prettier 3 (`.prettierrc.json`, import sorting)
+- **Build:** Vite+ `vp pack` (tsdown) — the `pack` block in `vite.config.ts`: `index` + `react` entries, ESM (`.js`) + CJS (`.cjs`) with their `.d.ts` / `.d.cts`, shared chunks between the entries; `platform: 'browser'`. Same toolchain as the boilerplate (Mantine's `vite-min-template`)
+- **Tests:** Vitest 5 through Vite+ (`vp test`) + jsdom + React Testing Library
+- **Language:** TypeScript 6.0 (typescript-eslint does not support 7 yet)
+- **Lint / format:** ESLint 10 flat config (typescript-eslint, react-hooks v7, i18next) + Prettier 3 (`.prettierrc.json`, import sorting)
 
 ## Project-Specific Constraints
 
 SDK-only rules that extend or override shared conventions:
 
-- **Package manager: Yarn** (classic) — never `bun` or `npm` (except `npm publish` in CI).
+- **Package manager: Yarn 4.18.1**, pinned in the repo (`.yarn/releases/`, `yarnPath` in `.yarnrc.yml`, `packageManager` in `package.json`; a global Yarn 1 hands over to it) with `nodeLinker: node-modules` and Yarn's safe defaults (no install scripts, the 1-day minimum package age) — never `bun` or `npm` (except `npm publish` in CI). Node ≥ 22.18.
 - **It is a library, not an app.** No TanStack Router / Query, Axios, Zustand, or i18next: transport is `core/transport.ts` (fetch), state is React context, routing is the host's job (components take callbacks such as `onSignIn`, `onOrgChange`).
-- **Never bundle a peer.** Anything imported from `react`, `react-dom`, `@mantine/*` or `lucide-react` must stay in `EXTERNAL` in `vite.config.ts`. Adding a runtime dependency is a breaking decision — ask first.
+- **Never bundle a peer.** Anything imported from `react`, `react-dom`, `@mantine/*` or `lucide-react` must stay a peer dependency in `package.json` — tsdown never bundles a package listed in `peerDependencies`; check `dist/` imports them after a build. Adding a runtime dependency is a breaking decision — ask first.
 - **No styles of its own.** No CSS files, no Shadow DOM, no hex colors: LM3 tokens and theme defaults only, so the host theme applies. Components must work in light and dark.
 - **Own i18n.** All user-facing text goes through `useT()` / `t('key')` from `src/i18n` — flat dot keys, `{var}` interpolation. `en.ts` is the source of truth; `ru.ts` and `uz.ts` are typed `Dictionary` and must have every key.
 - **Shared state lives in `SaaSProvider`.** Org and invite state are created once (`useOrgState`, `useMyInvitesState`) and read through `OrgContext` / `InvitesContext`. Public hooks (`useOrg`, `useInvites`) only read context — never create a second copy of server state in a component.
@@ -63,18 +64,18 @@ SDK-only rules that extend or override shared conventions:
 ## Commands
 
 ```bash
-yarn build                      # tsc && vite build → dist/ (index + react entries, .d.ts)
-yarn dev                        # vite build --watch
+yarn build                      # tsc && vp pack → dist/ (index + react entries, ESM + CJS, .d.ts + .d.cts)
+yarn dev                        # vp pack --watch
 yarn typecheck                  # tsc
 yarn lint                       # ESLint (max-lines 200; locales and tests exempt)
-yarn test                       # Vitest run
-yarn test:watch                 # Vitest watch
+yarn test                       # vp test run (Vitest 5)
+yarn test:watch                 # vp test
 yarn format                     # Prettier write
 yarn format:check               # Prettier check
 
 # Try a local build in an app before publishing (avoids duplicate React / Mantine from yarn link)
-yarn build && yarn pack --filename saas-support-react-<version>.tgz
-# then in the app: "@saas-support/react": "file:<path>/saas-support-react-<version>.tgz", yarn install --force
+yarn build && yarn pack -o saas-support-react-<version>.tgz
+# then in the app: yarn add @saas-support/react@file:<path>/saas-support-react-<version>.tgz
 ```
 
 ## Structure

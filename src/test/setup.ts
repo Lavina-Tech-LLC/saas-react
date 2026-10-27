@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 
 // jsdom lacks these browser APIs that Mantine components use
 const { getComputedStyle } = window;
