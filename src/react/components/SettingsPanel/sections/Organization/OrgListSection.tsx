@@ -1,20 +1,19 @@
-import { Avatar, Badge, Button } from '@mantine/core';
-import { Building2, Plus } from 'lucide-react';
+import { Avatar, Button, ThemeIcon } from '@mantine/core';
+import { Building2, Check, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '@/components/uiKit/EmptyState';
 import { ListItem } from '@/components/uiKit/List';
-import { SegmentedList } from '@/components/uiKit/SegmentedList';
+import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
 
 import { useSaaSContext } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
 import { orgInitials } from '../../../ui/initials';
-import { RoleBadge } from '../../../ui/RoleBadge';
-import { SettingsBlock } from '../../SettingsBlock';
+import { roleLabel } from '../../../ui/RoleBadge';
 import { CreateOrgSheet } from './CreateOrgSheet';
 
-// Every organization the user belongs to, one tile each: the current one marked, Switch on the others; New
-// organization when the project allows it
+// Every organization the user belongs to, as Google's account switcher: the current one checked, any other switched to
+// by pressing it, and New organization last when the project allows it
 export function OrgListSection({ onChanged }: { onChanged?: () => void }) {
   const { t, settings, user } = useSaaSContext();
   const { orgs, selectedOrg, selectOrg } = useOrg();
@@ -25,27 +24,34 @@ export function OrgListSection({ onChanged }: { onChanged?: () => void }) {
     await selectOrg(orgId);
     onChanged?.();
   };
+  const sheet = <CreateOrgSheet opened={creating} onClose={() => setCreating(false)} onCreated={() => onChanged?.()} />;
 
-  return (
-    <SettingsBlock
-      title={t('org.yours')}
-      action={
-        canCreate && (
-          <Button variant="light" leftSection={<Plus size={18} />} onClick={() => setCreating(true)}>
-            {t('org.new')}
-          </Button>
-        )
-      }
-    >
-      {orgs.length === 0 ? (
+  if (orgs.length === 0) {
+    return (
+      <>
         <EmptyState
           icon={Building2}
           title={t('org.emptyTitle')}
           description={canCreate ? t('org.emptyCanCreate') : t('org.emptyInviteOnly')}
+          action={
+            canCreate && (
+              <Button leftSection={<Plus size={18} />} onClick={() => setCreating(true)}>
+                {t('org.new')}
+              </Button>
+            )
+          }
         />
-      ) : (
-        <SegmentedList aria-label={t('org.yours')}>
-          {orgs.map((org) => (
+        {sheet}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SettingsGroup title={t('org.yours')}>
+        {orgs.map((org) => {
+          const current = org.id === selectedOrg?.id;
+          return (
             <ListItem
               key={org.id}
               leadingType="avatar"
@@ -55,24 +61,28 @@ export function OrgListSection({ onChanged }: { onChanged?: () => void }) {
                 </Avatar>
               }
               headline={org.name}
-              supportingText={org.role && <RoleBadge role={org.role} />}
-              selected={org.id === selectedOrg?.id}
-              trailing={
-                org.id === selectedOrg?.id ? (
-                  <Badge variant="light" color="green">
-                    {t('org.current')}
-                  </Badge>
-                ) : (
-                  <Button variant="default" onClick={() => switchTo(org.id)}>
-                    {t('org.switch')}
-                  </Button>
-                )
-              }
+              supportingText={org.role && roleLabel(t, org.role)}
+              selected={current}
+              trailingText={current ? t('org.current') : undefined}
+              trailing={current ? <Check size={20} /> : undefined}
+              onClick={current ? undefined : () => switchTo(org.id)}
             />
-          ))}
-        </SegmentedList>
-      )}
-      <CreateOrgSheet opened={creating} onClose={() => setCreating(false)} onCreated={() => onChanged?.()} />
-    </SettingsBlock>
+          );
+        })}
+        {canCreate && (
+          <ListItem
+            leadingType="avatar"
+            leading={
+              <ThemeIcon variant="light" size={40} radius="md">
+                <Plus size={20} />
+              </ThemeIcon>
+            }
+            headline={t('org.new')}
+            onClick={() => setCreating(true)}
+          />
+        )}
+      </SettingsGroup>
+      {sheet}
+    </>
   );
 }

@@ -1,10 +1,10 @@
 import { Button, PasswordInput, Stack } from '@mantine/core';
-import { Lock, Pencil } from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
-import { AppModal } from '@/components/uiKit/AppModal';
-import { SettingsRow } from '@/components/uiKit/SettingsRow';
+import { ListItem } from '@/components/uiKit/List';
+import { BottomSheet } from '@/components/uiKit/Sheets';
 
 import { useSaaSContext } from '../../../../context';
 import { useProfile } from '../../../../hooks/useProfile';
@@ -12,7 +12,7 @@ import { checkNewPassword } from '../../../SignIn/NewPasswordFields';
 
 const FORM = 'saas-change-password';
 
-// The password row; Change opens the form with the current and the new password
+// The password row; pressing it opens the current and the new password in a bottom sheet
 export function PasswordRow({ onChanged }: { onChanged: () => void }) {
   const { t, settings } = useSaaSContext();
   const { changePassword, isLoading, error, setError } = useProfile();
@@ -43,23 +43,27 @@ export function PasswordRow({ onChanged }: { onChanged: () => void }) {
 
   return (
     <>
-      <SettingsRow
-        icon={Lock}
-        color="orange"
-        label={t('signIn.password')}
-        description={t('settings.passwordHint', { min: minLength })}
-        action={
-          <Button variant="light" leftSection={<Pencil size={16} />} onClick={open}>
-            {t('common.change')}
-          </Button>
-        }
+      <ListItem
+        leading={<Lock />}
+        headline={t('signIn.password')}
+        supportingText={t('settings.passwordHint', { min: minLength })}
+        trailing={<ChevronRight size={20} />}
+        onClick={open}
       />
-      <AppModal
+      <BottomSheet
         opened={opened}
         onClose={() => setOpened(false)}
         title={t('settings.changePassword')}
-        size="md"
-        mainAction={{ label: t('settings.changePassword'), form: FORM, loading: isLoading }}
+        actions={
+          <>
+            <Button variant="default" onClick={() => setOpened(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" form={FORM} loading={isLoading}>
+              {t('settings.changePassword')}
+            </Button>
+          </>
+        }
       >
         <Stack component="form" id={FORM} onSubmit={submit} gap="md">
           {problem && <AppAlert severity="error">{problem}</AppAlert>}
@@ -86,7 +90,7 @@ export function PasswordRow({ onChanged }: { onChanged: () => void }) {
             required
           />
         </Stack>
-      </AppModal>
+      </BottomSheet>
     </>
   );
 }

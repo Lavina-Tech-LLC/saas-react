@@ -370,6 +370,17 @@ export const en = {
   'role.owner': 'Owner',
   'role.admin': 'Admin',
   'role.member': 'Member',
+  'settings.tabHint.profile': 'Name, photo, password and sign-in',
+  'settings.tabHint.organization': 'Name, logo and switching organizations',
+  'settings.tabHint.people': 'Members, invitations and roles',
+  'settings.tabHint.apiKeys': 'Keys for your servers and scripts',
+  'settings.tabHint.invites': 'Invitations to join an organization',
+  'settings.tabHint.billing': 'Plan and payments',
+  'settings.group.personal': 'Personal info',
+  'org.logo': 'Logo',
+  'org.logoHint': 'Shown in the organization menu',
+  'org.address': 'Address',
+  'org.plan': 'Plan',
 } as const;
 
 export type TranslationKey = keyof typeof en;

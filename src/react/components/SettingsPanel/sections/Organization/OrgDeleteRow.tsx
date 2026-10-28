@@ -1,15 +1,14 @@
-import { Button } from '@mantine/core';
-import { Trash2 } from 'lucide-react';
+import { ChevronRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/uiKit/ConfirmDialog';
-import { SettingsRow } from '@/components/uiKit/SettingsRow';
+import { ListItem } from '@/components/uiKit/List';
 
 import type { Org } from '../../../../../auth/types';
 import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
 
-// The red tile at the end; deleting is confirmed by typing the organization's name
+// The red row at the end; deleting is confirmed by typing the organization's name
 export function OrgDeleteRow({ org, onDeleted }: { org: Org; onDeleted: () => void }) {
   const t = useT();
   const { deleteOrg, error, setError } = useOrg();
@@ -29,16 +28,14 @@ export function OrgDeleteRow({ org, onDeleted }: { org: Org; onDeleted: () => vo
 
   return (
     <>
-      <SettingsRow
-        icon={Trash2}
-        danger
-        label={t('org.delete')}
-        description={t('org.deleteHint')}
-        action={
-          <Button variant="light" color="red" onClick={open}>
-            {t('common.delete')}
-          </Button>
-        }
+      <ListItem
+        leading={<Trash2 />}
+        color="red"
+        headline={t('org.delete')}
+        supportingText={t('org.deleteHint')}
+        wrapText
+        trailing={<ChevronRight size={20} />}
+        onClick={open}
       />
       <ConfirmDialog
         opened={opened}

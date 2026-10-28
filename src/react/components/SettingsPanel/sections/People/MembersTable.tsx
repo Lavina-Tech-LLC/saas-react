@@ -8,6 +8,7 @@ import { TableScroll } from '@/components/uiKit/TableScroll';
 import type { Member } from '../../../../../auth/types';
 import { useT } from '../../../../context';
 import { RoleBadge } from '../../../ui/RoleBadge';
+import { FLAT_CARD } from '../../flatCard';
 
 interface MembersTableProps {
   members: Member[];
@@ -19,7 +20,7 @@ interface MembersTableProps {
 export function MembersTable({ members, onEdit, onRemove }: MembersTableProps) {
   const t = useT();
   return (
-    <Paper p={0}>
+    <Paper p={0} {...FLAT_CARD}>
       <TableScroll minWidth={480} label={t('people.members')}>
         <Table>
           <Table.Thead>

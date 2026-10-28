@@ -8,13 +8,14 @@ import { TableScroll } from '@/components/uiKit/TableScroll';
 
 import type { ApiKey } from '../../../../../auth/types';
 import { useT } from '../../../../context';
+import { FLAT_CARD } from '../../flatCard';
 
 // LM3 §14 — the organization's API keys: name and prefix, roles, expiry, last use; Revoke
 export function ApiKeysTable({ keys, onRevoke }: { keys: ApiKey[]; onRevoke: (key: ApiKey) => void }) {
   const t = useT();
   const none = '—';
   return (
-    <Paper p={0}>
+    <Paper p={0} {...FLAT_CARD}>
       <TableScroll minWidth={600} label={t('apiKeys.yours')}>
         <Table>
           <Table.Thead>

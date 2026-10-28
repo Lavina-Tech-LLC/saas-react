@@ -65,7 +65,7 @@ describe('SettingsPanel', () => {
     renderWithSaaS(<SettingsPanel opened onClose={() => {}} />, { user: testUser });
     const list = within(screen.getByRole('list', { name: 'Settings menu' }));
 
-    await userEvent.click(list.getByRole('button', { name: 'Invites' }));
+    await userEvent.click(list.getByRole('button', { name: /^Invites/ }));
     expect(screen.queryByRole('list', { name: 'Settings menu' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Invites' })).toBeInTheDocument();
 

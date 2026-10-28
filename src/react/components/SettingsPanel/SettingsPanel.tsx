@@ -51,8 +51,8 @@ const SCREEN = {
 const SLIDE_UP = { transition: 'slide-up', duration: 250, timingFunction: 'cubic-bezier(0.05, 0.7, 0.1, 1)' } as const;
 
 /**
- * LM3 — the account settings: an M3 full-screen window. From sm 840 the sections are listed beside the open one; on
- * phones one pane at a time — the list, then a section under ←. Every section saves on its own.
+ * The account settings, after myaccount.google.com: an M3 full-screen window. From sm 840 the sections are listed beside
+ * one narrow column; on phones one pane at a time — the list, then a section under ←. Every section saves on its own.
  */
 export function SettingsPanel({
   opened,
@@ -118,13 +118,14 @@ export function SettingsPanel({
           <Flex flex={1} miw={0}>
             {!onePane && <SettingsNav items={tabs} active={shown.key} onSelect={select} invites={invites.length} />}
             <ScrollArea flex={1} miw={0} scrollbars="y" type="auto">
-              <Box maw={720} mx="auto" px={PAGE_PADDING_X} pt={onePane ? 'xs' : 'md'} pb="xl">
+              <Box maw={680} mx="auto" px={PAGE_PADDING_X} pt={onePane ? 'xs' : 'md'} pb="xl">
                 {showList ? (
                   <SettingsSectionList items={tabs} onSelect={select} invites={invites.length} />
                 ) : (
                   <>
-                    {!onePane && (
-                      <Title order={2} size="h3" mb="lg">
+                    {/* Profile opens on the person (its own header), every other section on its name */}
+                    {!onePane && shown.key !== 'profile' && (
+                      <Title order={1} mb="lg">
                         {t(shown.label)}
                       </Title>
                     )}

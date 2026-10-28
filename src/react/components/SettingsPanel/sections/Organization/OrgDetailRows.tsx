@@ -1,5 +1,5 @@
-import { Avatar, Button, Stack, TextInput, UnstyledButton } from '@mantine/core';
-import { Pencil } from 'lucide-react';
+import { Avatar, Button, Group, Stack, TextInput } from '@mantine/core';
+import { Building2, ChevronRight, ImageIcon, Link2, UserCog } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
@@ -11,11 +11,13 @@ import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
 import { AvatarUploadModal } from '../../../AvatarUpload/AvatarUploadModal';
 import { orgInitials } from '../../../ui/initials';
+import { roleLabel } from '../../../ui/RoleBadge';
 
 const FORM = 'saas-rename-org';
 
-// The organization's first tile: its logo (opens the cropper), name and address; Rename in a bottom sheet
-export function OrgHeader({ org, onUpdated }: { org: Org; onUpdated: () => void }) {
+// The organization's rows, as Google's personal info: its name (renamed in a bottom sheet), its logo (the cropper),
+// its address and your role
+export function OrgDetailRows({ org, onUpdated }: { org: Org; onUpdated: () => void }) {
   const t = useT();
   const { updateOrg, uploadOrgAvatar, error, setError } = useOrg();
   const [dialog, setDialog] = useState<'name' | 'logo' | null>(null);
@@ -48,22 +50,31 @@ export function OrgHeader({ org, onUpdated }: { org: Org; onUpdated: () => void 
   return (
     <>
       <ListItem
-        leadingType="avatar"
-        leading={
-          <UnstyledButton onClick={() => open('logo')} aria-label={t('org.changeLogo')}>
+        leading={<Building2 />}
+        headline={t('common.name')}
+        supportingText={org.name}
+        trailing={<ChevronRight size={20} />}
+        onClick={() => open('name')}
+      />
+      <ListItem
+        leading={<ImageIcon />}
+        headline={t('org.logo')}
+        supportingText={t('org.logoHint')}
+        wrapText
+        trailing={
+          <Group gap="sm" wrap="nowrap">
             <Avatar src={org.avatarUrl} radius="md" color="initials" name={org.name}>
               {orgInitials(org.name)}
             </Avatar>
-          </UnstyledButton>
+            <ChevronRight size={20} />
+          </Group>
         }
-        headline={org.name}
-        supportingText={org.slug}
-        trailing={
-          <Button variant="light" leftSection={<Pencil size={16} />} onClick={() => open('name')}>
-            {t('org.rename')}
-          </Button>
-        }
+        onClick={() => open('logo')}
       />
+      <ListItem leading={<Link2 />} headline={t('org.address')} supportingText={org.slug} />
+      {org.role && (
+        <ListItem leading={<UserCog />} headline={t('org.yourRole')} supportingText={roleLabel(t, org.role)} />
+      )}
       <BottomSheet
         opened={dialog === 'name'}
         onClose={() => setDialog(null)}

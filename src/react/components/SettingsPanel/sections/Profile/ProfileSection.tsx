@@ -1,10 +1,10 @@
-import { Stack } from '@mantine/core';
+import { Badge, Stack } from '@mantine/core';
 import { LogIn, Mail, Phone } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
+import { ListItem } from '@/components/uiKit/List';
 import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
-import { SettingsRow } from '@/components/uiKit/SettingsRow';
 import { SECTION_GAP } from '@/styles/spacing';
 
 import type { TranslationKey } from '../../../../../i18n';
@@ -12,8 +12,9 @@ import { useSaaSContext } from '../../../../context';
 import { useAuth } from '../../../../hooks/useAuth';
 import { DeleteAccountRow } from './DeleteAccountRow';
 import { FaceRow } from './FaceRow';
+import { NameRow } from './NameRow';
 import { PasswordRow } from './PasswordRow';
-import { ProfileHeader } from './ProfileHeader';
+import { ProfileHero } from './ProfileHero';
 
 const PROVIDERS: Record<string, TranslationKey> = {
   email: 'provider.email',
@@ -22,7 +23,8 @@ const PROVIDERS: Record<string, TranslationKey> = {
   github: 'provider.github',
 };
 
-// LM3 §13 — the account's settings: who you are, how you sign in, then deleting the account on its own at the end
+// The account, as on myaccount.google.com: the person on top, then personal info, how you sign in, and deleting the
+// account on its own at the end — every row opens what changes it
 export function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: string }) {
   const { t, settings } = useSaaSContext();
   const { user } = useAuth();
@@ -31,29 +33,41 @@ export function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUr
   const faceMode = settings?.faceVerificationMode ?? 'off';
   const provider = user?.provider && PROVIDERS[user.provider];
 
+  const verified = (yes?: boolean) =>
+    yes ? (
+      <Badge variant="light" color="green">
+        {t('common.verified')}
+      </Badge>
+    ) : undefined;
+
   return (
     <Stack gap={SECTION_GAP}>
+      <ProfileHero onSaved={setNotice} />
       {notice && (
         <AppAlert severity="success" onClose={() => setNotice(null)}>
           {t(notice)}
         </AppAlert>
       )}
-      <SettingsGroup>
-        <ProfileHeader onSaved={setNotice} />
-        <SettingsRow icon={Mail} color="teal" label={t('identifier.email')} value={user?.email || t('common.notSet')} />
-        <SettingsRow
-          icon={Phone}
-          color="green"
-          label={t('identifier.phone')}
-          value={user?.phone || t('common.notSet')}
+      <SettingsGroup title={t('settings.group.personal')}>
+        <NameRow onSaved={setNotice} />
+        <ListItem
+          leading={<Mail />}
+          headline={t('identifier.email')}
+          supportingText={user?.email || t('common.notSet')}
+          trailing={verified(user?.email ? user.emailVerified : false)}
+        />
+        <ListItem
+          leading={<Phone />}
+          headline={t('identifier.phone')}
+          supportingText={user?.phone || t('common.notSet')}
+          trailing={verified(user?.phone ? user.phoneVerified : false)}
         />
       </SettingsGroup>
       <SettingsGroup title={t('settings.group.security')}>
-        <SettingsRow
-          icon={LogIn}
-          color="violet"
-          label={t('settings.authProvider')}
-          value={provider ? t(provider) : (user?.provider ?? t('common.notSet'))}
+        <ListItem
+          leading={<LogIn />}
+          headline={t('settings.authProvider')}
+          supportingText={provider ? t(provider) : (user?.provider ?? t('common.notSet'))}
         />
         {hasPassword && <PasswordRow onChanged={() => setNotice('settings.passwordChanged')} />}
         {faceMode !== 'off' && <FaceRow />}

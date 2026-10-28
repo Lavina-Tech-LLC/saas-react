@@ -1,10 +1,11 @@
-import { Paper, ThemeIcon } from '@mantine/core';
+import { ThemeIcon } from '@mantine/core';
 import { Mail, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { ConfirmDialog } from '@/components/uiKit/ConfirmDialog';
-import { List, ListItem } from '@/components/uiKit/List';
+import { ListItem } from '@/components/uiKit/List';
 import { RelativeTime } from '@/components/uiKit/RelativeTime';
+import { SegmentedList } from '@/components/uiKit/SegmentedList';
 import { TableActions } from '@/components/uiKit/TableActions';
 
 import type { PendingInvite } from '../../../../../auth/types';
@@ -13,7 +14,7 @@ import { useOrg } from '../../../../hooks/useOrg';
 import { RoleBadge } from '../../../ui/RoleBadge';
 import { SettingsBlock } from '../../SettingsBlock';
 
-// Personal invites not accepted yet, as list rows (who, the role, when it was sent); hidden when there are none
+// Personal invites not accepted yet, one tile each (who, the role, when it was sent); hidden when there are none
 export function PendingInvitesCard({ orgId }: { orgId: string }) {
   const t = useT();
   const { invites, revokeInvite } = useOrg();
@@ -34,34 +35,32 @@ export function PendingInvitesCard({ orgId }: { orgId: string }) {
 
   return (
     <SettingsBlock title={t('people.pendingInvites')}>
-      <Paper p={0} style={{ overflow: 'hidden' }}>
-        <List aria-label={t('people.pendingInvites')} dividers="inset">
-          {invites.map((invite) => (
-            <ListItem
-              key={invite.id}
-              leadingType="avatar"
-              leading={
-                <ThemeIcon variant="light" color="violet">
-                  <Mail />
-                </ThemeIcon>
-              }
-              headline={invite.email || invite.phone}
-              supportingText={<RelativeTime value={invite.createdAt} />}
-              trailing={
-                <>
-                  <RoleBadge role={invite.role} label={invite.roleName || invite.role} />
-                  <TableActions
-                    name={invite.email || invite.phone || ''}
-                    actions={[
-                      { key: 'revoke', label: revoke, icon: X, destructive: true, onClick: () => setRevoking(invite) },
-                    ]}
-                  />
-                </>
-              }
-            />
-          ))}
-        </List>
-      </Paper>
+      <SegmentedList aria-label={t('people.pendingInvites')}>
+        {invites.map((invite) => (
+          <ListItem
+            key={invite.id}
+            leadingType="avatar"
+            leading={
+              <ThemeIcon variant="light" color="violet">
+                <Mail />
+              </ThemeIcon>
+            }
+            headline={invite.email || invite.phone}
+            supportingText={<RelativeTime value={invite.createdAt} />}
+            trailing={
+              <>
+                <RoleBadge role={invite.role} label={invite.roleName || invite.role} />
+                <TableActions
+                  name={invite.email || invite.phone || ''}
+                  actions={[
+                    { key: 'revoke', label: revoke, icon: X, destructive: true, onClick: () => setRevoking(invite) },
+                  ]}
+                />
+              </>
+            }
+          />
+        ))}
+      </SegmentedList>
       <ConfirmDialog
         opened={revoking !== null}
         onClose={() => setRevoking(null)}

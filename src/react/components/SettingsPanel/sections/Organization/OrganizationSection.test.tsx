@@ -27,7 +27,7 @@ describe('OrganizationSection', () => {
     expect(selectOrg).toHaveBeenCalledWith('o3');
   });
 
-  it('switches to another organization', async () => {
+  it('switches to another organization by pressing it', async () => {
     const selectOrg = vi.fn(async () => undefined);
     renderWithSaaS(<OrganizationSection />, {
       user: testUser,
@@ -36,7 +36,7 @@ describe('OrganizationSection', () => {
     });
 
     expect(screen.getByText('Current')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Switch' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Beta LLC/ }));
 
     expect(selectOrg).toHaveBeenCalledWith('o2');
   });
@@ -45,7 +45,7 @@ describe('OrganizationSection', () => {
     renderWithSaaS(<OrganizationSection />, { user: testUser, selectedOrg: beta, org: { orgs: [beta] as never } });
     expect(screen.getByText('Beta LLC')).toBeInTheDocument();
     expect(screen.queryByText('Current organization')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Delete organization/ })).not.toBeInTheDocument();
   });
 
   it('deletes the organization only after its name is typed', async () => {
@@ -57,7 +57,7 @@ describe('OrganizationSection', () => {
       org: { orgs: [acme] as never, deleteOrg },
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Delete organization/ }));
     const confirm = screen.getByRole('button', { name: 'Delete organization' });
     expect(confirm).toBeDisabled();
 

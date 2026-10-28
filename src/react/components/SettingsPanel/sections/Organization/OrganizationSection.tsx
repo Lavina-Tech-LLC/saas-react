@@ -1,18 +1,16 @@
 import { Stack } from '@mantine/core';
-import { Check, UserCog } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
 import { EmptyState } from '@/components/uiKit/EmptyState';
 import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
-import { SettingsRow } from '@/components/uiKit/SettingsRow';
 import { SECTION_GAP } from '@/styles/spacing';
 
 import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
-import { RoleBadge } from '../../../ui/RoleBadge';
 import { OrgDeleteRow } from './OrgDeleteRow';
-import { OrgHeader } from './OrgHeader';
+import { OrgDetailRows } from './OrgDetailRows';
 import { OrgListSection } from './OrgListSection';
 
 interface OrganizationSectionProps {
@@ -43,6 +41,8 @@ export function OrganizationSection({ onOrgDeleted, onOrgUpdated }: Organization
     onOrgDeleted?.();
   };
 
+  const owner = !deleted && selectedOrg?.role === 'owner' ? selectedOrg : null;
+
   return (
     <Stack gap={SECTION_GAP}>
       {updated && (
@@ -51,23 +51,18 @@ export function OrganizationSection({ onOrgDeleted, onOrgUpdated }: Organization
         </AppAlert>
       )}
       {deleted && <EmptyState icon={Check} color="green" title={t('org.deleted')} description={t('org.deletedHint')} />}
-      {!deleted && selectedOrg?.role === 'owner' && (
-        <>
-          <SettingsGroup title={t('org.currentTitle')}>
-            <OrgHeader org={selectedOrg} onUpdated={handleUpdated} />
-            <SettingsRow
-              icon={UserCog}
-              color="indigo"
-              label={t('org.yourRole')}
-              value={<RoleBadge role={selectedOrg.role} />}
-            />
-          </SettingsGroup>
-          <SettingsGroup>
-            <OrgDeleteRow org={selectedOrg} onDeleted={handleDeleted} />
-          </SettingsGroup>
-        </>
+      {owner && (
+        <SettingsGroup title={t('org.currentTitle')}>
+          <OrgDetailRows org={owner} onUpdated={handleUpdated} />
+        </SettingsGroup>
       )}
       <OrgListSection onChanged={onOrgUpdated} />
+      {/* Deleting goes last, on its own */}
+      {owner && (
+        <SettingsGroup>
+          <OrgDeleteRow org={owner} onDeleted={handleDeleted} />
+        </SettingsGroup>
+      )}
     </Stack>
   );
 }

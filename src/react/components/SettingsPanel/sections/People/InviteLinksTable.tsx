@@ -12,6 +12,7 @@ import type { InviteLink } from '../../../../../auth/types';
 import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
 import { RoleBadge } from '../../../ui/RoleBadge';
+import { FLAT_CARD } from '../../flatCard';
 
 // LM3 §14 — the invite links: the link's end, its role, uses, when it expires; Copy and Revoke
 export function InviteLinksTable({ links, onRevoke }: { links: InviteLink[]; onRevoke: (link: InviteLink) => void }) {
@@ -25,7 +26,7 @@ export function InviteLinksTable({ links, onRevoke }: { links: InviteLink[]; onR
   };
 
   return (
-    <Paper p={0}>
+    <Paper p={0} {...FLAT_CARD}>
       <TableScroll minWidth={600} label={t('people.inviteLinks')}>
         <Table>
           <Table.Thead>

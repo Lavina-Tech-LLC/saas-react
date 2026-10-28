@@ -22,22 +22,42 @@ const count = (key: SettingsTab, invites: number) =>
     </Badge>
   ) : null;
 
-/** LM3 §12 — the sections beside the open one (from sm 840): navigation-drawer rows, the open one lit. */
+// The Google Account rail: a tonal icon circle and the name; the open section sits on a pill in the card tone
+const navStyles = (active: boolean) => ({
+  root: {
+    width: 'fit-content',
+    maxWidth: '100%',
+    minHeight: 52,
+    borderRadius: 999,
+    padding: '6px 20px 6px 6px',
+    '--nl-bg': 'var(--m3-surface)',
+    '--nl-color': 'var(--mantine-color-text)',
+  },
+  section: { marginInlineEnd: 12 },
+  label: { fontWeight: active ? 600 : 500 },
+});
+
+/** The sections beside the open one (from sm 840), as on myaccount.google.com. */
 export function SettingsNav({ items, active, onSelect, invites }: SettingsNavProps) {
   const t = useT();
   return (
-    <Box component="nav" aria-label={t('settings.menu')} w={256} py="xs" pr="sm" style={{ flexShrink: 0 }}>
-      <Stack gap={2}>
-        {items.map(({ key, label, icon: Icon }) => (
+    <Box component="nav" aria-label={t('settings.menu')} w={280} px="md" pt="md" style={{ flexShrink: 0 }}>
+      <Stack gap={4} align="flex-start">
+        {items.map(({ key, label, icon: Icon, color }) => (
           <NavLink
             key={key}
             component="button"
             label={t(label)}
-            leftSection={<Icon size={20} />}
+            leftSection={
+              <ThemeIcon variant="light" color={color} size={40} radius="xl">
+                <Icon size={20} />
+              </ThemeIcon>
+            }
             rightSection={count(key, invites)}
             active={key === active}
             aria-current={key === active ? 'page' : undefined}
             onClick={() => onSelect(key)}
+            styles={navStyles(key === active)}
           />
         ))}
       </Stack>
@@ -45,19 +65,21 @@ export function SettingsNav({ items, active, onSelect, invites }: SettingsNavPro
   );
 }
 
-/** LM3 §13 — the sections on phones, before one opens: a separated list, each a tonal icon and a chevron. */
+/** The sections on phones, before one opens: a separated list — a tonal icon, the name and what it holds. */
 export function SettingsSectionList({ items, onSelect, invites }: Omit<SettingsNavProps, 'active'>) {
   const t = useT();
   return (
     <SegmentedList aria-label={t('settings.menu')}>
-      {items.map(({ key, label, icon: Icon, color }) => (
+      {items.map(({ key, label, hint, icon: Icon, color }) => (
         <ListItem
           key={key}
           headline={t(label)}
+          supportingText={t(hint)}
+          wrapText
           leadingType="avatar"
           leading={
-            <ThemeIcon variant="light" color={color}>
-              <Icon />
+            <ThemeIcon variant="light" color={color} size={40} radius="xl">
+              <Icon size={20} />
             </ThemeIcon>
           }
           trailing={
