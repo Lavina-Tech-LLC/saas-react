@@ -1,12 +1,13 @@
 import { Button, Stack, Text } from '@mantine/core';
 import type { FormEvent } from 'react';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import type { PhoneOtpChannel } from '../../../auth/types';
 import type { TranslationKey } from '../../../i18n';
 import { useT } from '../../context';
 import { AuthCard } from '../ui/AuthCard';
 import { CodeInput } from '../ui/CodeInput';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
 
 const SENT_VIA: Record<PhoneOtpChannel, TranslationKey> = {
@@ -42,7 +43,7 @@ export function OtpScreen(props: OtpScreenProps) {
 
   return (
     <AuthCard title={props.title} subtitle={subtitle}>
-      <ErrorAlert message={props.error} />
+      {props.error && <AppAlert severity="error">{props.error}</AppAlert>}
       <form onSubmit={props.onSubmit}>
         <Stack gap="md">
           <CodeInput label={t('otp.label')} value={code} onChange={props.onCodeChange} />

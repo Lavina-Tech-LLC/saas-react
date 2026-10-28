@@ -1,17 +1,19 @@
-import { Stack, Title } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+import { EmptyState } from '@/components/uiKit/EmptyState';
+import { SECTION_GAP } from '@/styles/spacing';
+
 import { useSaaSContext } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
-import { EmptyState } from '../../../ui/EmptyState';
-import { ErrorAlert } from '../../../ui/ErrorAlert';
 import { InviteLinksCard } from './InviteLinksCard';
 import { InviteSuccessBanner, type InviteSuccess } from './InviteSuccessBanner';
 import { MembersCard } from './MembersCard';
 import { PendingInvitesCard } from './PendingInvitesCard';
 
-// Members, pending invites and invite links of the selected organization
+// The selected organization's members, the invites not yet accepted, and its invite links
 export function PeopleSection() {
   const { t, settings } = useSaaSContext();
   const { selectedOrg, roles, error, refreshMembers, refreshInvites, refreshInviteLinks } = useOrg();
@@ -29,18 +31,12 @@ export function PeopleSection() {
   }, [orgId, refreshMembers, refreshInvites, refreshInviteLinks]);
 
   if (!orgId) {
-    return (
-      <Stack gap="lg">
-        <Title order={4}>{t('people.title')}</Title>
-        <EmptyState icon={<Users size={24} />}>{t('settings.selectOrgMembers')}</EmptyState>
-      </Stack>
-    );
+    return <EmptyState icon={Users} title={t('people.noOrgTitle')} description={t('settings.selectOrgMembers')} />;
   }
 
   return (
-    <Stack gap="lg">
-      <Title order={4}>{t('people.title')}</Title>
-      <ErrorAlert message={error} />
+    <Stack gap={SECTION_GAP}>
+      {error && <AppAlert severity="error">{error}</AppAlert>}
       {inviteSuccess && <InviteSuccessBanner success={inviteSuccess} onDismiss={() => setInviteSuccess(null)} />}
       <MembersCard
         orgId={orgId}

@@ -1,18 +1,20 @@
-import { Box, Button, Group, Modal, PasswordInput, Stack } from '@mantine/core';
+import { Button, PasswordInput, Stack } from '@mantine/core';
 import { Lock, Pencil } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+
+import { AppAlert } from '@/components/uiKit/AppAlert';
+import { AppModal } from '@/components/uiKit/AppModal';
+import { SettingsRow } from '@/components/uiKit/SettingsRow';
 
 import { useSaaSContext } from '../../../../context';
 import { useProfile } from '../../../../hooks/useProfile';
 import { checkNewPassword } from '../../../SignIn/NewPasswordFields';
-import { ErrorAlert } from '../../../ui/ErrorAlert';
-import { SettingsRow } from '../../../ui/SettingsRow';
-import { useColorVariant } from '../../../ui/useColorVariant';
 
-// Password row; Change opens the dialog with the current and the new password
+const FORM = 'saas-change-password';
+
+// The password row; Change opens the form with the current and the new password
 export function PasswordRow({ onChanged }: { onChanged: () => void }) {
   const { t, settings } = useSaaSContext();
-  const colorVariant = useColorVariant();
   const { changePassword, isLoading, error, setError } = useProfile();
   const [opened, setOpened] = useState(false);
   const [current, setCurrent] = useState('');
@@ -29,7 +31,6 @@ export function PasswordRow({ onChanged }: { onChanged: () => void }) {
     setError(null);
     setOpened(true);
   };
-
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const problem = checkNewPassword(next, confirm, minLength, t);
@@ -38,6 +39,7 @@ export function PasswordRow({ onChanged }: { onChanged: () => void }) {
     setOpened(false);
     onChanged();
   };
+  const problem = validationError || error;
 
   return (
     <>
@@ -47,48 +49,44 @@ export function PasswordRow({ onChanged }: { onChanged: () => void }) {
         label={t('signIn.password')}
         description={t('settings.passwordHint', { min: minLength })}
         action={
-          <Button size="xs" variant={colorVariant} leftSection={<Pencil size={14} />} onClick={open}>
+          <Button variant="light" leftSection={<Pencil size={16} />} onClick={open}>
             {t('common.change')}
           </Button>
         }
       />
-      <Modal opened={opened} onClose={() => setOpened(false)} title={t('settings.changePassword')}>
-        <Box p="md" component="form" onSubmit={submit}>
-          <Stack gap="md">
-            <ErrorAlert message={validationError || error} />
-            <PasswordInput
-              label={t('settings.currentPassword')}
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.currentTarget.value)}
-              required
-              data-autofocus
-            />
-            <PasswordInput
-              label={t('settings.newPassword')}
-              autoComplete="new-password"
-              value={next}
-              onChange={(e) => setNext(e.currentTarget.value)}
-              required
-            />
-            <PasswordInput
-              label={t('settings.confirmNewPassword')}
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.currentTarget.value)}
-              required
-            />
-          </Stack>
-          <Group justify="flex-end" mt="lg">
-            <Button variant="default" onClick={() => setOpened(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" loading={isLoading}>
-              {t('settings.changePassword')}
-            </Button>
-          </Group>
-        </Box>
-      </Modal>
+      <AppModal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        title={t('settings.changePassword')}
+        size="md"
+        mainAction={{ label: t('settings.changePassword'), form: FORM, loading: isLoading }}
+      >
+        <Stack component="form" id={FORM} onSubmit={submit} gap="md">
+          {problem && <AppAlert severity="error">{problem}</AppAlert>}
+          <PasswordInput
+            label={t('settings.currentPassword')}
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.currentTarget.value)}
+            required
+            data-autofocus
+          />
+          <PasswordInput
+            label={t('settings.newPassword')}
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.currentTarget.value)}
+            required
+          />
+          <PasswordInput
+            label={t('settings.confirmNewPassword')}
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.currentTarget.value)}
+            required
+          />
+        </Stack>
+      </AppModal>
     </>
   );
 }

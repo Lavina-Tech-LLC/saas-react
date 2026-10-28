@@ -1,19 +1,22 @@
-import { Button, Group, Paper, Select, Text } from '@mantine/core';
+import { Button, Select } from '@mantine/core';
 import { Link, Plus } from 'lucide-react';
 import { useState } from 'react';
+
+import { ConfirmDialog } from '@/components/uiKit/ConfirmDialog';
+import { EmptyState } from '@/components/uiKit/EmptyState';
+import { BottomSheet } from '@/components/uiKit/Sheets';
 
 import type { InviteLink, Role } from '../../../../../auth/types';
 import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
-import { ConfirmModal } from '../../../ui/ConfirmModal';
-import { SettingsSection } from '../../../ui/SettingsSection';
+import { SettingsBlock } from '../../SettingsBlock';
 import { InviteLinksTable } from './InviteLinksTable';
 
-// Reusable invite links: create, copy, revoke
+// Reusable invite links: Create link (its role picked in a bottom sheet), copy, revoke
 export function InviteLinksCard({ orgId, assignableRoles }: { orgId: string; assignableRoles: Role[] }) {
   const t = useT();
   const { inviteLinks, createInviteLink, revokeInviteLink } = useOrg();
-  const [showCreate, setShowCreate] = useState(false);
+  const [creatingOpen, setCreatingOpen] = useState(false);
   const [linkRole, setLinkRole] = useState('member');
   const [creating, setCreating] = useState(false);
   const [revoking, setRevoking] = useState<InviteLink | null>(null);
@@ -23,13 +26,12 @@ export function InviteLinksCard({ orgId, assignableRoles }: { orgId: string; ass
     setCreating(true);
     try {
       if (!(await createInviteLink(orgId, linkRole))) return;
-      setShowCreate(false);
+      setCreatingOpen(false);
       setLinkRole('member');
     } finally {
       setCreating(false);
     }
   };
-
   const confirmRevoke = async () => {
     if (!revoking) return;
     setRevokePending(true);
@@ -40,49 +42,52 @@ export function InviteLinksCard({ orgId, assignableRoles }: { orgId: string; ass
     }
   };
 
-  const createButton = (
-    <Button size="sm" leftSection={<Plus size={16} />} onClick={() => setShowCreate((v) => !v)}>
-      {t('people.createLink')}
-    </Button>
-  );
-
   return (
-    <SettingsSection title={t('people.inviteLinks')} icon={<Link size={18} />} action={createButton}>
-      {showCreate && (
-        <Paper p="md" bg="var(--mantine-color-default-hover)">
-          <Group align="flex-end" gap="sm">
-            <Select
-              label={t('common.role')}
-              data={assignableRoles.map((r) => ({ value: r.key, label: r.name }))}
-              value={linkRole}
-              onChange={(value) => value && setLinkRole(value)}
-              allowDeselect={false}
-              flex={1}
-              miw={180}
-            />
-            <Button onClick={create} loading={creating}>
-              {t('common.create')}
-            </Button>
-          </Group>
-        </Paper>
-      )}
+    <SettingsBlock
+      title={t('people.inviteLinks')}
+      action={
+        <Button variant="light" leftSection={<Plus size={18} />} onClick={() => setCreatingOpen(true)}>
+          {t('people.createLink')}
+        </Button>
+      }
+    >
       {inviteLinks.length === 0 ? (
-        <Text fz="sm" c="dimmed">
-          {t('people.noInviteLinks')}
-        </Text>
+        <EmptyState icon={Link} title={t('people.noInviteLinks')} description={t('people.noInviteLinksHint')} />
       ) : (
         <InviteLinksTable links={inviteLinks} onRevoke={setRevoking} />
       )}
-      <ConfirmModal
+      <BottomSheet
+        opened={creatingOpen}
+        onClose={() => setCreatingOpen(false)}
+        title={t('people.createLink')}
+        actions={
+          <>
+            <Button variant="default" onClick={() => setCreatingOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={create} loading={creating}>
+              {t('common.create')}
+            </Button>
+          </>
+        }
+      >
+        <Select
+          label={t('common.role')}
+          data={assignableRoles.map((r) => ({ value: r.key, label: r.name }))}
+          value={linkRole}
+          onChange={(value) => value && setLinkRole(value)}
+          allowDeselect={false}
+        />
+      </BottomSheet>
+      <ConfirmDialog
         opened={revoking !== null}
         onClose={() => setRevoking(null)}
         onConfirm={confirmRevoke}
-        title={t('people.revokeLink')}
+        title={t('people.revokeLinkTitle')}
+        description={t('people.revokeLinkConfirm')}
         confirmLabel={t('common.revoke')}
         loading={revokePending}
-      >
-        {t('people.revokeLinkConfirm')}
-      </ConfirmModal>
-    </SettingsSection>
+      />
+    </SettingsBlock>
   );
 }

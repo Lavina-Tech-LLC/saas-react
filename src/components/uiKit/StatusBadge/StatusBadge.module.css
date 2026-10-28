@@ -1,0 +1,13 @@
+/* A status is never cut off: the badge keeps its full label in a narrow column (the column grows instead), and in a
+   flex row it doesn't shrink (Mantine ellipsizes the label) */
+.badge {
+  max-width: none;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}

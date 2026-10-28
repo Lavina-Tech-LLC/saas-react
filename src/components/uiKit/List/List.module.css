@@ -1,0 +1,391 @@
+/* LM3 §13 — M3 lists (List, ListItem) and the option lists built from the same rows. The size scale runs from dense
+   (xs) to comfortable (xl), 8px a step: md is M3's 56px row, sm the 48px menu item that option lists share. */
+
+/* ─── Size scale: on the list, its section and every row; `.scope` carries it to an option list's group labels ─── */
+
+.scope,
+.section,
+.list,
+.item,
+.row {
+  --li-h1: 3.5rem;
+  --li-h2: 4.5rem;
+  --li-h3: 5.5rem;
+  --li-px: 1rem;
+  --li-gap: 1rem;
+  --li-fz: var(--mantine-font-size-md);
+  --li-lh: 1.5rem;
+  --li-sfz: var(--mantine-font-size-sm);
+  --li-slh: 1.25rem;
+  --li-tfz: var(--mantine-font-size-xs);
+  --li-icon: 1.5rem;
+  --li-avatar: 2.5rem;
+  --li-image: 3.5rem;
+  --li-video: 4rem;
+  --li-sub-h: 3rem;
+  --li-sub-fz: var(--mantine-font-size-sm);
+}
+
+:is(.scope, .section, .list, .item, .row)[data-size='xs'] {
+  --li-h1: 2.5rem;
+  --li-h2: 3.5rem;
+  --li-h3: 4.5rem;
+  --li-px: 0.75rem;
+  --li-gap: 0.75rem;
+  --li-fz: var(--mantine-font-size-sm);
+  --li-lh: 1.25rem;
+  --li-sfz: var(--mantine-font-size-xs);
+  --li-slh: 1rem;
+  --li-tfz: 0.6875rem;
+  --li-icon: 1.125rem;
+  --li-avatar: 1.75rem;
+  --li-image: 2.5rem;
+  --li-video: 3rem;
+  --li-sub-h: 2rem;
+  --li-sub-fz: var(--mantine-font-size-xs);
+}
+
+:is(.scope, .section, .list, .item, .row)[data-size='sm'] {
+  --li-h1: 3rem;
+  --li-h2: 4rem;
+  --li-h3: 5rem;
+  --li-px: 0.75rem;
+  --li-gap: 0.75rem;
+  --li-fz: var(--mantine-font-size-sm);
+  --li-lh: 1.25rem;
+  --li-sfz: var(--mantine-font-size-xs);
+  --li-slh: 1rem;
+  --li-icon: 1.25rem;
+  --li-avatar: 2rem;
+  --li-image: 3rem;
+  --li-video: 3.5rem;
+  --li-sub-h: 2.5rem;
+  --li-sub-fz: var(--mantine-font-size-xs);
+}
+
+:is(.scope, .section, .list, .item, .row)[data-size='lg'] {
+  --li-h1: 4rem;
+  --li-h2: 5rem;
+  --li-h3: 6rem;
+  --li-px: 1.25rem;
+}
+
+:is(.scope, .section, .list, .item, .row)[data-size='xl'] {
+  --li-h1: 4.5rem;
+  --li-h2: 5.5rem;
+  --li-h3: 6.5rem;
+  --li-px: 1.5rem;
+  --li-gap: 1.25rem;
+  --li-fz: var(--mantine-font-size-lg);
+  --li-lh: 1.625rem;
+  --li-sfz: var(--mantine-font-size-md);
+  --li-slh: 1.375rem;
+  --li-tfz: var(--mantine-font-size-sm);
+  --li-icon: 1.625rem;
+  --li-avatar: 3rem;
+  --li-image: 4rem;
+  --li-video: 4.5rem;
+  --li-sub-h: 3.5rem;
+  --li-sub-fz: var(--mantine-font-size-md);
+}
+
+/* ─── List, sections, subheader, dividers ─── */
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Sections of one card: a hairline between them when the lists have dividers, space otherwise */
+.section + .section {
+  margin-top: 0.5rem;
+}
+.section[data-dividers] + .section[data-dividers] {
+  margin-top: 0;
+  border-top: 1px solid var(--m3-outline-variant);
+}
+
+/* M3 list subheader, lined up with the rows' text. Doubled class: as an option group's label it shares its element with
+   Mantine's own label class. */
+.subheader.subheader {
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  min-height: var(--li-sub-h);
+  padding: 0 var(--li-px) 0.5rem;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--li-sub-fz);
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
+/* A subheader as an option group's label (Combobox.Group): Mantine draws a line after the label */
+.subheader:global(.mantine-Combobox-groupLabel)::after {
+  display: none;
+}
+
+.item {
+  --li-lead: calc(0px - var(--li-gap));
+  position: relative;
+}
+.item[data-leading='icon'],
+.item[data-leading='control'] {
+  --li-lead: var(--li-icon);
+}
+.item[data-leading='avatar'] {
+  --li-lead: var(--li-avatar);
+}
+.item[data-leading='image'] {
+  --li-lead: var(--li-image);
+}
+.item[data-leading='video'] {
+  --li-lead: calc(var(--li-video) * 16 / 9);
+}
+
+/* A hairline over every row but the first: full width, or from the text start (M3 inset divider). Above the rows'
+   state layers, so a hovered row keeps its lines. */
+.list[data-dividers] > .item + .item::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  inset-inline: var(--li-divider-start, 0px) 0;
+  border-top: 1px solid var(--m3-outline-variant);
+  pointer-events: none;
+}
+.list[data-dividers='inset'] > .item {
+  --li-divider-start: calc(var(--li-px) + var(--li-lead) + var(--li-gap));
+}
+
+/* ─── Row ─── */
+
+/* [data-size] keeps these above Mantine's own option and button resets, whatever the stylesheet order */
+.row[data-size] {
+  --li-bg: transparent;
+  --li-on: var(--mantine-color-text);
+  --li-on-variant: var(--mantine-color-dimmed);
+  display: flex;
+  align-items: center;
+  gap: var(--li-gap);
+  box-sizing: border-box;
+  width: 100%;
+  /* --li-density: M3 density — option rows a step tighter with a mouse (globals.css): lower, and half of it off the
+     padding above and below, so rows whose text sets the height shrink too */
+  min-height: calc(var(--li-h1) - var(--li-density, 0px));
+  margin: 0;
+  padding: calc(0.5rem - var(--li-density, 0px) / 2) var(--li-px);
+  border: 0;
+  border-radius: 0;
+  background-color: var(--li-bg);
+  color: var(--li-on);
+  font-family: var(--mantine-font-family);
+  font-weight: 500;
+  text-align: start;
+  text-decoration: none;
+  transition: background-color 150ms linear;
+}
+.row[data-lines='2'] {
+  min-height: calc(var(--li-h2) - var(--li-density, 0px));
+}
+/* Three lines: M3 puts the leading and trailing content at the top */
+.row[data-lines='3'] {
+  align-items: flex-start;
+  min-height: calc(var(--li-h3) - var(--li-density, 0px));
+  padding-block: calc(0.75rem - var(--li-density, 0px) / 2);
+}
+
+.row[data-selected] {
+  --li-bg: var(--m3-secondary-container);
+  --li-on: var(--m3-on-secondary-container);
+  --li-on-variant: color-mix(in srgb, var(--m3-on-secondary-container) 78%, var(--m3-secondary-container));
+}
+
+.row:is([data-interactive], [data-pressable]):not([data-disabled]) {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .row:is([data-interactive], [data-pressable]):not([data-disabled]):hover {
+    background-color: color-mix(in srgb, var(--li-on) var(--m3-hover), var(--li-bg));
+  }
+}
+
+/* Press, keyboard focus and an option list's keyboard highlight; a row that holds controls shows no press while one of
+   them is the thing pressed */
+.row[data-interactive]:not([data-disabled]):is(:active, :focus-visible, [data-combobox-selected]),
+.row[data-pressable]:not([data-disabled]):active:not(
+    :has(:is(a, button, input, label, [role='button'], [role='checkbox'], [data-row-controls]):active)
+  ) {
+  background-color: color-mix(in srgb, var(--li-on) var(--m3-press), var(--li-bg));
+}
+
+/* The focus ring sits inside the row, so a card's or a list's edge never cuts it */
+.row.row:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+.row[data-disabled] {
+  cursor: default;
+}
+.row[data-disabled] > * {
+  opacity: 0.38;
+}
+
+/* ─── Slots ─── */
+
+.leading,
+.trailing {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--li-on-variant);
+}
+
+/* A leading control can come with an icon or avatar after it (a multi-select option) */
+.leading[data-type='control'] {
+  gap: var(--li-gap);
+}
+
+.trailing {
+  gap: 0.5rem;
+}
+
+.leading:is([data-type='icon'], [data-type='control']) {
+  min-width: var(--li-icon);
+}
+
+/* Lucide icons take the slot's size whatever size they were drawn at */
+:is(.leading[data-type='icon'], .trailing) > svg {
+  width: var(--li-icon);
+  height: var(--li-icon);
+}
+
+/* An avatar or a tonal icon circle: sized by the list unless given a size of its own */
+.leading[data-type='avatar'] {
+  width: var(--li-avatar);
+  height: var(--li-avatar);
+}
+.leading[data-type='avatar'] > :global(.mantine-Avatar-root) {
+  --avatar-size: var(--li-avatar);
+}
+.leading[data-type='avatar'] > :global(.mantine-ThemeIcon-root) {
+  --ti-size: var(--li-avatar);
+}
+.leading[data-type='avatar'] > :global(.mantine-ThemeIcon-root) > svg {
+  width: 50%;
+  height: 50%;
+}
+
+/* Thumbnails: the container tone shows while the picture loads */
+.leading:is([data-type='image'], [data-type='video']) {
+  overflow: hidden;
+  border-radius: var(--mantine-radius-sm);
+  background-color: var(--m3-surface-container-high);
+}
+.leading[data-type='image'] {
+  width: var(--li-image);
+  height: var(--li-image);
+}
+.leading[data-type='video'] {
+  width: calc(var(--li-video) * 16 / 9);
+  height: var(--li-video);
+}
+.leading:is([data-type='image'], [data-type='video']) > :is(img, :global(.mantine-Image-root)) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─── Text ─── */
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.overline,
+.headline,
+.supporting {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overline {
+  color: var(--li-on-variant);
+  font-size: var(--li-tfz);
+  line-height: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.headline {
+  font-size: var(--li-fz);
+  line-height: var(--li-lh);
+}
+
+.supporting {
+  color: var(--li-on-variant);
+  font-size: var(--li-sfz);
+  line-height: var(--li-slh);
+}
+
+.row[data-lines='3'] .supporting {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.row[data-wrap] :is(.headline, .supporting) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.trailingText {
+  flex-shrink: 0;
+  color: var(--li-on-variant);
+  font-size: var(--li-tfz);
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+/* ─── Details under a row, connected lists ─── */
+
+/* A row's block content (ListItem children) starts where its text starts */
+.details {
+  padding: 0 var(--li-px) 1.5rem calc(var(--li-px) + var(--li-lead) + var(--li-gap));
+}
+
+/* Connected (an activity history): a line joins consecutive leading tiles, stopping 4px short of each. The segments
+   hang off the tile itself (up to the row above, down past any details), so the line follows rows of any height; each
+   item clips its own segments. */
+.list[data-connected] > .item {
+  overflow: hidden;
+}
+.list[data-connected] > .item .leading {
+  position: relative;
+}
+.list[data-connected] > .item:not(:first-child) > .row .leading::before,
+.list[data-connected] > .item:not(:last-child) > .row .leading::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(50% - 1px);
+  width: 2px;
+  height: 100vh;
+  border-radius: 1px;
+  background-color: var(--m3-outline-variant);
+  pointer-events: none;
+}
+.list[data-connected] > .item .leading::before {
+  bottom: calc(100% + 4px);
+}
+.list[data-connected] > .item .leading::after {
+  top: calc(100% + 4px);
+}

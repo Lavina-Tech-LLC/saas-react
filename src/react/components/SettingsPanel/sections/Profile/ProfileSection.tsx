@@ -1,13 +1,15 @@
-import { Stack, Title } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { LogIn, Mail, Phone } from 'lucide-react';
 import { useState } from 'react';
+
+import { AppAlert } from '@/components/uiKit/AppAlert';
+import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
+import { SettingsRow } from '@/components/uiKit/SettingsRow';
+import { SECTION_GAP } from '@/styles/spacing';
 
 import type { TranslationKey } from '../../../../../i18n';
 import { useSaaSContext } from '../../../../context';
 import { useAuth } from '../../../../hooks/useAuth';
-import { SettingsGroup } from '../../../ui/SettingsGroup';
-import { SettingsRow } from '../../../ui/SettingsRow';
-import { SuccessAlert } from '../../../ui/SuccessAlert';
 import { DeleteAccountRow } from './DeleteAccountRow';
 import { FaceRow } from './FaceRow';
 import { PasswordRow } from './PasswordRow';
@@ -20,7 +22,7 @@ const PROVIDERS: Record<string, TranslationKey> = {
   github: 'provider.github',
 };
 
-// Settings rows: identity first, then how you sign in, then the destructive row on its own at the bottom
+// LM3 §13 — the account's settings: who you are, how you sign in, then deleting the account on its own at the end
 export function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUrl?: string }) {
   const { t, settings } = useSaaSContext();
   const { user } = useAuth();
@@ -30,9 +32,12 @@ export function ProfileSection({ afterDeleteAccountUrl }: { afterDeleteAccountUr
   const provider = user?.provider && PROVIDERS[user.provider];
 
   return (
-    <Stack gap="lg">
-      <Title order={4}>{t('settings.tab.profile')}</Title>
-      <SuccessAlert>{notice && t(notice)}</SuccessAlert>
+    <Stack gap={SECTION_GAP}>
+      {notice && (
+        <AppAlert severity="success" onClose={() => setNotice(null)}>
+          {t(notice)}
+        </AppAlert>
+      )}
       <SettingsGroup>
         <ProfileHeader onSaved={setNotice} />
         <SettingsRow icon={Mail} color="teal" label={t('identifier.email')} value={user?.email || t('common.notSet')} />

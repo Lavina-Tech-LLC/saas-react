@@ -1,0 +1,72 @@
+/* LM3 §20 — M3 sheets: the surface container low, the headline small title, 24px side insets */
+
+.body {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+}
+
+/* The action bar: start-aligned (M3), on a divider */
+.actions {
+  flex-shrink: 0;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+  border-top: 1px solid var(--m3-outline-variant);
+}
+
+/* Bottom sheet: 28px top corners, up to the screen's height less M3's 56px top margin; it follows the finger (swipe) */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 56px);
+  border-radius: var(--mantine-radius-xl) var(--mantine-radius-xl) 0 0;
+  background-color: var(--m3-surface-container-low);
+  --fl-bg: var(--m3-surface-container-low);
+}
+
+/* The top: the drag handle (32 × 4 in a 48px touch row, M3) and the title; swiping it down closes the sheet */
+.top {
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+.top[data-dragging] {
+  cursor: grabbing;
+}
+
+.handle {
+  display: block;
+  width: 48px;
+  height: 36px;
+  margin-inline: auto;
+  padding-top: 16px;
+}
+.handle::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 4px;
+  margin-inline: auto;
+  border-radius: 2px;
+  background-color: var(--m3-on-surface-variant);
+  opacity: 0.4;
+}
+
+.title {
+  padding: 4px var(--mantine-spacing-lg) var(--mantine-spacing-md);
+  font-family: var(--mantine-font-family-headings);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 2rem;
+}
+
+.sheetBody {
+  padding: 0 var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+}
+
+/* Without a title the content starts under the handle */
+.sheet:not(:has(.title)) .sheetBody {
+  padding-top: var(--mantine-spacing-xs);
+}
+
+.sheetActions {
+  flex-shrink: 0;
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+}

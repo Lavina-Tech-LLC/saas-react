@@ -1,0 +1,37 @@
+/* LM3 §13 — M3 Expressive's separated list. Inside a sheet or dialog, whose surface is the card tone already, tiles
+   step up to the highest container so they still read (a page-like full-screen window in the page tone sets
+   --segment-dialog-bg back to the card tone). Each tile clips its row's state layers to its corners and gives
+   a labelled field in it its notch color (--fl-bg); a tile lifted to reorder (useRowDrag) is rounded all round. */
+.group {
+  --segment-bg: var(--m3-surface);
+  --segment-radius: 4px;
+  --segment-end-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+:global(:is(.mantine-Modal-content, .mantine-Drawer-content)) .group {
+  --segment-bg: var(--segment-dialog-bg, var(--m3-surface-container-highest));
+}
+
+.group > li {
+  --fl-bg: var(--segment-bg);
+  overflow: hidden;
+  border-radius: var(--segment-radius);
+  background-color: var(--segment-bg);
+}
+
+.group > li:first-child {
+  border-start-start-radius: var(--segment-end-radius);
+  border-start-end-radius: var(--segment-end-radius);
+}
+
+.group > li:last-child {
+  border-end-start-radius: var(--segment-end-radius);
+  border-end-end-radius: var(--segment-end-radius);
+}
+
+.group > li[data-dragging] {
+  border-radius: var(--segment-end-radius);
+}

@@ -1,9 +1,10 @@
 import { Group } from '@mantine/core';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import type { PhoneOtpChannel } from '../../../auth/types';
 import { useT } from '../../context';
 import { AuthCard } from '../ui/AuthCard';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
 import { ChannelButtons } from './ChannelButtons';
 
@@ -21,7 +22,7 @@ export function ChannelPickScreen({ identifier, channels, loading, error, onSele
   const t = useT();
   return (
     <AuthCard title={t('otp.title')} subtitle={t('otp.pickSubtitle', { identifier })}>
-      <ErrorAlert message={error} />
+      {error && <AppAlert severity="error">{error}</AppAlert>}
       <ChannelButtons channels={channels} loading={loading} onSelect={onSelect} />
       <Group justify="center">
         <TextLink onClick={onBack}>{t('otp.changeNumber')}</TextLink>

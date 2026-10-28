@@ -1,11 +1,12 @@
 import { Divider, Stack, Text } from '@mantine/core';
 import { useState } from 'react';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import type { FacePose } from '../../../auth/face/engine';
 import { useSaaSContext } from '../../context';
 import { FaceScanner } from '../FaceScanner/FaceScanner';
 import { AuthCard } from '../ui/AuthCard';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
 import { CredentialsForm, type CredentialStep } from './CredentialsForm';
 import { ForgotPassword } from './ForgotPassword';
@@ -129,7 +130,7 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
 
   return (
     <AuthCard title={title} subtitle={subtitle}>
-      <ErrorAlert message={flow.error} />
+      {flow.error && <AppAlert severity="error">{flow.error}</AppAlert>}
       <CredentialsForm
         flow={flow}
         step={step}

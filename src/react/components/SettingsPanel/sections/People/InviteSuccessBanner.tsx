@@ -1,5 +1,6 @@
-import { Alert, Stack, Text } from '@mantine/core';
-import { CheckCircle } from 'lucide-react';
+import { Stack, Text } from '@mantine/core';
+
+import { AppAlert } from '@/components/uiKit/AppAlert';
 
 import { useT } from '../../../../context';
 import { CopyField } from '../../../ui/CopyField';
@@ -9,27 +10,20 @@ export interface InviteSuccess {
   url?: string;
 }
 
-// Shown after a personal invite is created; the shareable link can be copied from here
+// After a personal invite is sent: who it went to, and its link to share by hand
 export function InviteSuccessBanner({ success, onDismiss }: { success: InviteSuccess; onDismiss: () => void }) {
   const t = useT();
   return (
-    <Alert
-      color="green"
-      icon={<CheckCircle size={16} />}
-      p="xs"
-      withCloseButton
-      onClose={onDismiss}
-      closeButtonLabel={t('common.dismiss')}
-    >
+    <AppAlert severity="success" onClose={onDismiss}>
       <Stack gap="xs">
-        <Text fz="sm">
+        <Text inherit>
           {t('people.inviteCreatedFor')}{' '}
-          <Text span fw={600}>
+          <Text span inherit fw={700}>
             {success.identifier}
           </Text>
         </Text>
         {success.url && <CopyField value={success.url} copyLabel={t('people.copyInviteLink')} />}
       </Stack>
-    </Alert>
+    </AppAlert>
   );
 }

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import { useT } from '../../context';
 
-// One sentence — "By continuing, you agree to the Terms of Service and Privacy Policy." — not a row of joined links
+// One sentence — "By continuing, you agree to the Terms of service and Privacy policy." — not a row of joined links
 export function LegalLinks({ privacyUrl, termsUrl }: { privacyUrl?: string; termsUrl?: string }) {
   const t = useT();
   const link = (href: string, label: string) => (

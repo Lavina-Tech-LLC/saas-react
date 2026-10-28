@@ -1,0 +1,23 @@
+/* LM3 §14 — cell text stays on one line; the full text is the title */
+.text {
+  max-width: 320px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* CellName's name as a button (`onOpen`): looks like the cell's text, with a focus ring for the keyboard */
+.open {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  vertical-align: top;
+  border-radius: var(--mantine-radius-xs);
+}
+
+.open:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}

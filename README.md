@@ -516,7 +516,7 @@ saas.destroy()
 
 ## Styling
 
-Components are plain Mantine components rendered in your app's tree — no Shadow DOM, no SDK stylesheet, no fonts loaded by the SDK. They follow your `MantineProvider` theme (colors, radius, fonts, light/dark), so they look like the rest of the app.
+Components are Mantine components built from the LM3 UI kit and rendered in your app's tree — no Shadow DOM, no fonts loaded by the SDK. They follow your `MantineProvider` theme (colors, radius, fonts, light/dark), so they look like the rest of the app; the only CSS the SDK brings is the kit's own small CSS Modules (bottom sheet, lists, table scroll…), which your bundler picks up with the components that use them. They are made for the LM3 theme the boilerplate sets up.
 
 ---
 

@@ -2,7 +2,9 @@
   "name": "@saas-support/react",
   "version": "1.3.0",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "description": "Embeddable auth SDK for SaaS Support",
   "exports": {
     ".": {

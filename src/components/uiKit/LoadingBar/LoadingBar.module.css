@@ -1,0 +1,133 @@
+/* Two bars, each sliding (the outer span) while it stretches and shrinks (the inner one), on the timings of Material's
+   own indicator */
+.bar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 1;
+  height: 4px;
+  overflow: hidden;
+  background: var(--m3-secondary-container);
+}
+
+/* Physical left and translateX: the bars run left to right in either writing direction, like the platform's */
+.primary,
+.secondary {
+  position: absolute;
+  inset-block: 0;
+  width: 100%;
+  animation: 2s linear infinite;
+}
+
+.primary {
+  left: -145.166611%;
+  animation-name: loading-bar-primary;
+}
+
+.secondary {
+  left: -54.888891%;
+  animation-name: loading-bar-secondary;
+}
+
+.inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--m3-indicator);
+  animation: 2s linear infinite;
+}
+
+.primary .inner {
+  animation-name: loading-bar-primary-scale;
+}
+
+.secondary .inner {
+  animation-name: loading-bar-secondary-scale;
+}
+
+@keyframes loading-bar-primary {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    animation-timing-function: cubic-bezier(0.5, 0, 0.701732, 0.495819);
+    transform: translateX(0);
+  }
+  59.15% {
+    animation-timing-function: cubic-bezier(0.302435, 0.381352, 0.55, 0.956352);
+    transform: translateX(83.67142%);
+  }
+  100% {
+    transform: translateX(200.611057%);
+  }
+}
+
+@keyframes loading-bar-primary-scale {
+  0% {
+    transform: scaleX(0.08);
+  }
+  36.65% {
+    animation-timing-function: cubic-bezier(0.334731, 0.12482, 0.785844, 1);
+    transform: scaleX(0.08);
+  }
+  69.15% {
+    animation-timing-function: cubic-bezier(0.06, 0.11, 0.6, 1);
+    transform: scaleX(0.661479);
+  }
+  100% {
+    transform: scaleX(0.08);
+  }
+}
+
+@keyframes loading-bar-secondary {
+  0% {
+    animation-timing-function: cubic-bezier(0.15, 0, 0.515058, 0.409685);
+    transform: translateX(0);
+  }
+  25% {
+    animation-timing-function: cubic-bezier(0.31033, 0.284058, 0.8, 0.733712);
+    transform: translateX(37.651913%);
+  }
+  48.35% {
+    animation-timing-function: cubic-bezier(0.4, 0.627035, 0.6, 0.902026);
+    transform: translateX(84.386165%);
+  }
+  100% {
+    transform: translateX(160.277782%);
+  }
+}
+
+@keyframes loading-bar-secondary-scale {
+  0% {
+    animation-timing-function: cubic-bezier(0.205028, 0.057051, 0.57661, 0.453971);
+    transform: scaleX(0.08);
+  }
+  19.15% {
+    animation-timing-function: cubic-bezier(0.152313, 0.196432, 0.648374, 1.004315);
+    transform: scaleX(0.457104);
+  }
+  44.15% {
+    animation-timing-function: cubic-bezier(0.257759, -0.003163, 0.211762, 1.38179);
+    transform: scaleX(0.72796);
+  }
+  100% {
+    transform: scaleX(0.08);
+  }
+}
+
+/* Reduced motion: nothing moves — the primary bar fills the track, a steady bar that still says "loading" */
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .secondary,
+  .inner {
+    animation: none;
+  }
+
+  .primary {
+    left: 0;
+  }
+
+  .secondary {
+    display: none;
+  }
+}

@@ -42,9 +42,12 @@ describe('UserButton', () => {
     renderWithSaaS(<UserButton />, { user: testUser });
 
     await userEvent.click(screen.getByRole('button', { name: 'User menu' }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Dark theme' }));
+    // The theme is a one-of choice in the menu (LM3 §21): picking Dark marks it
+    const dark = await screen.findByRole('menuitemradio', { name: 'Dark theme' });
+    await userEvent.click(dark);
 
-    expect(await screen.findByRole('menuitem', { name: 'Light theme' })).toBeInTheDocument();
+    expect(dark).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('menuitemradio', { name: 'Light theme' })).toHaveAttribute('aria-checked', 'false');
   });
 
   it('offers the languages only when the app can change its language', async () => {
@@ -57,7 +60,7 @@ describe('UserButton', () => {
     renderWithSaaS(<UserButton />, { user: testUser, onLocaleChange });
     await userEvent.click(screen.getByRole('button', { name: 'User menu' }));
     await userEvent.click(await screen.findByRole('menuitem', { name: /Language/ }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Русский' }));
+    await userEvent.click(await screen.findByRole('menuitemradio', { name: 'Русский' }));
 
     expect(onLocaleChange).toHaveBeenCalledWith('ru');
   });

@@ -1,0 +1,50 @@
+/* The table's frame: positions the loading bar along its top edge */
+.frame {
+  position: relative;
+}
+
+/* Keyboard focus on the scroll region: the focus ring inside its edge (the table clips anything outside) */
+.frame :global(.mantine-ScrollArea-viewport):focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+/* Cells stay on one line, so rows keep one height and a long column scrolls sideways; a field's error message still
+   wraps */
+.frame :global(:is(.mantine-Table-th, .mantine-Table-td)) {
+  white-space: nowrap;
+}
+.frame :global(.mantine-Table-td .mantine-InputWrapper-error) {
+  white-space: normal;
+}
+
+/* Loading: the bar takes the card's top edge, as Google's linear indicator does — the card's top hairline steps aside
+   (see-through, with the card's fill stopping at its padding box so the page shows there, not a white line). Nothing
+   moves: the border keeps its width. Cards never nest, so the card holding the frame is the one. */
+:global(.mantine-Paper-root):has(.frame[data-loading]) {
+  border-top-color: transparent;
+  background-clip: padding-box;
+}
+
+/* Loading new rows: the current ones dim under the bar, so a filter change shows at once */
+.frame[data-loading] :is(tbody, ul) {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .frame :is(tbody, ul) {
+    transition: opacity 150ms linear;
+  }
+
+  /* Rows that arrive with new data rise in gently; rows that stay keep still */
+  .frame tbody > tr {
+    animation: table-row-in 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+@keyframes table-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

@@ -18,8 +18,9 @@ describe('OrganizationSection', () => {
     renderWithSaaS(<OrganizationSection />, { user: testUser, org: { orgs: [], createOrg, selectOrg } });
 
     await userEvent.click(screen.getByRole('button', { name: 'New organization' }));
-    await userEvent.type(screen.getByLabelText(/Organization Name/), 'Gamma Ltd');
-    expect(screen.getByText('gamma-ltd')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Organization name/), 'Gamma Ltd');
+    // The address made from the name, as the field's supporting text
+    expect(screen.getByText('Address: gamma-ltd')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
 
     expect(createOrg).toHaveBeenCalledWith('Gamma Ltd', 'gamma-ltd');
@@ -60,7 +61,8 @@ describe('OrganizationSection', () => {
     const confirm = screen.getByRole('button', { name: 'Delete organization' });
     expect(confirm).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText(/Type the organization name/), 'Acme Corp');
+    expect(screen.getByRole('dialog', { name: 'Delete Acme Corp?' })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Type Acme Corp to confirm'), 'Acme Corp');
     await userEvent.click(confirm);
 
     expect(deleteOrg).toHaveBeenCalledWith('o1');

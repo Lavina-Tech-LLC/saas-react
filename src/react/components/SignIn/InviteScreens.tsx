@@ -1,8 +1,9 @@
 import { Button, Center, Group, Loader, Text } from '@mantine/core';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import { useT } from '../../context';
 import { AuthCard } from '../ui/AuthCard';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
 import { formatInviterName } from './inviteUrl';
 import type { InviteFlow } from './useInviteFlow';
@@ -45,7 +46,7 @@ export function InviteScreens({ invite, onAccept }: { invite: InviteFlow; onAcce
       title={t('invite.invitesYou', { inviter: formatInviterName(info, t), org: info.orgName })}
       subtitle={t('invite.joinAs', { role: info.roleName || info.role })}
     >
-      <ErrorAlert message={invite.acceptError || error} />
+      {(invite.acceptError || error) && <AppAlert severity="error">{invite.acceptError || error}</AppAlert>}
       <Button fullWidth loading={invite.isAccepting} disabled={isLoading} onClick={onAccept}>
         {acceptLabel}
       </Button>

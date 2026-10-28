@@ -1,0 +1,40 @@
+/* Dialog actions wrap and stay right-aligned when they don't fit side by side (M3 stacked actions). Doubled class:
+   Mantine's Group sets its own wrap with the same specificity. */
+.actions.actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* DialogScroll: a ScrollArea between a dialog's title and its actions, so both stay put. A flex column, so its viewport
+   shrinks to the room left without a height of its own; it stops dead at its edge like the dialog's own scroll. */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* M3 scrolling dialog: a line under the title once the content has scrolled, and above the actions while more is
+     below (useScrollEdges); see-through otherwise, so nothing shifts when they show */
+  border-block: 1px solid transparent;
+}
+.scroll[data-above] {
+  border-top-color: var(--m3-outline-variant);
+}
+.scroll[data-below] {
+  border-bottom-color: var(--m3-outline-variant);
+}
+.viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overscroll-behavior: none;
+}
+
+/* AppModal's content inside it: the theme's dialog body insets */
+.content {
+  padding: 12px var(--mantine-spacing-lg) var(--mantine-spacing-md);
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+}

@@ -1,4 +1,4 @@
-import { MantineProvider } from '@mantine/core';
+import { createTheme, DEFAULT_THEME, MantineProvider } from '@mantine/core';
 import { render as rtlRender } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
@@ -98,3 +98,15 @@ function saasTree(ui: ReactNode, options: SaaSTestOptions, client: SaaSSupport) 
     </MantineProvider>
   );
 }
+
+// The kit's own tests (copied from the boilerplate): its components under Mantine, outside a SaaSProvider. The LM3
+// theme lives in the host app; like it, the primary color is named `brand` (the kit's ACTION_COLOR uses the name).
+const HOST_LIKE = createTheme({ primaryColor: 'brand', colors: { brand: DEFAULT_THEME.colors.blue } });
+function MantineOnly({ children }: { children: ReactNode }) {
+  return (
+    <MantineProvider theme={HOST_LIKE} env="test">
+      {children}
+    </MantineProvider>
+  );
+}
+export const render = (ui: ReactNode) => rtlRender(ui, { wrapper: MantineOnly });

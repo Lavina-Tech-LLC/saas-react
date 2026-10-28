@@ -19,7 +19,7 @@ const codeSent = (channel?: PhoneOtpChannel) =>
 
 // The dial code is already in the field
 const enterPhone = async () => {
-  await userEvent.type(screen.getByLabelText(/^Phone Number/), '901112233');
+  await userEvent.type(screen.getByLabelText(/^Phone number/), '901112233');
   await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 };
 
@@ -31,7 +31,7 @@ const enterCode = async (group: string, code: string) => {
 const chooseTelegramAndEnterCode = async (submit: string) => {
   await userEvent.click(screen.getByRole('button', { name: 'Get code via Telegram' }));
   expect(await screen.findByText(`We sent a code to ${PHONE} in Telegram`)).toBeInTheDocument();
-  await enterCode('Verification Code', '123456');
+  await enterCode('Verification code', '123456');
   await userEvent.click(screen.getByRole('button', { name: submit }));
 };
 
@@ -203,7 +203,7 @@ describe('SignIn phone confirmation and recovery with channels', () => {
   const submitSignUp = async () => {
     await enterPhone();
     await userEvent.type(screen.getByLabelText(/^New password/), 'secret-pass');
-    await userEvent.type(screen.getByLabelText(/^Confirm Password/), 'secret-pass');
+    await userEvent.type(screen.getByLabelText(/^Confirm password/), 'secret-pass');
     await userEvent.click(screen.getByRole('button', { name: 'Sign up' }));
   };
 
@@ -223,7 +223,7 @@ describe('SignIn phone confirmation and recovery with channels', () => {
 
     expect(sendPhoneOtp).toHaveBeenCalledWith(PHONE, 'register', expect.objectContaining({ channel: 'telegram' }));
     expect(await screen.findByRole('button', { name: 'Get the code another way' })).toBeInTheDocument();
-    await enterCode('Verification Code', '123456');
+    await enterCode('Verification code', '123456');
     await userEvent.click(screen.getByRole('button', { name: 'Confirm and sign up' }));
 
     expect(verifyPhoneOtp).toHaveBeenCalledWith(PHONE, '123456', 'register');

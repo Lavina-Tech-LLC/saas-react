@@ -1,11 +1,11 @@
 import { Button, Group, Stack } from '@mantine/core';
 import { useState, type FormEvent } from 'react';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import { useSaaSContext } from '../../context';
 import { usePasswordReset } from '../../hooks/usePasswordReset';
 import { AuthCard } from '../ui/AuthCard';
-import { ErrorAlert } from '../ui/ErrorAlert';
-import { SuccessAlert } from '../ui/SuccessAlert';
 import { TextLink } from '../ui/TextLink';
 import { checkNewPassword, NewPasswordFields } from './NewPasswordFields';
 import { deriveSignInSettings } from './signInSettings';
@@ -29,7 +29,7 @@ export function ResetPassword({ token, onDone }: { token: string; onDone?: () =>
   if (done) {
     return (
       <AuthCard title={t('reset.title')}>
-        <SuccessAlert>{t('forgot.done')}</SuccessAlert>
+        <AppAlert severity="success">{t('forgot.done')}</AppAlert>
         {onDone && (
           <Group justify="center">
             <TextLink onClick={onDone}>{t('forgot.back')}</TextLink>
@@ -41,7 +41,7 @@ export function ResetPassword({ token, onDone }: { token: string; onDone?: () =>
 
   return (
     <AuthCard title={t('reset.title')} subtitle={t('reset.subtitle')}>
-      <ErrorAlert message={validationError || reset.error} />
+      {(validationError || reset.error) && <AppAlert severity="error">{validationError || reset.error}</AppAlert>}
       <form onSubmit={submit}>
         <Stack gap="md">
           <NewPasswordFields

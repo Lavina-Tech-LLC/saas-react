@@ -1,6 +1,9 @@
-import { ActionIcon, Box, Burger, Flex, Group, Modal, ScrollArea, type ModalProps } from '@mantine/core';
-import { ArrowLeft, Building2, CreditCard, KeyRound, Mail, User, Users } from 'lucide-react';
+import { ActionIcon, Box, Flex, Modal, ScrollArea, Title, Tooltip } from '@mantine/core';
+import { ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+
+import { useBelow } from '@/hooks/useScreen';
+import { PAGE_PADDING_X } from '@/styles/spacing';
 
 import { useSaaSContext } from '../../context';
 import { useInvites } from '../../hooks/useInvites';
@@ -11,9 +14,10 @@ import { InvitesSection } from './sections/InvitesSection';
 import { OrganizationSection } from './sections/Organization/OrganizationSection';
 import { PeopleSection } from './sections/People/PeopleSection';
 import { ProfileSection } from './sections/Profile/ProfileSection';
-import { SettingsNav, type SettingsNavItem } from './SettingsNav';
+import { SettingsNav, SettingsSectionList } from './SettingsNav';
+import { canSee, SETTINGS_TABS, type SettingsTab } from './settingsTabs';
 
-export type SettingsTab = 'profile' | 'organization' | 'people' | 'apiKeys' | 'invites' | 'billing';
+export type { SettingsTab } from './settingsTabs';
 
 export interface SettingsPanelProps {
   opened: boolean;
@@ -26,30 +30,30 @@ export interface SettingsPanelProps {
   onOrgUpdated?: () => void;
 }
 
-type Role = 'any' | 'admin' | 'owner';
-const TABS: (SettingsNavItem & { role: Role })[] = [
-  { key: 'profile', label: 'settings.tab.profile', icon: <User size={18} />, role: 'any' },
-  { key: 'organization', label: 'settings.tab.organization', icon: <Building2 size={18} />, role: 'any' },
-  { key: 'people', label: 'settings.tab.people', icon: <Users size={18} />, role: 'admin' },
-  { key: 'apiKeys', label: 'settings.tab.apiKeys', icon: <KeyRound size={18} />, role: 'admin' },
-  { key: 'invites', label: 'settings.tab.invites', icon: <Mail size={18} />, role: 'any' },
-  { key: 'billing', label: 'settings.tab.billing', icon: <CreditCard size={18} />, role: 'owner' },
-];
+const SURFACE = 'var(--mantine-color-body)';
+// M3 full-screen dialog in the page tone: a 64px top bar — ✕ (or ←) first, then the title (M3 title large, one line)
+const SCREEN = {
+  // A page, not a floating panel: its tiles take the card tone, as on a page (SegmentedList)
+  content: { backgroundColor: SURFACE, '--fl-bg': SURFACE, '--segment-dialog-bg': 'var(--m3-surface)' },
+  header: { backgroundColor: SURFACE, minHeight: 64, padding: '0 var(--mantine-spacing-md) 0 8px', gap: 4 },
+  title: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: '1.375rem',
+    lineHeight: '1.75rem',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+  close: { marginInlineStart: 0 },
+  body: { flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', padding: 0 },
+} as const;
+// M3 emphasized decelerate, as the kit's full-screen dialog
+const SLIDE_UP = { transition: 'slide-up', duration: 250, timingFunction: 'cubic-bezier(0.05, 0.7, 0.1, 1)' } as const;
 
-// The theme centres a modal title; a page header reads left to right, so the title starts at the back arrow.
-// It is a page, not a floating modal, so it sits on the page background (LM3 §10 AppShell) instead of the modal's
-// surface. Content and body become a column so the sidebar and the section fill the screen under the header.
-const PAGE_BG = 'var(--mantine-color-body)';
-const PAGE_STYLES: ModalProps['styles'] = {
-  header: { backgroundColor: PAGE_BG },
-  title: { textAlign: 'start', paddingLeft: 0 },
-  content: { display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: PAGE_BG },
-  body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
-};
-
-// The full-screen settings page (LM3 §20 modal chrome + §12 settings sidebar): header with back, the nav toggle below
-// md, the title and the theme's round ✕; the sidebar on the left and the section in a centered 720px column that
-// scrolls on its own. No footer — every section saves on its own.
+/**
+ * LM3 — the account settings: an M3 full-screen window. From sm 840 the sections are listed beside the open one; on
+ * phones one pane at a time — the list, then a section under ←. Every section saves on its own.
+ */
 export function SettingsPanel({
   opened,
   onClose,
@@ -61,23 +65,25 @@ export function SettingsPanel({
   const { t, user } = useSaaSContext();
   const { selectedOrg, members } = useOrg();
   const { invites } = useInvites();
+  const onePane = useBelow('sm');
   const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab);
-  const [navOpen, setNavOpen] = useState(false);
+  // Phones: a section is open (a tab asked for opens straight away)
+  const [inSection, setInSection] = useState(defaultTab !== 'profile');
   // Each time the panel opens it starts on defaultTab (e.g. "Manage organizations" opens Organization)
   const [wasOpened, setWasOpened] = useState(opened);
   if (opened !== wasOpened) {
     setWasOpened(opened);
     if (opened) {
       setActiveTab(defaultTab);
-      setNavOpen(false);
+      setInSection(defaultTab !== 'profile');
     }
   }
 
   const myRole = selectedOrg?.role ?? members.find((m) => m.userId === user?.id)?.role;
-  const allowed = (role: Role) => role === 'any' || myRole === 'owner' || (role === 'admin' && myRole === 'admin');
-  const tabs = TABS.filter((tab) => allowed(tab.role));
+  const tabs = SETTINGS_TABS.filter((tab) => canSee(tab.role, myRole));
   // Keep the requested tab; show Profile until the role that unlocks it is known
-  const shownTab = tabs.some((tab) => tab.key === activeTab) ? activeTab : 'profile';
+  const shown = tabs.find((tab) => tab.key === activeTab) ?? tabs[0];
+  const showList = onePane && !inSection;
 
   const sections: Record<SettingsTab, ReactNode> = {
     profile: <ProfileSection afterDeleteAccountUrl={afterDeleteAccountUrl} />,
@@ -87,39 +93,49 @@ export function SettingsPanel({
     invites: <InvitesSection />,
     billing: <BillingSection />,
   };
-
   const select = (tab: SettingsTab) => {
     setActiveTab(tab);
-    setNavOpen(false);
+    setInSection(true);
   };
-
-  const title = (
-    <Group gap="xs" wrap="nowrap">
-      <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('common.back')} onClick={onClose}>
-        <ArrowLeft size={18} />
-      </ActionIcon>
-      <Burger
-        size="sm"
-        hiddenFrom="md"
-        opened={navOpen}
-        onClick={() => setNavOpen((open) => !open)}
-        aria-label={t('settings.menu')}
-        aria-expanded={navOpen}
-      />
-      <span>{t('settings.title')}</span>
-    </Group>
-  );
+  const back = t('common.back');
 
   return (
-    <Modal opened={opened} onClose={onClose} title={title} fullScreen styles={PAGE_STYLES}>
-      <Flex direction={{ base: 'column', md: 'row' }} flex={1} mih={0}>
-        <SettingsNav items={tabs} active={shownTab} onSelect={select} invites={invites.length} opened={navOpen} />
-        <ScrollArea flex={1} mih={0} scrollbars="y">
-          <Box maw={720} mx="auto" px={{ base: 'md', md: 'xl' }} py={{ base: 'md', md: 'xl' }}>
-            {sections[shownTab]}
-          </Box>
-        </ScrollArea>
-      </Flex>
-    </Modal>
+    <Modal.Root opened={opened} onClose={onClose} fullScreen radius={0} transitionProps={SLIDE_UP} styles={SCREEN}>
+      <Modal.Content>
+        <Modal.Header>
+          {onePane && inSection ? (
+            <Tooltip label={back}>
+              <ActionIcon variant="standard" size="input-sm" aria-label={back} onClick={() => setInSection(false)}>
+                <ArrowLeft size={22} />
+              </ActionIcon>
+            </Tooltip>
+          ) : (
+            <Modal.CloseButton aria-label={t('common.close')} />
+          )}
+          <Modal.Title>{onePane && inSection ? t(shown.label) : t('settings.title')}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Flex flex={1} miw={0}>
+            {!onePane && <SettingsNav items={tabs} active={shown.key} onSelect={select} invites={invites.length} />}
+            <ScrollArea flex={1} miw={0} scrollbars="y" type="auto">
+              <Box maw={720} mx="auto" px={PAGE_PADDING_X} pt={onePane ? 'xs' : 'md'} pb="xl">
+                {showList ? (
+                  <SettingsSectionList items={tabs} onSelect={select} invites={invites.length} />
+                ) : (
+                  <>
+                    {!onePane && (
+                      <Title order={2} size="h3" mb="lg">
+                        {t(shown.label)}
+                      </Title>
+                    )}
+                    {sections[shown.key]}
+                  </>
+                )}
+              </Box>
+            </ScrollArea>
+          </Flex>
+        </Modal.Body>
+      </Modal.Content>
+    </Modal.Root>
   );
 }

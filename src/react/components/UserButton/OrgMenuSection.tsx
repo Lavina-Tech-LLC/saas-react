@@ -1,10 +1,11 @@
 import { Avatar, Group, Menu, Text } from '@mantine/core';
-import { Building2, Check } from 'lucide-react';
+import { Building2, Check, Settings2 } from 'lucide-react';
 
 import type { Org } from '../../../auth/types';
 import { useSaaSContext } from '../../context';
 import { useOrg } from '../../hooks/useOrg';
 import { orgInitials } from '../ui/initials';
+import { roleLabel } from '../ui/RoleBadge';
 
 interface OrgMenuSectionProps {
   onSelect: (org: Org) => void;
@@ -13,7 +14,8 @@ interface OrgMenuSectionProps {
   onOrgSettingsClick?: (org: Org) => void;
 }
 
-// Organization switcher and a way into Settings → Organization (creating one happens there, not in the menu)
+// LM3 §21 — the organization switcher (the current one ✓) and a way into Settings → Organization, where they are
+// created
 export function OrgMenuSection({ onSelect, onManage, onOrgSettingsClick }: OrgMenuSectionProps) {
   const { t } = useSaaSContext();
   const { orgs, selectedOrg } = useOrg();
@@ -35,11 +37,11 @@ export function OrgMenuSection({ onSelect, onManage, onOrgSettingsClick }: OrgMe
             rightSection={
               <Group gap={6} wrap="nowrap">
                 {org.role && (
-                  <Text fz="xs" c="dimmed" tt="capitalize">
-                    {org.role}
+                  <Text fz="sm" c="dimmed">
+                    {roleLabel(t, org.role)}
                   </Text>
                 )}
-                {active && <Check size={14} color="var(--mantine-primary-color-filled)" />}
+                {active && <Check size={20} color="var(--m3-indicator)" />}
               </Group>
             }
           >
@@ -49,11 +51,11 @@ export function OrgMenuSection({ onSelect, onManage, onOrgSettingsClick }: OrgMe
           </Menu.Item>
         );
       })}
-      <Menu.Item leftSection={<Building2 size={14} />} onClick={onManage}>
+      <Menu.Item leftSection={<Building2 size={20} />} onClick={onManage}>
         {t('org.manage')}
       </Menu.Item>
       {selectedOrg && onOrgSettingsClick && (
-        <Menu.Item leftSection={<Building2 size={14} />} onClick={() => onOrgSettingsClick(selectedOrg)}>
+        <Menu.Item leftSection={<Settings2 size={20} />} onClick={() => onOrgSettingsClick(selectedOrg)}>
           {t('org.settings')}
         </Menu.Item>
       )}

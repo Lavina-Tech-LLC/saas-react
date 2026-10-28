@@ -91,7 +91,7 @@ export function UserButton({
   );
   // Pending invites show as a count on the avatar
   const badgedAvatar = (
-    <Indicator label={invites.length} size={16} disabled={invites.length === 0} color="red">
+    <Indicator label={invites.length} disabled={invites.length === 0}>
       {avatar}
     </Indicator>
   );
@@ -127,7 +127,7 @@ export function UserButton({
               description={selectedOrg?.name}
               leftSection={badgedAvatar}
               // Signals a menu: theme, language, organizations and sign-out are all inside
-              rightSection={<ChevronsUpDown size={16} color="var(--mantine-color-dimmed)" />}
+              rightSection={<ChevronsUpDown size={18} color="var(--mantine-color-dimmed)" />}
               noWrap
               h="100%"
               px="md"
@@ -162,7 +162,7 @@ export function UserButton({
           )}
           <Menu.Divider />
           <Menu.Item
-            leftSection={<Settings size={14} />}
+            leftSection={<Settings size={20} />}
             rightSection={
               invites.length > 0 ? (
                 <Badge size="sm" circle color="red" aria-label={t('settings.tab.invites')}>
@@ -177,7 +177,7 @@ export function UserButton({
           <Menu.Divider />
           <PreferencesMenuSection />
           <Menu.Divider />
-          <Menu.Item leftSection={<LogOut size={14} />} onClick={handleSignOut}>
+          <Menu.Item leftSection={<LogOut size={20} />} onClick={handleSignOut}>
             {t('user.signOut')}
           </Menu.Item>
         </Menu.Dropdown>

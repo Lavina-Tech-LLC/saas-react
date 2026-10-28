@@ -1,0 +1,29 @@
+/* A setting with a value (SettingsRow): the label in a fixed column and the value beside it from xs (600) up, so values
+   line up across rows; on phones the label sits over the value */
+.columns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  flex-shrink: 0;
+}
+
+.value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 37.5em) {
+  .columns {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--mantine-spacing-md);
+  }
+
+  .label {
+    width: 180px;
+  }
+}

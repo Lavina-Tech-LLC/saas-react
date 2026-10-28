@@ -1,10 +1,11 @@
 import { Box, Button, Group, Stack, Text } from '@mantine/core';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import type { FacePose } from '../../../auth/face/engine';
 import type { FaceSample } from '../../../auth/types';
 import { useT } from '../../context';
 import { AuthCard } from '../ui/AuthCard';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { TextLink } from '../ui/TextLink';
 import { useFaceCapture } from './useFaceCapture';
 
@@ -61,7 +62,7 @@ export function FaceScanner({
 
   const content = (
     <Stack gap="md">
-      <ErrorAlert message={error || engineError} />
+      {(error || engineError) && <AppAlert severity="error">{error || engineError}</AppAlert>}
       {phase === 'intro' ? (
         <>
           {consentText && (

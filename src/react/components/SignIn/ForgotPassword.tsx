@@ -1,6 +1,8 @@
 import { Button, Group, Stack } from '@mantine/core';
 import { useState, type FormEvent } from 'react';
 
+import { AppAlert } from '@/components/uiKit/AppAlert';
+
 import type { IdentifierKind } from '../../../auth/identifier';
 import type { PhoneOtpChannel } from '../../../auth/types';
 import { useSaaSContext } from '../../context';
@@ -8,8 +10,6 @@ import { usePasswordReset } from '../../hooks/usePasswordReset';
 import { usePhoneOtp } from '../../hooks/usePhoneOtp';
 import { AuthCard } from '../ui/AuthCard';
 import { CodeInput } from '../ui/CodeInput';
-import { ErrorAlert } from '../ui/ErrorAlert';
-import { SuccessAlert } from '../ui/SuccessAlert';
 import { TextLink } from '../ui/TextLink';
 import { ChannelButtons } from './ChannelButtons';
 import { IdentifierField } from './IdentifierField';
@@ -81,7 +81,9 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
   if (step === 'emailSent' || step === 'done') {
     return (
       <AuthCard title={t('forgot.title')}>
-        <SuccessAlert>{step === 'done' ? t('forgot.done') : t('forgot.linkSent', { identifier })}</SuccessAlert>
+        <AppAlert severity="success">
+          {step === 'done' ? t('forgot.done') : t('forgot.linkSent', { identifier })}
+        </AppAlert>
         {back}
       </AuthCard>
     );
@@ -90,7 +92,7 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
   if (step === 'phoneCode') {
     return (
       <AuthCard title={t('forgot.title')} subtitle={t('forgot.codeSubtitle', { identifier })}>
-        <ErrorAlert message={error} />
+        {error && <AppAlert severity="error">{error}</AppAlert>}
         <form onSubmit={confirmPhone}>
           <Stack gap="md">
             <CodeInput label={t('otp.label')} value={code} onChange={setCode} />
@@ -112,7 +114,7 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
 
   return (
     <AuthCard title={t('forgot.title')} subtitle={isPhone ? t('forgot.phoneSubtitle') : t('forgot.emailSubtitle')}>
-      <ErrorAlert message={error} />
+      {error && <AppAlert severity="error">{error}</AppAlert>}
       <form onSubmit={request}>
         <Stack gap="md">
           <IdentifierField

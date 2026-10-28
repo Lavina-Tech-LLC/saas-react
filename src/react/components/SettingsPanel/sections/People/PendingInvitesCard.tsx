@@ -1,23 +1,24 @@
-import { ActionIcon, Group, Paper, Table, Tooltip } from '@mantine/core';
-import { Send, X } from 'lucide-react';
+import { Paper, ThemeIcon } from '@mantine/core';
+import { Mail, X } from 'lucide-react';
 import { useState } from 'react';
+
+import { ConfirmDialog } from '@/components/uiKit/ConfirmDialog';
+import { List, ListItem } from '@/components/uiKit/List';
+import { RelativeTime } from '@/components/uiKit/RelativeTime';
+import { TableActions } from '@/components/uiKit/TableActions';
 
 import type { PendingInvite } from '../../../../../auth/types';
 import { useT } from '../../../../context';
 import { useOrg } from '../../../../hooks/useOrg';
-import { ConfirmModal } from '../../../ui/ConfirmModal';
 import { RoleBadge } from '../../../ui/RoleBadge';
-import { SettingsSection } from '../../../ui/SettingsSection';
-import { useColorVariant } from '../../../ui/useColorVariant';
+import { SettingsBlock } from '../../SettingsBlock';
 
-// Personal invites not accepted yet; hidden when there are none
+// Personal invites not accepted yet, as list rows (who, the role, when it was sent); hidden when there are none
 export function PendingInvitesCard({ orgId }: { orgId: string }) {
   const t = useT();
-  const variant = useColorVariant();
   const { invites, revokeInvite } = useOrg();
   const [revoking, setRevoking] = useState<PendingInvite | null>(null);
   const [pending, setPending] = useState(false);
-
   if (invites.length === 0) return null;
 
   const confirmRevoke = async () => {
@@ -29,59 +30,47 @@ export function PendingInvitesCard({ orgId }: { orgId: string }) {
       setPending(false);
     }
   };
+  const revoke = t('people.revokeInvite');
 
   return (
-    <SettingsSection title={t('people.pendingInvites')} icon={<Send size={18} />}>
-      <Paper p={0} withBorder style={{ overflow: 'hidden' }}>
-        <Table.ScrollContainer minWidth={480}>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('common.email')}</Table.Th>
-                <Table.Th>{t('common.role')}</Table.Th>
-                <Table.Th w={1} ta="center">
-                  {t('common.actions')}
-                </Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {invites.map((invite) => (
-                <Table.Tr key={invite.id}>
-                  <Table.Td>{invite.email || invite.phone}</Table.Td>
-                  <Table.Td>
-                    <RoleBadge role={invite.role} label={invite.roleName || invite.role} />
-                  </Table.Td>
-                  <Table.Td w={1}>
-                    <Group justify="center" gap="xs" wrap="nowrap">
-                      <Tooltip label={t('people.revokeInvite')} withArrow>
-                        <ActionIcon
-                          aria-label={t('people.revokeInvite')}
-                          variant={variant}
-                          size="md"
-                          color="red"
-                          onClick={() => setRevoking(invite)}
-                        >
-                          <X size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+    <SettingsBlock title={t('people.pendingInvites')}>
+      <Paper p={0} style={{ overflow: 'hidden' }}>
+        <List aria-label={t('people.pendingInvites')} dividers="inset">
+          {invites.map((invite) => (
+            <ListItem
+              key={invite.id}
+              leadingType="avatar"
+              leading={
+                <ThemeIcon variant="light" color="violet">
+                  <Mail />
+                </ThemeIcon>
+              }
+              headline={invite.email || invite.phone}
+              supportingText={<RelativeTime value={invite.createdAt} />}
+              trailing={
+                <>
+                  <RoleBadge role={invite.role} label={invite.roleName || invite.role} />
+                  <TableActions
+                    name={invite.email || invite.phone || ''}
+                    actions={[
+                      { key: 'revoke', label: revoke, icon: X, destructive: true, onClick: () => setRevoking(invite) },
+                    ]}
+                  />
+                </>
+              }
+            />
+          ))}
+        </List>
       </Paper>
-      <ConfirmModal
+      <ConfirmDialog
         opened={revoking !== null}
         onClose={() => setRevoking(null)}
         onConfirm={confirmRevoke}
-        title={t('people.revokeInvite')}
+        title={t('people.revokeInviteTitle', { identifier: revoking?.email || revoking?.phone || '' })}
+        description={t('people.revokeInviteConfirm')}
         confirmLabel={t('common.revoke')}
         loading={pending}
-      >
-        {t('people.revokeInviteConfirm', { identifier: revoking?.email || revoking?.phone || '' })}
-      </ConfirmModal>
-    </SettingsSection>
+      />
+    </SettingsBlock>
   );
 }

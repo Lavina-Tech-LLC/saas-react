@@ -1,33 +1,28 @@
-import { Stack, Title } from '@mantine/core';
 import { CreditCard } from 'lucide-react';
+
+import { EmptyState } from '@/components/uiKit/EmptyState';
+import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
+import { SettingsRow } from '@/components/uiKit/SettingsRow';
 
 import { useT } from '../../../context';
 import { useOrg } from '../../../hooks/useOrg';
-import { EmptyState } from '../../ui/EmptyState';
-import { SettingsGroup } from '../../ui/SettingsGroup';
-import { SettingsRow } from '../../ui/SettingsRow';
 
-// Owner-only: the organization's plan as a settings row, until billing actions are wired up
+// Owner only: the organization's plan as a settings tile, until billing actions are wired up
 export function BillingSection() {
   const t = useT();
   const { selectedOrg } = useOrg();
-
+  if (!selectedOrg) {
+    return <EmptyState icon={CreditCard} title={t('people.noOrgTitle')} description={t('settings.selectOrgBilling')} />;
+  }
   return (
-    <Stack gap="lg">
-      <Title order={4}>{t('billing.title')}</Title>
-      {selectedOrg ? (
-        <SettingsGroup>
-          <SettingsRow
-            icon={CreditCard}
-            color="pink"
-            label={t('billing.planTitle')}
-            description={t('billing.none')}
-            value={selectedOrg.planName || t('common.notSet')}
-          />
-        </SettingsGroup>
-      ) : (
-        <EmptyState icon={<CreditCard size={24} />}>{t('settings.selectOrgBilling')}</EmptyState>
-      )}
-    </Stack>
+    <SettingsGroup>
+      <SettingsRow
+        icon={CreditCard}
+        color="pink"
+        label={t('billing.planTitle')}
+        description={t('billing.none')}
+        value={selectedOrg.planName || t('common.notSet')}
+      />
+    </SettingsGroup>
   );
 }

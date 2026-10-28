@@ -15,7 +15,7 @@ interface IdentityChipProps {
 export function IdentityChip({ identifier, kind, onChange }: IdentityChipProps) {
   const t = useT();
   return (
-    <Paper withBorder radius="xl" px="sm" py={6}>
+    <Paper shadow="none" radius="xl" px="sm" py={6}>
       <Group justify="space-between" wrap="nowrap" gap="sm">
         <Group gap="xs" wrap="nowrap" miw={0}>
           <ThemeIcon size="md" radius="xl" variant="light">

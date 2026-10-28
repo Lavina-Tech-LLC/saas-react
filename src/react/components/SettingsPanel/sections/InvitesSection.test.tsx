@@ -6,7 +6,8 @@ const invite = { id: 'i1', orgId: 'o1', orgName: 'Acme Corp', role: 'admin', exp
 describe('InvitesSection', () => {
   it('says so when there are no invitations', () => {
     renderWithSaaS(<InvitesSection />, { user: testUser, invites: { invites: [] } });
-    expect(screen.getByText('No pending invitations')).toBeInTheDocument();
+    expect(screen.getByText('No invitations')).toBeInTheDocument();
+    expect(screen.getByText('When someone invites you to an organization, it shows up here.')).toBeInTheDocument();
   });
 
   it('accepts an invitation and refreshes the organizations', async () => {
