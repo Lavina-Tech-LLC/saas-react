@@ -1,10 +1,10 @@
-import { Button, Center, Group, Loader, Text } from '@mantine/core';
+import { Button, Center, Loader, Text } from '@mantine/core';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
 
 import { useT } from '../../context';
+import { AuthActions } from '../ui/AuthActions';
 import { AuthCard } from '../ui/AuthCard';
-import { TextLink } from '../ui/TextLink';
 import { formatInviterName } from './inviteUrl';
 import type { InviteFlow } from './useInviteFlow';
 
@@ -30,9 +30,9 @@ export function InviteScreens({ invite, onAccept }: { invite: InviteFlow; onAcce
   if (!info) {
     return (
       <AuthCard title={t('invite.unavailable')} subtitle={error}>
-        <Group justify="center">
-          <TextLink onClick={invite.dismiss}>{t('invite.backToSignIn')}</TextLink>
-        </Group>
+        <AuthActions>
+          <Button onClick={invite.dismiss}>{t('invite.backToSignIn')}</Button>
+        </AuthActions>
       </AuthCard>
     );
   }
@@ -47,12 +47,17 @@ export function InviteScreens({ invite, onAccept }: { invite: InviteFlow; onAcce
       subtitle={t('invite.joinAs', { role: info.roleName || info.role })}
     >
       {(invite.acceptError || error) && <AppAlert severity="error">{invite.acceptError || error}</AppAlert>}
-      <Button fullWidth loading={invite.isAccepting} disabled={isLoading} onClick={onAccept}>
-        {acceptLabel}
-      </Button>
-      <Group justify="center">
-        <TextLink onClick={invite.dismiss}>{t('invite.notNow')}</TextLink>
-      </Group>
+      <AuthActions
+        start={
+          <Button variant="subtle" onClick={invite.dismiss}>
+            {t('invite.notNow')}
+          </Button>
+        }
+      >
+        <Button loading={invite.isAccepting} disabled={isLoading} onClick={onAccept}>
+          {acceptLabel}
+        </Button>
+      </AuthActions>
     </AuthCard>
   );
 }

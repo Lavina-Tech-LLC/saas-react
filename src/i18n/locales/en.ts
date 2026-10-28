@@ -381,6 +381,11 @@ export const en = {
   'org.logoHint': 'Shown in the organization menu',
   'org.address': 'Address',
   'org.plan': 'Plan',
+  'signUp.createAccount': 'Create account',
+  'signIn.instead': 'Sign in instead',
+  'user.theme': 'Theme',
+  'user.light': 'Light',
+  'user.dark': 'Dark',
 } as const;
 
 export type TranslationKey = keyof typeof en;

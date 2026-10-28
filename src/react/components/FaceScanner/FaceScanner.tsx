@@ -5,8 +5,8 @@ import { AppAlert } from '@/components/uiKit/AppAlert';
 import type { FacePose } from '../../../auth/face/engine';
 import type { FaceSample } from '../../../auth/types';
 import { useT } from '../../context';
+import { AuthActions } from '../ui/AuthActions';
 import { AuthCard } from '../ui/AuthCard';
-import { TextLink } from '../ui/TextLink';
 import { useFaceCapture } from './useFaceCapture';
 
 export interface FaceScannerProps {
@@ -60,6 +60,12 @@ export function FaceScanner({
           ? t('face.status.stopped')
           : hint;
 
+  const cancelButton = onCancel && (
+    <Button variant="subtle" onClick={cancel}>
+      {t('common.cancel')}
+    </Button>
+  );
+
   const content = (
     <Stack gap="md">
       {(error || engineError) && <AppAlert severity="error">{error || engineError}</AppAlert>}
@@ -70,9 +76,9 @@ export function FaceScanner({
               {consentText}
             </Text>
           )}
-          <Button fullWidth onClick={start}>
-            {confirmLabel}
-          </Button>
+          <AuthActions start={cancelButton}>
+            <Button onClick={start}>{confirmLabel}</Button>
+          </AuthActions>
         </>
       ) : (
         <>
@@ -125,22 +131,15 @@ export function FaceScanner({
           <Text ta="center" fz="sm" mih={20} aria-live="polite">
             {status}
           </Text>
-          {phase === 'scanning' && canSkipPose && (
-            <Group justify="center">
-              <TextLink onClick={requestSkip}>{t('face.skipPose')}</TextLink>
-            </Group>
-          )}
-          {phase === 'failed' && (
-            <Button fullWidth onClick={start}>
-              {t('face.retry')}
-            </Button>
-          )}
+          <AuthActions start={cancelButton}>
+            {phase === 'scanning' && canSkipPose && (
+              <Button variant="default" onClick={requestSkip}>
+                {t('face.skipPose')}
+              </Button>
+            )}
+            {phase === 'failed' && <Button onClick={start}>{t('face.retry')}</Button>}
+          </AuthActions>
         </>
-      )}
-      {onCancel && (
-        <Group justify="center">
-          <TextLink onClick={cancel}>{t('common.cancel')}</TextLink>
-        </Group>
       )}
     </Stack>
   );

@@ -1,9 +1,8 @@
-import { Group, Paper, Text, ThemeIcon } from '@mantine/core';
-import { Mail, Phone } from 'lucide-react';
+import { Button, ThemeIcon } from '@mantine/core';
+import { ChevronDown, Mail, Phone } from 'lucide-react';
 
 import type { IdentifierKind } from '../../../auth/identifier';
 import { useT } from '../../context';
-import { TextLink } from '../ui/TextLink';
 
 interface IdentityChipProps {
   identifier: string;
@@ -11,22 +10,27 @@ interface IdentityChipProps {
   onChange: () => void;
 }
 
-// Step two leads with who is signing in — the one thing on the screen that is about the user, not the form
+// Step two leads with who is signing in, as Google's account chip: an outlined pill that goes back to change it
 export function IdentityChip({ identifier, kind, onChange }: IdentityChipProps) {
   const t = useT();
+  const value = identifier.trim();
   return (
-    <Paper shadow="none" radius="xl" px="sm" py={6}>
-      <Group justify="space-between" wrap="nowrap" gap="sm">
-        <Group gap="xs" wrap="nowrap" miw={0}>
-          <ThemeIcon size="md" radius="xl" variant="light">
-            {kind === 'phone' ? <Phone size={14} /> : <Mail size={14} />}
-          </ThemeIcon>
-          <Text fz="sm" fw={600} truncate ff={kind === 'phone' ? 'monospace' : undefined}>
-            {identifier.trim()}
-          </Text>
-        </Group>
-        <TextLink onClick={onChange}>{t('common.change')}</TextLink>
-      </Group>
-    </Paper>
+    <Button
+      variant="default"
+      size="sm"
+      maw="100%"
+      pl={4}
+      leftSection={
+        <ThemeIcon size={28} radius="xl" variant="light">
+          {kind === 'phone' ? <Phone size={14} /> : <Mail size={14} />}
+        </ThemeIcon>
+      }
+      rightSection={<ChevronDown size={16} />}
+      aria-label={`${value} — ${t('common.change')}`}
+      onClick={onChange}
+      styles={{ label: { fontFamily: kind === 'phone' ? 'var(--mantine-font-family-monospace)' : undefined } }}
+    >
+      {value}
+    </Button>
   );
 }

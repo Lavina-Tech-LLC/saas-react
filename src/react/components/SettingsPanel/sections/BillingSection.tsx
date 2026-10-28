@@ -1,13 +1,13 @@
 import { CreditCard } from 'lucide-react';
 
 import { EmptyState } from '@/components/uiKit/EmptyState';
+import { ListItem } from '@/components/uiKit/List';
 import { SettingsGroup } from '@/components/uiKit/SettingsGroup';
-import { SettingsRow } from '@/components/uiKit/SettingsRow';
 
 import { useT } from '../../../context';
 import { useOrg } from '../../../hooks/useOrg';
 
-// Owner only: the organization's plan as a settings tile, until billing actions are wired up
+// Owner only: the organization's plan as a settings row, until billing actions are wired up
 export function BillingSection() {
   const t = useT();
   const { selectedOrg } = useOrg();
@@ -16,12 +16,11 @@ export function BillingSection() {
   }
   return (
     <SettingsGroup>
-      <SettingsRow
-        icon={CreditCard}
-        color="pink"
-        label={t('billing.planTitle')}
-        description={t('billing.none')}
-        value={selectedOrg.planName || t('common.notSet')}
+      <ListItem
+        leading={<CreditCard />}
+        headline={t('org.plan')}
+        supportingText={selectedOrg.planName || t('billing.none')}
+        wrapText
       />
     </SettingsGroup>
   );

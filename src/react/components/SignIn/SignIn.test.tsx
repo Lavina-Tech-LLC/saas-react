@@ -34,7 +34,7 @@ describe('SignIn', () => {
     renderWithSaaS(<SignIn />);
 
     await continueWith(/^Email address/, 'ali@example.com');
-    await userEvent.click(screen.getByRole('button', { name: 'Change' }));
+    await userEvent.click(screen.getByRole('button', { name: /Change/ }));
 
     expect(screen.getByLabelText(/^Email address/)).toHaveValue('ali@example.com');
   });

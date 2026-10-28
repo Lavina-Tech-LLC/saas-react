@@ -2,11 +2,10 @@ import { Button, Group, PasswordInput, Stack } from '@mantine/core';
 import { useState, type FormEvent, type ReactNode } from 'react';
 
 import { useT } from '../../context';
+import { AuthActions } from '../ui/AuthActions';
 import { CodeInput } from '../ui/CodeInput';
-import { TextLink } from '../ui/TextLink';
 import { ChannelStep } from './ChannelStep';
 import { IdentifierField, identifierProblem } from './IdentifierField';
-import { IdentityChip } from './IdentityChip';
 import type { SignInFlow } from './useSignInFlow';
 
 export type CredentialStep = 'identifier' | 'channel' | 'password';
@@ -16,12 +15,15 @@ interface CredentialsFormProps {
   step: CredentialStep;
   onStepChange: (step: CredentialStep) => void;
   onForgot?: () => void;
+  /** At the start of step one's actions: switch between signing in and up, or leave an invite. */
+  switchAction?: ReactNode;
   /** Social sign-in, shown under the first step only. */
   social?: ReactNode;
 }
 
-// Two steps, one decision each: who you are, then your password, where to send a code (phone) or the MFA code
-export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: CredentialsFormProps) {
+// Two steps, one decision each: who you are, then your password, where to send a code (phone) or the MFA code. The
+// identity chip that goes back to step one sits beside the form (AuthCard's aside).
+export function CredentialsForm({ flow, step, onStepChange, onForgot, switchAction, social }: CredentialsFormProps) {
   const t = useT();
   const { isSignIn, mfaMode, cfg } = flow;
   const [identifierError, setIdentifierError] = useState<string | null>(null);
@@ -35,14 +37,6 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
     if (problem) return setIdentifierError(t(problem));
     setIdentifierError(null);
     onStepChange(codeAvailable ? 'channel' : 'password');
-  };
-
-  const back = () => {
-    flow.setPassword('');
-    flow.setConfirmPassword('');
-    flow.backFromMfa();
-    flow.phoneCode.reset();
-    onStepChange('identifier');
   };
 
   const switchTo = (next: CredentialStep) => {
@@ -69,9 +63,9 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
               dialCode={cfg.dialCode}
               error={identifierError}
             />
-            <Button type="submit" fullWidth>
-              {t('signIn.continue')}
-            </Button>
+            <AuthActions start={switchAction}>
+              <Button type="submit">{t('signIn.continue')}</Button>
+            </AuthActions>
           </Stack>
         </form>
         {social}
@@ -80,36 +74,28 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
   }
 
   if (step === 'channel' && !mfaMode) {
-    return <ChannelStep flow={flow} onBack={back} onPassword={() => switchTo('password')} />;
+    return <ChannelStep flow={flow} onPassword={() => switchTo('password')} />;
   }
 
   return (
     <form onSubmit={mfaMode || isSignIn ? flow.submitSignIn : flow.submitSignUp}>
       <Stack gap="md">
-        <IdentityChip identifier={flow.identifier} kind={flow.identifierKind} onChange={back} />
         {mfaMode ? (
           <CodeInput label={t('mfa.label')} hint={t('mfa.hint')} value={flow.mfaCode} onChange={flow.setMfaCode} />
         ) : (
           <>
-            <Stack gap={6}>
-              <PasswordInput
-                id={`${idPrefix}-password`}
-                label={isSignIn ? t('signIn.password') : t('signUp.newPassword')}
-                autoComplete={isSignIn ? 'current-password' : 'new-password'}
-                value={flow.password}
-                onChange={(e) => {
-                  flow.setPassword(e.currentTarget.value);
-                  flow.setValidationError(null);
-                }}
-                required
-                autoFocus
-              />
-              {isSignIn && onForgot && (
-                <Group justify="flex-end">
-                  <TextLink onClick={onForgot}>{t('signIn.forgot')}</TextLink>
-                </Group>
-              )}
-            </Stack>
+            <PasswordInput
+              id={`${idPrefix}-password`}
+              label={isSignIn ? t('signIn.password') : t('signUp.newPassword')}
+              autoComplete={isSignIn ? 'current-password' : 'new-password'}
+              value={flow.password}
+              onChange={(e) => {
+                flow.setPassword(e.currentTarget.value);
+                flow.setValidationError(null);
+              }}
+              required
+              autoFocus
+            />
             {!isSignIn && (
               <PasswordInput
                 label={t('signIn.passwordConfirm')}
@@ -122,16 +108,30 @@ export function CredentialsForm({ flow, step, onStepChange, onForgot, social }: 
                 required
               />
             )}
+            {codeAvailable && (
+              <Group>
+                <Button variant="subtle" size="compact-sm" onClick={() => switchTo('channel')}>
+                  {t('phoneCode.useCode')}
+                </Button>
+              </Group>
+            )}
           </>
         )}
-        <Button type="submit" fullWidth loading={flow.isLoading} disabled={mfaMode && flow.mfaCode.length < 6}>
-          {submitLabel}
-        </Button>
-        {codeAvailable && !mfaMode && (
-          <Group justify="center">
-            <TextLink onClick={() => switchTo('channel')}>{t('phoneCode.useCode')}</TextLink>
-          </Group>
-        )}
+        <AuthActions
+          start={
+            isSignIn &&
+            !mfaMode &&
+            onForgot && (
+              <Button variant="subtle" onClick={onForgot}>
+                {t('signIn.forgot')}
+              </Button>
+            )
+          }
+        >
+          <Button type="submit" loading={flow.isLoading} disabled={mfaMode && flow.mfaCode.length < 6}>
+            {submitLabel}
+          </Button>
+        </AuthActions>
       </Stack>
     </form>
   );

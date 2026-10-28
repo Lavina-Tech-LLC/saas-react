@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core';
+import { Button, Group, Stack, Text } from '@mantine/core';
 import type { FormEvent } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
@@ -6,9 +6,10 @@ import { AppAlert } from '@/components/uiKit/AppAlert';
 import type { PhoneOtpChannel } from '../../../auth/types';
 import type { TranslationKey } from '../../../i18n';
 import { useT } from '../../context';
+import { AuthActions } from '../ui/AuthActions';
 import { AuthCard } from '../ui/AuthCard';
 import { CodeInput } from '../ui/CodeInput';
-import { TextLink } from '../ui/TextLink';
+import { IdentityChip } from './IdentityChip';
 
 const SENT_VIA: Record<PhoneOtpChannel, TranslationKey> = {
   sms: 'otp.sentVia.sms',
@@ -35,34 +36,48 @@ interface OtpScreenProps {
   onChangeNumber: () => void;
 }
 
-// A one-time code sent to a phone number: confirming it for a sign-up, or signing in with it
+// A one-time code sent to a phone number: confirming it for a sign-up, or signing in with it. The number sits beside
+// the form as a chip that changes it; a new code is offered under the boxes once the wait is over
 export function OtpScreen(props: OtpScreenProps) {
   const t = useT();
   const { identifier, channel, code, resendAfterSeconds } = props;
   const subtitle = channel ? t(SENT_VIA[channel], { identifier }) : t('otp.subtitle', { identifier });
-
   return (
-    <AuthCard title={props.title} subtitle={subtitle}>
+    <AuthCard
+      title={props.title}
+      subtitle={subtitle}
+      aside={<IdentityChip identifier={identifier} kind="phone" onChange={props.onChangeNumber} />}
+    >
       {props.error && <AppAlert severity="error">{props.error}</AppAlert>}
       <form onSubmit={props.onSubmit}>
         <Stack gap="md">
           <CodeInput label={t('otp.label')} value={code} onChange={props.onCodeChange} />
-          <Button type="submit" fullWidth loading={props.loading} disabled={code.length < 6}>
-            {props.submitLabel}
-          </Button>
+          <Group mih={28}>
+            {resendAfterSeconds > 0 ? (
+              <Text fz="sm" c="dimmed">
+                {t('otp.resendIn', { seconds: resendAfterSeconds })}
+              </Text>
+            ) : (
+              <Button variant="subtle" size="compact-sm" onClick={props.onResend}>
+                {t('otp.resend')}
+              </Button>
+            )}
+          </Group>
+          <AuthActions
+            start={
+              props.onOtherWay && (
+                <Button variant="subtle" onClick={props.onOtherWay}>
+                  {t('phoneCode.otherWay')}
+                </Button>
+              )
+            }
+          >
+            <Button type="submit" loading={props.loading} disabled={code.length < 6}>
+              {props.submitLabel}
+            </Button>
+          </AuthActions>
         </Stack>
       </form>
-      <Stack gap={4} align="center">
-        {resendAfterSeconds > 0 ? (
-          <Text fz="sm" c="dimmed">
-            {t('otp.resendIn', { seconds: resendAfterSeconds })}
-          </Text>
-        ) : (
-          <TextLink onClick={props.onResend}>{t('otp.resend')}</TextLink>
-        )}
-        {props.onOtherWay && <TextLink onClick={props.onOtherWay}>{t('phoneCode.otherWay')}</TextLink>}
-        <TextLink onClick={props.onChangeNumber}>{t('otp.changeNumber')}</TextLink>
-      </Stack>
     </AuthCard>
   );
 }

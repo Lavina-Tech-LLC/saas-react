@@ -9,6 +9,13 @@ import { useProfile } from '../../../../hooks/useProfile';
 import { AvatarUploadModal } from '../../../AvatarUpload/AvatarUploadModal';
 import { userInitial } from '../../../ui/initials';
 
+// A solid tonal circle on the photo's edge, cut out of it by a ring in the page tone (as on Google's profile photo)
+const CAMERA = {
+  backgroundColor: 'var(--m3-surface-container-highest)',
+  border: '3px solid var(--mantine-color-body)',
+  color: 'var(--mantine-color-text)',
+};
+
 // The person first, as on the Google Account home: a large photo with a camera to change it, the name, the address
 export function ProfileHero({ onSaved }: { onSaved: (notice: TranslationKey) => void }) {
   const t = useT();
@@ -32,13 +39,13 @@ export function ProfileHero({ onSaved }: { onSaved: (notice: TranslationKey) => 
         <Tooltip label={changePhoto}>
           <ActionIcon
             variant="default"
-            radius="xl"
-            size="lg"
+            size={36}
             pos="absolute"
-            right={-4}
-            bottom={-4}
+            right={-2}
+            bottom={-2}
             aria-label={changePhoto}
             onClick={() => setOpened(true)}
+            style={CAMERA}
           >
             <Camera size={18} />
           </ActionIcon>

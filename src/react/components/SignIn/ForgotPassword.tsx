@@ -1,4 +1,4 @@
-import { Button, Group, Stack } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { useState, type FormEvent } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
@@ -8,9 +8,9 @@ import type { PhoneOtpChannel } from '../../../auth/types';
 import { useSaaSContext } from '../../context';
 import { usePasswordReset } from '../../hooks/usePasswordReset';
 import { usePhoneOtp } from '../../hooks/usePhoneOtp';
+import { AuthActions } from '../ui/AuthActions';
 import { AuthCard } from '../ui/AuthCard';
 import { CodeInput } from '../ui/CodeInput';
-import { TextLink } from '../ui/TextLink';
 import { ChannelButtons } from './ChannelButtons';
 import { IdentifierField } from './IdentifierField';
 import { checkNewPassword, NewPasswordFields } from './NewPasswordFields';
@@ -73,9 +73,9 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
   };
 
   const back = (
-    <Group justify="center">
-      <TextLink onClick={onBack}>{t('forgot.back')}</TextLink>
-    </Group>
+    <Button variant="subtle" onClick={onBack}>
+      {t('forgot.back')}
+    </Button>
   );
 
   if (step === 'emailSent' || step === 'done') {
@@ -84,7 +84,10 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
         <AppAlert severity="success">
           {step === 'done' ? t('forgot.done') : t('forgot.linkSent', { identifier })}
         </AppAlert>
-        {back}
+        {/* The one way on from here, filled */}
+        <AuthActions>
+          <Button onClick={onBack}>{t('forgot.back')}</Button>
+        </AuthActions>
       </AuthCard>
     );
   }
@@ -102,12 +105,13 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
               onPasswordChange={setPassword}
               onConfirmChange={setConfirm}
             />
-            <Button type="submit" fullWidth loading={reset.isLoading || phoneOtp.isLoading} disabled={code.length < 6}>
-              {t('forgot.submit')}
-            </Button>
+            <AuthActions start={back}>
+              <Button type="submit" loading={reset.isLoading || phoneOtp.isLoading} disabled={code.length < 6}>
+                {t('forgot.submit')}
+              </Button>
+            </AuthActions>
           </Stack>
         </form>
-        {back}
       </AuthCard>
     );
   }
@@ -126,20 +130,23 @@ export function ForgotPassword({ cfg, initialKind, initialIdentifier, onBack }: 
             acceptsBoth={cfg.showIdentifierToggle}
             dialCode={cfg.dialCode}
           />
-          {pickChannel ? (
+          {pickChannel && (
             <ChannelButtons
               channels={cfg.phoneOtpChannels ?? []}
               loading={phoneOtp.isLoading}
               onSelect={(channel) => void sendCode(channel)}
             />
-          ) : (
-            <Button type="submit" fullWidth loading={reset.isLoading || phoneOtp.isLoading}>
-              {isPhone ? t('forgot.sendCode') : t('forgot.sendLink')}
-            </Button>
           )}
+          {/* With channel rows on screen, they are the way on */}
+          <AuthActions start={back}>
+            {!pickChannel && (
+              <Button type="submit" loading={reset.isLoading || phoneOtp.isLoading}>
+                {isPhone ? t('forgot.sendCode') : t('forgot.sendLink')}
+              </Button>
+            )}
+          </AuthActions>
         </Stack>
       </form>
-      {back}
     </AuthCard>
   );
 }

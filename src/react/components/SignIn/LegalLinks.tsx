@@ -26,7 +26,7 @@ export function LegalLinks({ privacyUrl, termsUrl }: { privacyUrl?: string; term
   const [before, after = ''] = t('legal.sentence').split('{links}');
 
   return (
-    <Text fz="xs" c="dimmed" ta="center">
+    <Text fz="xs" c="dimmed">
       {before}
       {links}
       {after}

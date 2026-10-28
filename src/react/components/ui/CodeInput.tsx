@@ -1,4 +1,5 @@
-import { Group, PinInput, Stack, Text } from '@mantine/core';
+import { Input, PinInput } from '@mantine/core';
+import { useId } from 'react';
 
 interface CodeInputProps {
   label: string;
@@ -8,28 +9,27 @@ interface CodeInputProps {
   hint?: string;
 }
 
-// 6-digit verification code (MFA, SMS) — one-time-code autofill, numbers only, focus moves automatically
+// 6-digit verification code (MFA, SMS): six large boxes under the field label, start-aligned with the other fields;
+// one-time-code autofill, numbers only, focus moves on by itself
 export function CodeInput({ label, value, onChange, onComplete, hint }: CodeInputProps) {
+  const id = useId();
   return (
-    <Stack gap={6}>
-      <Text fz="sm">{label}</Text>
-      <Group justify="center">
-        <PinInput
-          length={6}
-          type="number"
-          oneTimeCode
-          autoFocus
-          value={value}
-          onChange={onChange}
-          onComplete={onComplete}
-          aria-label={label}
-        />
-      </Group>
-      {hint && (
-        <Text fz="xs" c="dimmed" ta="center">
-          {hint}
-        </Text>
-      )}
-    </Stack>
+    <Input.Wrapper label={label} description={hint} id={id} inputWrapperOrder={['label', 'input', 'description']}>
+      <PinInput
+        id={id}
+        length={6}
+        size="lg"
+        gap="xs"
+        type="number"
+        placeholder=""
+        oneTimeCode
+        autoFocus
+        value={value}
+        onChange={onChange}
+        onComplete={onComplete}
+        aria-label={label}
+        pt={6}
+      />
+    </Input.Wrapper>
   );
 }

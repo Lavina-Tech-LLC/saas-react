@@ -1,4 +1,4 @@
-import { Divider, Stack, Text } from '@mantine/core';
+import { Button, Divider, Stack } from '@mantine/core';
 import { useState } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
@@ -7,9 +7,9 @@ import type { FacePose } from '../../../auth/face/engine';
 import { useSaaSContext } from '../../context';
 import { FaceScanner } from '../FaceScanner/FaceScanner';
 import { AuthCard } from '../ui/AuthCard';
-import { TextLink } from '../ui/TextLink';
 import { CredentialsForm, type CredentialStep } from './CredentialsForm';
 import { ForgotPassword } from './ForgotPassword';
+import { IdentityChip } from './IdentityChip';
 import { InviteScreens } from './InviteScreens';
 import { formatInviterName } from './inviteUrl';
 import { LegalLinks } from './LegalLinks';
@@ -116,6 +116,18 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
         ? t('signIn.subtitle')
         : t('signUp.subtitle');
 
+  // Step two leads with who is signing in; the chip goes back to step one
+  const backToIdentifier = () => {
+    flow.setPassword('');
+    flow.setConfirmPassword('');
+    flow.backFromMfa();
+    flow.phoneCode.reset();
+    setStep('identifier');
+  };
+  const chip = onSecondStep && (
+    <IdentityChip identifier={flow.identifier} kind={flow.identifierKind} onChange={backToIdentifier} />
+  );
+
   const social = cfg.hasOAuth && (
     <Stack gap="sm">
       <Divider label={t('divider.or')} labelPosition="center" />
@@ -127,48 +139,35 @@ export function SignIn({ initialMode = 'signIn', inviteCode, resetToken, onPassw
       />
     </Stack>
   );
+  // Step one's quieter action: leave an invite, or switch between signing in and up
+  const switchAction = invite.showSignUp ? (
+    <Button variant="subtle" onClick={invite.dismiss}>
+      {t('common.cancel')}
+    </Button>
+  ) : isSignIn ? (
+    flow.canSignUp && (
+      <Button variant="subtle" onClick={() => flow.switchMode('signUp')}>
+        {t('signUp.createAccount')}
+      </Button>
+    )
+  ) : (
+    <Button variant="subtle" onClick={() => flow.switchMode('signIn')}>
+      {t('signIn.instead')}
+    </Button>
+  );
 
   return (
-    <AuthCard title={title} subtitle={subtitle}>
+    <AuthCard title={title} subtitle={subtitle} aside={chip}>
       {flow.error && <AppAlert severity="error">{flow.error}</AppAlert>}
       <CredentialsForm
         flow={flow}
         step={step}
         onStepChange={setStep}
         onForgot={() => setForgot(true)}
+        switchAction={switchAction}
         social={social}
       />
       <LegalLinks privacyUrl={cfg.privacyPolicyUrl} termsUrl={cfg.termsOfServiceUrl} />
-      <Footer flow={flow} inviteActive={invite.showSignUp} onCancelInvite={invite.dismiss} />
     </AuthCard>
-  );
-}
-
-function Footer({
-  flow,
-  inviteActive,
-  onCancelInvite,
-}: {
-  flow: ReturnType<typeof useSignInFlow>;
-  inviteActive: boolean;
-  onCancelInvite: () => void;
-}) {
-  const { t } = useSaaSContext();
-  // During MFA the identity chip's "Change" is the way back
-  if (flow.mfaMode) return null;
-  return (
-    <Stack gap={4} align="center">
-      {flow.isSignIn && flow.canSignUp && (
-        <Text fz="sm" c="dimmed">
-          {t('signIn.noAccount')} <TextLink onClick={() => flow.switchMode('signUp')}>{t('signUp.submit')}</TextLink>
-        </Text>
-      )}
-      {!flow.isSignIn && (
-        <Text fz="sm" c="dimmed">
-          {t('signIn.hasAccount')} <TextLink onClick={() => flow.switchMode('signIn')}>{t('signIn.submit')}</TextLink>
-        </Text>
-      )}
-      {inviteActive && <TextLink onClick={onCancelInvite}>{t('common.cancel')}</TextLink>}
-    </Stack>
   );
 }

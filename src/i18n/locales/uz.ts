@@ -356,4 +356,9 @@ export const uz: Dictionary = {
   'org.logoHint': 'Tashkilotlar menyusida ko‘rinadi',
   'org.address': 'Manzil',
   'org.plan': 'Tarif',
+  'signUp.createAccount': 'Hisob yaratish',
+  'signIn.instead': 'Hisobga kirish',
+  'user.theme': 'Mavzu',
+  'user.light': 'Yorug‘',
+  'user.dark': 'Qorong‘i',
 };

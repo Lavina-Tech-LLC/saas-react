@@ -1,12 +1,12 @@
-import { Button, Group, Stack } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { useState, type FormEvent } from 'react';
 
 import { AppAlert } from '@/components/uiKit/AppAlert';
 
 import { useSaaSContext } from '../../context';
 import { usePasswordReset } from '../../hooks/usePasswordReset';
+import { AuthActions } from '../ui/AuthActions';
 import { AuthCard } from '../ui/AuthCard';
-import { TextLink } from '../ui/TextLink';
 import { checkNewPassword, NewPasswordFields } from './NewPasswordFields';
 import { deriveSignInSettings } from './signInSettings';
 
@@ -31,9 +31,9 @@ export function ResetPassword({ token, onDone }: { token: string; onDone?: () =>
       <AuthCard title={t('reset.title')}>
         <AppAlert severity="success">{t('forgot.done')}</AppAlert>
         {onDone && (
-          <Group justify="center">
-            <TextLink onClick={onDone}>{t('forgot.back')}</TextLink>
-          </Group>
+          <AuthActions>
+            <Button onClick={onDone}>{t('forgot.back')}</Button>
+          </AuthActions>
         )}
       </AuthCard>
     );
@@ -50,16 +50,21 @@ export function ResetPassword({ token, onDone }: { token: string; onDone?: () =>
             onPasswordChange={setPassword}
             onConfirmChange={setConfirm}
           />
-          <Button type="submit" fullWidth loading={reset.isLoading}>
-            {t('forgot.submit')}
-          </Button>
+          <AuthActions
+            start={
+              onDone && (
+                <Button variant="subtle" onClick={onDone}>
+                  {t('forgot.back')}
+                </Button>
+              )
+            }
+          >
+            <Button type="submit" loading={reset.isLoading}>
+              {t('forgot.submit')}
+            </Button>
+          </AuthActions>
         </Stack>
       </form>
-      {onDone && (
-        <Group justify="center">
-          <TextLink onClick={onDone}>{t('forgot.back')}</TextLink>
-        </Group>
-      )}
     </AuthCard>
   );
 }

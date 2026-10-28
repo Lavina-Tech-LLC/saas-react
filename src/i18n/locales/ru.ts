@@ -355,4 +355,9 @@ export const ru: Dictionary = {
   'org.logoHint': 'Показывается в меню организаций',
   'org.address': 'Адрес',
   'org.plan': 'Тариф',
+  'signUp.createAccount': 'Создать аккаунт',
+  'signIn.instead': 'Войти в аккаунт',
+  'user.theme': 'Тема',
+  'user.light': 'Светлая',
+  'user.dark': 'Тёмная',
 };

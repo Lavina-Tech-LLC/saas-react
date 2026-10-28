@@ -99,7 +99,7 @@ src/
     context.ts, sharedState.ts  # SaaSContext, OrgContext, InvitesContext
     hooks/                      # Public hooks (useAuth, useOrg, useInvites, usePasswordReset, ...) + internal state hooks
     components/
-      ui/                       # SDK building blocks (AuthCard, CodeInput, CopyField, RoleBadge, TextLink, ...)
+      ui/                       # SDK building blocks (AuthCard, AuthActions, CodeInput, CopyField, RoleBadge, ...)
       SignIn/                   # Sign-in / sign-up flow, split into screens + flow hooks
       UserButton/               # Avatar menu, org switcher, opens SettingsPanel
       SettingsPanel/            # M3 full-screen dialog: SettingsNav beside the section (sm+), one pane on phones
