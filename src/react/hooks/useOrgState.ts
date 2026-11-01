@@ -15,6 +15,8 @@ export function useOrgState() {
   const [selectedOrg, setSelectedOrg] = useState<Org | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // The org list has loaded once: the saved or only org is selected, or there is none to pick (see `isLoaded` below)
+  const [orgsLoaded, setOrgsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initialSelectDone = useRef(false);
   const people = useOrgPeople(client, setError);
@@ -45,6 +47,8 @@ export function useOrgState() {
           initialSelectDone.current = true;
           setSelectedOrg(orgToSelect);
           storage?.setItem(STORAGE_KEY, orgToSelect.id);
+          // Loaded with the org in place — an app can start its org's requests without waiting for the members
+          setOrgsLoaded(true);
           try {
             await loadMembersFor(orgToSelect);
           } catch {
@@ -56,6 +60,8 @@ export function useOrgState() {
       setError(errorMessage(err, 'Failed to load organizations'));
     } finally {
       setIsLoading(false);
+      // Also when listing failed or there is no org to pick: an app waiting on it must not wait forever
+      setOrgsLoaded(true);
     }
   }, [client, refreshRoles, loadMembersFor]);
 
@@ -151,6 +157,9 @@ export function useOrgState() {
     inviteLinks: people.inviteLinks,
     roles,
     isLoading,
+    /** The org list has loaded once for the signed-in user — the saved or only org is selected by then, or there is
+     *  none to pick. An app that sends the selected org with its requests waits for it before its first request. */
+    isLoaded: orgsLoaded,
     error,
     setError,
     refresh,

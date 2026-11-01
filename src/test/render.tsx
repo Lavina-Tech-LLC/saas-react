@@ -21,6 +21,7 @@ function stubOrg(overrides: Partial<OrgState>): OrgState {
     inviteLinks: [],
     roles: [],
     isLoading: false,
+    isLoaded: true,
     error: null,
     setError: vi.fn(),
     getInviteLinkUrl: () => '',

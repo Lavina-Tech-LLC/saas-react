@@ -394,8 +394,18 @@ const {
   removeMember,      // (orgId, userId) => Promise<boolean>
   refresh,
   isLoading,
+  isLoaded,          // boolean — the org list has loaded once (the saved or only org is selected by then)
   error,
 } = useOrg()
+```
+
+An app that sends the selected org with its requests (an `X-Org-ID` header) waits for `isLoaded` before rendering
+anything that fetches, so its first request already carries the org:
+
+```tsx
+const { isLoaded, isSignedIn } = useAuth()
+const { isLoaded: orgsLoaded } = useOrg()
+if (!isLoaded || (isSignedIn && !orgsLoaded)) return <PageLoader />
 ```
 
 ### `useProfile()`
