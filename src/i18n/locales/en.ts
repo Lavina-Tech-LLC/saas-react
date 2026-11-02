@@ -386,6 +386,7 @@ export const en = {
   'user.theme': 'Theme',
   'user.light': 'Light',
   'user.dark': 'Dark',
+  'user.system': 'System',
 } as const;
 
 export type TranslationKey = keyof typeof en;

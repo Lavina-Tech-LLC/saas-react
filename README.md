@@ -205,7 +205,7 @@ Guided camera capture for face verification. `<SignIn />` and the settings panel
 
 ### `<UserButton />`
 
-A sidebar row — avatar, name and organization, ⇅ — opening a menu with your account, the org switcher, account settings, preferences and sign-out. **Preferences** switches the app between light and dark (through your `MantineProvider`) and — when `SaaSProvider` has `onLocaleChange` — the language.
+A sidebar row — avatar, name and organization, ⇅ — opening a menu with your account, the org switcher, account settings, preferences and sign-out. **Preferences** switches the app between light, dark and System — the device's theme (through your `MantineProvider`) and — when `SaaSProvider` has `onLocaleChange` — the language.
 
 ```tsx
 <UserButton

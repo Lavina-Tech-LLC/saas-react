@@ -1,4 +1,4 @@
-import { Menu, Text, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
+import { Menu, Text, useComputedColorScheme, useMantineColorScheme, type MantineColorScheme } from '@mantine/core';
 import { Check, Languages, Moon, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -41,9 +41,14 @@ function ChoiceRow({
 // host's Mantine color scheme, the language through the host's onLocaleChange (only when the host provides it)
 export function PreferencesMenuSection() {
   const { t, locale, onLocaleChange } = useSaaSContext();
-  const { setColorScheme } = useMantineColorScheme();
+  // The choice (light, dark or System, which follows the device) and the scheme it shows now, for the row's icon
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
   const scheme = useComputedColorScheme('dark');
-  const themes = { light: t('user.light'), dark: t('user.dark') };
+  const themes: Record<MantineColorScheme, string> = {
+    light: t('user.light'),
+    dark: t('user.dark'),
+    auto: t('user.system'),
+  };
 
   return (
     <>
@@ -51,15 +56,14 @@ export function PreferencesMenuSection() {
       <ChoiceRow
         icon={scheme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
         label={t('user.theme')}
-        value={themes[scheme]}
+        value={themes[colorScheme]}
       >
-        <Menu.RadioGroup value={scheme} onChange={(value) => setColorScheme(value as 'light' | 'dark')}>
-          <Menu.RadioItem value="light" checkIcon={CHECK}>
-            {themes.light}
-          </Menu.RadioItem>
-          <Menu.RadioItem value="dark" checkIcon={CHECK}>
-            {themes.dark}
-          </Menu.RadioItem>
+        <Menu.RadioGroup value={colorScheme} onChange={(value) => setColorScheme(value as MantineColorScheme)}>
+          {(['light', 'dark', 'auto'] as const).map((option) => (
+            <Menu.RadioItem key={option} value={option} checkIcon={CHECK}>
+              {themes[option]}
+            </Menu.RadioItem>
+          ))}
         </Menu.RadioGroup>
       </ChoiceRow>
       {onLocaleChange && (

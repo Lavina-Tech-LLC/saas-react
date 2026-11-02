@@ -361,4 +361,5 @@ export const uz: Dictionary = {
   'user.theme': 'Mavzu',
   'user.light': 'Yorug‘',
   'user.dark': 'Qorong‘i',
+  'user.system': 'Tizim',
 };

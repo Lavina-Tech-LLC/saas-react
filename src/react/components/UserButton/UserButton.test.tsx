@@ -51,6 +51,19 @@ describe('UserButton', () => {
     expect(screen.getByRole('menuitemradio', { name: 'Light' })).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('can follow the device’s theme (System), and says so on its row', async () => {
+    renderWithSaaS(<UserButton />, { user: testUser });
+
+    await userEvent.click(screen.getByRole('button', { name: 'User menu' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Theme/ }));
+    const system = await screen.findByRole('menuitemradio', { name: 'System' });
+    await userEvent.click(system);
+
+    expect(system).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('menuitem', { name: /Theme/ })).toHaveTextContent('System');
+  });
+
   it('offers the languages only when the app can change its language', async () => {
     const onLocaleChange = vi.fn();
     const { unmount } = renderWithSaaS(<UserButton />, { user: testUser });

@@ -360,4 +360,5 @@ export const ru: Dictionary = {
   'user.theme': 'Тема',
   'user.light': 'Светлая',
   'user.dark': 'Тёмная',
+  'user.system': 'Системная',
 };
