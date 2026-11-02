@@ -22,15 +22,15 @@ git -C ../Convensions pull --ff-only   # the rule book
 - If it exists: all frontend rules live there. Read the relevant docs before writing any code.
 - **If it does not exist: stop immediately. Tell the user the Convensions folder is missing and do not continue.**
 
-Key docs to load per task type:
+Key docs to load per task type. **Use the task's skill first** — it loads the right part of these docs and the checklist for being done. The skills live in `../Convensions/skills/` and are linked into `~/.claude/skills/`; `/skills` lists them. If one is missing, link it (`ln -s "$(realpath ../Convensions/skills/<name>)" ~/.claude/skills/<name>`, then `/reload-plugins`) and read the docs below meanwhile.
 
-| Task | Read |
-|------|------|
-| Any task | `../Convensions/principles.md` — how we work: think first, keep it simple, change only what is needed, verify |
-| Any code | `../Convensions/frontend/README.md` — full rules, Mantine docs usage, file size |
-| Any UI / JSX | `../Convensions/frontend/lm3/` — tokens, components, modals, tables, responsive (start at its `README.md`, the map of its parts) |
-| Mantine components / hooks | `../Convensions/frontend/reference/mantine/` — local v9.7 docs; never rely on memory or web search first |
-| Types, naming, lint, format, tests | `../Convensions/frontend/typescript.md`, `naming.md`, `eslint.md`, `prettier.md`, `testing.md` |
+| Task | Skill | Read |
+|------|-------|------|
+| Any task | — | `../Convensions/principles.md` — how we work: think first, keep it simple, change only what is needed, verify |
+| Any code | `frontend-conventions` | `../Convensions/frontend/README.md` — full rules, Mantine docs usage, file size |
+| Any UI / JSX | `lm3-design` | `../Convensions/frontend/lm3/` — tokens, components, modals, tables, responsive (start at its `README.md`, the map of its parts) |
+| Mantine components / hooks | `lm3-design` | `../Convensions/frontend/reference/mantine/` — local v9.7 docs; never rely on memory or web search first |
+| Types, naming, lint, format, tests | `frontend-conventions` | `../Convensions/frontend/typescript.md`, `naming.md`, `eslint.md`, `prettier.md`, `testing.md` |
 
 ---
 
