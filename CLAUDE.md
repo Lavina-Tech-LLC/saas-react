@@ -22,7 +22,7 @@ git -C ../Convensions pull --ff-only   # the rule book
 - If it exists: all frontend rules live there. Read the relevant docs before writing any code.
 - **If it does not exist: stop immediately. Tell the user the Convensions folder is missing and do not continue.**
 
-Key docs to load per task type. **Use the task's skill first** — it loads the right part of these docs and the checklist for being done. The skills live in `../Convensions/skills/` and are linked into `~/.claude/skills/`; `/skills` lists them. If one is missing, link it (`ln -s "$(realpath ../Convensions/skills/<name>)" ~/.claude/skills/<name>`, then `/reload-plugins`) and read the docs below meanwhile.
+Key docs to load per task type. **Use the task's skill first** — it loads the right part of these docs and the checklist for being done. The skills live in `../Convensions/skills/` and are linked into `~/.claude/skills/`; `/skills` lists them. If one is missing, link it (`ln -s "$(realpath ../Convensions/skills/<name>)" ~/.claude/skills/<name>`, then `/reload-skills`) and read the docs below meanwhile.
 
 | Task | Skill | Read |
 |------|-------|------|
