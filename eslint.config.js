@@ -21,7 +21,7 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [{ name: '@tabler/icons-react', message: 'Use lucide-react (LM3-design-system.md §9).' }],
+          paths: [{ name: '@tabler/icons-react', message: 'Use lucide-react (LM3 §9).' }],
         },
       ],
       'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
