@@ -24,13 +24,15 @@ git -C ../Convensions pull --ff-only   # the rule book
 
 Key docs to load per task type. **Use the task's skill first** — it loads the right part of these docs and the checklist for being done. The skills live in `../Convensions/skills/` and are linked into `~/.claude/skills/`; `/skills` lists them. If one is missing, link it (`ln -s "$(realpath ../Convensions/skills/<name>)" ~/.claude/skills/<name>`, then `/reload-skills`) and read the docs below meanwhile.
 
+**Design system: LM3** (Material 3 on Mantine). Its docs are in `src/design/docs/` and its skill, `lm3-design`, is installed for this repo in `.claude/skills/` (from `src/design/skill/`). Never use Cupertino's rules or skill here. Both are copied from LStudio's `src/kits/lm3/` — `yarn kit:diff` there checks this copy.
+
 | Task | Skill | Read |
 |------|-------|------|
 | Any task | — | `../Convensions/principles.md` — how we work: think first, keep it simple, change only what is needed, verify |
-| Any code | `frontend-conventions` | `../Convensions/frontend/README.md` — full rules, Mantine docs usage, file size |
-| Any UI / JSX | `lm3-design` | `../Convensions/frontend/lm3/` — tokens, components, modals, tables, responsive (start at its `README.md`, the map of its parts) |
-| Mantine components / hooks | `lm3-design` | `../Convensions/frontend/reference/mantine/` — local v9.7 docs; never rely on memory or web search first |
-| Types, naming, lint, format, tests | `frontend-conventions` | `../Convensions/frontend/typescript.md`, `naming.md`, `eslint.md`, `prettier.md`, `testing.md` |
+| Any code | `react-conventions` | `../Convensions/frontend/react/README.md` — full rules, Mantine docs usage, file size |
+| Any UI / JSX | `lm3-design` | `src/design/docs/` — tokens, components, modals, tables, responsive (start at its `README.md`, the map of its parts) |
+| Mantine components / hooks | `lm3-design` | `../Convensions/frontend/react/reference/mantine/` — local v9.7 docs; never rely on memory or web search first |
+| Types, naming, lint, format, tests | `react-conventions` | `../Convensions/frontend/react/typescript.md`, `naming.md`, `eslint.md`, `prettier.md`, `testing.md` |
 
 ---
 
@@ -55,7 +57,7 @@ SDK-only rules that extend or override shared conventions:
 - **Package manager: Yarn 4.18.1**, pinned in the repo (`.yarn/releases/`, `yarnPath` in `.yarnrc.yml`, `packageManager` in `package.json`; a global Yarn 1 hands over to it) with `nodeLinker: node-modules` and Yarn's safe defaults (no install scripts, the 1-day minimum package age) — never `bun` or `npm` (except `npm publish` in CI). Node ≥ 22.18.
 - **It is a library, not an app.** No TanStack Router / Query, Axios, Zustand, or i18next: transport is `core/transport.ts` (fetch), state is React context, routing is the host's job (components take callbacks such as `onSignIn`, `onOrgChange`).
 - **Never bundle a peer.** Anything imported from `react`, `react-dom`, `@mantine/*` or `lucide-react` must stay a peer dependency in `package.json` — tsdown never bundles a package listed in `peerDependencies`; check `dist/` imports them after a build. Adding a runtime dependency is a breaking decision — ask first.
-- **The UI kit is the boilerplate's, copied unchanged.** `src/components/uiKit/<Name>/` folders are copied verbatim from the boilerplate (`Saas support boilerplate/frontend/src/components/uiKit/`) — same names, same CSS Modules; never rename or edit them here (fix the boilerplate, then copy again). Their small helpers come along at the same paths: `src/hooks/` (useScreen, useSwipeToClose, useVerticalWheelPassThrough), `src/styles/` (lines, spacing, iconSize, tonalEdge, tableScrollArea, m3/contrast), `src/utils/format.ts`. The SDK's own screens (`src/react/components/`) are built from the kit and LM3 (`../Convensions/frontend/lm3/`) — kit pieces first, then theme-styled Mantine.
+- **The UI kit is the boilerplate's, copied unchanged.** `src/components/uiKit/<Name>/` folders are copied verbatim from the boilerplate (`Saas support boilerplate/frontend/src/components/uiKit/`) — same names, same CSS Modules; never rename or edit them here (fix the boilerplate, then copy again). Their small helpers come along at the same paths: `src/hooks/` (useScreen, useSwipeToClose, useVerticalWheelPassThrough), `src/styles/` (lines, spacing, iconSize, tonalEdge, tableScrollArea, m3/contrast), `src/utils/format.ts`. The SDK's own screens (`src/react/components/`) are built from the kit and LM3 (`src/design/docs/`) — kit pieces first, then theme-styled Mantine.
 - **Aliases make the kit portable.** `@/*` → `src/*` and `react-i18next` → `src/lib/i18nAdapter.ts` (the kit's `useTranslation().t` served by the SDK's dictionaries), set in `tsconfig.json` paths, `vite.config.ts` `resolve.alias` and the `pack` `alias`. Kit strings (`common.close`, `common.moreActions`, …) live in the SDK's locales like any other key. The kit's extra Mantine variants (ActionIcon `standard`, Button `adaptive`) are typed in `src/types/mantineVariants.d.ts`.
 - **No styles of its own beyond the kit.** No new CSS files, no Shadow DOM, no hex colors: LM3 tokens and theme defaults only, so the host theme applies. Components must work in light and dark.
 - **Own i18n.** All user-facing text goes through `useT()` / `t('key')` from `src/i18n` — flat dot keys, `{var}` interpolation. `en.ts` is the source of truth; `ru.ts` and `uz.ts` are typed `Dictionary` and must have every key. The components load only the active language (`i18n/loadDictionary.ts`, `react/useDictionary.ts`): English is built in, Russian and Uzbek are dynamic imports — never import `locales/ru` or `locales/uz` statically outside `locales/index.ts` (the public `dictionaries`), or every app downloads all three again.
@@ -131,7 +133,7 @@ At the end of each response that involves code changes, include:
 - List new files created
 
 ### Mantine docs used
-If the response involved any Mantine code (components, hooks, theme), list every local doc file read from `../Convensions/frontend/reference/mantine/` (by its path inside `reference/`), e.g.:
+If the response involved any Mantine code (components, hooks, theme), list every local doc file read from `../Convensions/frontend/react/reference/mantine/` (by its path inside `reference/`), e.g.:
 - `mantine/core/inputs/password-input.md`
 - `mantine/hooks/state-management/use-local-storage.md`
 
