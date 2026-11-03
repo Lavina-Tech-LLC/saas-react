@@ -24,7 +24,7 @@ git -C ../Convensions pull --ff-only   # the rule book
 
 Key docs to load per task type. **Use the task's skill first** — it loads the right part of these docs and the checklist for being done. The skills live in `../Convensions/skills/` and are linked into `~/.claude/skills/`; `/skills` lists them. If one is missing, link it (`ln -s "$(realpath ../Convensions/skills/<name>)" ~/.claude/skills/<name>`, then `/reload-skills`) and read the docs below meanwhile.
 
-**Design system: LM3** (Material 3 on Mantine). Its docs are in `src/design/docs/` and its skill, `lm3-design`, is installed for this repo in `.claude/skills/` (from `src/design/skill/`). Never use another design system's rules or skill here. Both are copied from LStudio's `src/kits/lm3/` — `yarn kit:diff` there checks this copy.
+**Design system: LM3** (Material 3 on Mantine). Its docs are in `src/design/docs/` and its skill, `lm3-design`, is installed for this repo in `.claude/skills/` (from `src/design/skill/`). Never use another design system's rules or skill here. Both are copied from LStudio's `frontend/lm3/` — `node frontend/scripts/kit-diff.mjs` there checks this copy.
 
 | Task | Skill | Read |
 |------|-------|------|
