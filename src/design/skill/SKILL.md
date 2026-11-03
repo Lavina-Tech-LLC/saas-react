@@ -1,6 +1,6 @@
 ---
 name: lm3-design
-description: LM3, Lavina Tech's Material 3 design system on Mantine 9.7, and its UI kit. Use ONLY in an LM3 project (LStudio's src/kits/lm3/, or a project whose repo guide says LM3) for any UI work — JSX, pages, layouts, forms, tables, dialogs, buttons, filters, loading, empty or error states, the theme or the kit — and when reviewing UI or choosing a component. Never for a Cupertino project.
+description: LM3, Lavina Tech's Material 3 design system on Mantine 9.7, and its UI kit. Use ONLY in an LM3 project (LStudio's src/kits/lm3/, or a project whose repo guide says LM3) for any UI work — JSX, pages, layouts, forms, tables, dialogs, buttons, filters, loading, empty or error states, the theme or the kit — and when reviewing UI or choosing a component. Never for a project on another design system.
 ---
 
 
@@ -12,7 +12,7 @@ LM3 is Material 3 built on Mantine 9.7. The theme restyles Mantine's own compone
 
 This skill is for **LM3 only**. In LStudio (the Saas support boilerplate) the active kit is `DESIGN` (`lm3` unless set
 otherwise) and LM3's files are under `src/kits/lm3/`; in a project, its repo guide names its design system. If the
-work is for Cupertino or another design system, **stop using this skill** — use that kit's own skill.
+work is for another design system, **stop using this skill** — use that kit's own skill.
 
 ## Where the rules are
 
