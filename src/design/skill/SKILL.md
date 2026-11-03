@@ -1,6 +1,6 @@
 ---
 name: lm3-design
-description: LM3, Lavina Tech's Material 3 design system on Mantine 9.7, and its UI kit. Use ONLY in an LM3 project (LStudio's frontend/lm3/, or a project whose repo guide says LM3) for any UI work — JSX, pages, layouts, forms, tables, dialogs, buttons, filters, loading, empty or error states, the theme or the kit — and when reviewing UI or choosing a component. Never for a project on another design system.
+description: LM3, Lavina Tech's Material 3 design system on Mantine 9.7, and its UI kit. Use ONLY in an LM3 project (LStudio's frontend/react/lm3/, or a project whose repo guide says LM3) for any UI work — JSX, pages, layouts, forms, tables, dialogs, buttons, filters, loading, empty or error states, the theme or the kit — and when reviewing UI or choosing a component. Never for a project on another design system.
 ---
 
 
@@ -10,14 +10,14 @@ LM3 is Material 3 built on Mantine 9.7. The theme restyles Mantine's own compone
 
 ## Before anything: is this an LM3 project?
 
-This skill is for **LM3 only**. In LStudio (the Saas support boilerplate) LM3 is the app in `frontend/lm3/`; in a
+This skill is for **LM3 only**. In LStudio (the Saas support boilerplate) LM3 is the app in `frontend/react/lm3/`; in a
 project, its repo guide names its design system. If the
 work is for another design system, **stop using this skill** — use that kit's own skill.
 
 ## Where the rules are
 
 This skill only points at the rules; it does not replace them. LM3's design docs sit next to this skill: `../docs/`
-(resolve this folder with `realpath` first if it is a link — in LStudio `frontend/lm3/src/design/docs/`, in a
+(resolve this folder with `realpath` first if it is a link — in LStudio `frontend/react/lm3/src/design/docs/`, in a
 project `src/design/docs/`).
 
 - `../docs/README.md`: read it first. It holds §0 (principles, the three layers, the "I need… → use" table) and the
@@ -50,7 +50,7 @@ LM3 §29 (the antipattern index) has the full list.
 
 ## Changing the kit or the theme (LM3 §31)
 
-- Build or fix it in **LStudio first** (`frontend/lm3/`), with a test and a Components-page section. Then copy it to the projects. A fix made in a project goes back to the boilerplate.
+- Build or fix it in **LStudio first** (`frontend/react/lm3/`), with a test and a Components-page section. Then copy it to the projects. A fix made in a project goes back to the boilerplate.
 - Update the LM3 section it changes **in the same change**, and update this skill if a rule above changes.
 - A design decision (a new or changed rule, a component replaced) also gets a dated entry in `../docs/decisions.md`: what it replaced and why. Read that log before changing a rule, so a settled decision isn't undone.
 - After copying the kit into a project, run `node frontend/scripts/kit-diff.mjs <the project's frontend folder>` from the boilerplate's folder. Fix what drifted; accept a file the project changes on purpose in its `kit-diff.json`, with why.
